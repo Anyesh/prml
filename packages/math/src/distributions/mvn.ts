@@ -88,9 +88,23 @@ export interface Ellipse {
  * ellipse the viz layer can draw directly. `mass` is a probability, not a sigma count,
  * because the chi-squared radius that converts between them differs by dimension and
  * getting it wrong is invisible on screen.
+ *
+ * Throws unless `cov` is positive definite, for the reason `cholesky` does: a matrix with
+ * a non-positive eigenvalue has no elliptical contour, so the radius would come back NaN,
+ * and a NaN radius propagates silently into the caller's plot domain and blanks the whole
+ * figure, axes included, while every surrounding readout keeps computing correct numbers.
+ * An inverted Hessian away from a minimum is the case that reaches here.
  */
 export function mvnCovarianceEllipse(p: MvnParams, mass = 0.95): Ellipse {
   const { values, vectors } = eigSym(p.cov);
+  // Relative to the largest eigenvalue, matching `pinv`'s rcond: a singular covariance
+  // reaches here with a smallest eigenvalue of ~1e-16 rather than an exact zero, and its
+  // degenerate contour is a segment that would still draw as a sliver of an ellipse.
+  if (!(values[0]! > 0) || !(values[1]! > 1e-12 * values[0]!)) {
+    throw new Error(
+      `mvnCovarianceEllipse: covariance is not positive definite (eigenvalues ${values[0]}, ${values[1]}), so it has no elliptical contour`,
+    );
+  }
   const r = Math.sqrt(-2 * Math.log(1 - mass));
   const rx = r * Math.sqrt(values[0]!);
   const ry = r * Math.sqrt(values[1]!);

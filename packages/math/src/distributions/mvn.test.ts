@@ -138,6 +138,28 @@ describe('mvnCovarianceEllipse', () => {
       expect(mahalanobisSq).toBeCloseTo(chi2q, 6);
     }
   });
+
+  it('throws on an indefinite matrix rather than returning a NaN radius', () => {
+    const indefinite = [
+      [0.118, 0],
+      [0, -0.165],
+    ];
+
+    expect(() => mvnCovarianceEllipse({ mean: [0, 0], cov: indefinite }, 0.5)).toThrow(
+      /not positive definite/,
+    );
+  });
+
+  it('throws on a singular covariance, whose contour is a segment rather than an ellipse', () => {
+    const singular = [
+      [1, 1],
+      [1, 1],
+    ];
+
+    expect(() => mvnCovarianceEllipse({ mean: [0, 0], cov: singular }, 0.5)).toThrow(
+      /not positive definite/,
+    );
+  });
 });
 
 describe('mvnSample', () => {
