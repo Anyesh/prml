@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { autocorrelation, gaussianRandomWalkProposal, metropolisHastingsChain, mvnCovarianceEllipse, mvnLogPdf, pcg32 } from '@prml/math';
-import { Axes, Curve, Plot, ScatterField, Trajectory, useResolvedTokens } from '@prml/viz';
+import { autocorrelation, gaussianRandomWalkProposal, metropolisHastingsChain, mvnLogPdf, pcg32 } from '@prml/math';
+import { Axes, CovarianceEllipse, Curve, Plot, ScatterField, Trajectory, useResolvedTokens } from '@prml/viz';
 import { Slider } from '@prml/ui';
 import '../widgets.css';
 
@@ -12,14 +12,6 @@ const COV = [
 const N_STEPS = 300;
 const MAX_LAG = 40;
 
-function ellipsePoints(cx: number, cy: number, rx: number, ry: number, angle: number, n = 64): (readonly [number, number])[] {
-  return Array.from({ length: n + 1 }, (_, i) => {
-    const t = (2 * Math.PI * i) / n;
-    const x = rx * Math.cos(t);
-    const y = ry * Math.sin(t);
-    return [cx + x * Math.cos(angle) - y * Math.sin(angle), cy + x * Math.sin(angle) + y * Math.cos(angle)] as const;
-  });
-}
 
 function circlePoints(cx: number, cy: number, r: number, n = 48): (readonly [number, number])[] {
   return Array.from({ length: n + 1 }, (_, i) => {
@@ -40,14 +32,13 @@ export default function MetropolisHastingsExplorer() {
   }, [stepSize]);
 
   const rho = useMemo(() => autocorrelation(chain.states.map((s) => s[0]!), MAX_LAG), [chain]);
-  const ellipse = mvnCovarianceEllipse({ mean: MEAN, cov: COV }, 0.9);
   const current = chain.states[chain.states.length - 1]!;
 
   return (
     <div className="widget-grid">
       <Plot width={340} height={340} xDomain={[-4, 4]} yDomain={[-4, 4]} equalAspect label="Metropolis-Hastings chain on a correlated Gaussian target">
         <Axes x={{ label: 'z1' }} y={{ label: 'z2' }} grid zeroLine />
-        <Curve points={ellipsePoints(ellipse.cx, ellipse.cy, ellipse.rx, ellipse.ry, ellipse.angle)} color={tokens.color.inkFaint} width={1.5} />
+        <CovarianceEllipse mean={MEAN} cov={COV} levels={[0.9]} color={tokens.color.inkFaint} width={1.5} />
         <Trajectory path={chain.states.map((s) => [s[0]!, s[1]!] as const)} color={tokens.series[0]!} width={1.25} fadeOlder />
         <Curve points={circlePoints(current[0]!, current[1]!, stepSize)} color={tokens.color.accent} width={1.5} dash="dashed" />
         <ScatterField points={[{ x: current[0]!, y: current[1]!, color: tokens.color.accent, size: 5 }]} />

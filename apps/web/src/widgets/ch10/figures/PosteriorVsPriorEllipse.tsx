@@ -1,6 +1,5 @@
-import { mvnCovarianceEllipse, pcg32, standardNormal, submatrix, variationalLogisticFit } from '@prml/math';
-import { Axes, Curve, Plot, useResolvedTokens } from '@prml/viz';
-import { ellipseToPolyline } from '../lib.js';
+import { pcg32, standardNormal, submatrix, variationalLogisticFit } from '@prml/math';
+import { Axes, CovarianceEllipse, Plot, useResolvedTokens } from '@prml/viz';
 import '../../widgets.css';
 
 const SEED = 20260917;
@@ -38,8 +37,8 @@ export default function PosteriorVsPriorEllipse() {
   return (
     <Plot width={280} height={280} xDomain={[-4, 4]} yDomain={[-4, 4]} equalAspect label="The prior over (w1, w2) shrinking to the posterior after seeing the data">
       <Axes x={{ label: 'w1' }} y={{ label: 'w2' }} grid zeroLine />
-      <Curve points={ellipseToPolyline(mvnCovarianceEllipse(priorMarginal, 0.9))} color={tokens.color.inkFaint} width={1.5} dash="dashed" />
-      <Curve points={ellipseToPolyline(mvnCovarianceEllipse(posteriorMarginal, 0.9))} color={tokens.color.accent} width={2} />
+      <CovarianceEllipse mean={priorMarginal.mean} cov={priorMarginal.cov} levels={[0.9]} color={tokens.color.inkFaint} width={1.5} dash="dashed" />
+      <CovarianceEllipse mean={posteriorMarginal.mean} cov={posteriorMarginal.cov} levels={[0.9]} color={tokens.color.accent} width={2} />
     </Plot>
   );
 }

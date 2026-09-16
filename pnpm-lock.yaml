@@ -118,6 +118,9 @@ importers:
 
   packages/viz:
     dependencies:
+      '@prml/math':
+        specifier: workspace:*
+        version: link:../math
       '@prml/ui':
         specifier: workspace:*
         version: link:../ui

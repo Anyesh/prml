@@ -4,12 +4,11 @@ import {
   correlatedPrecision,
   factorizedGaussianForwardKlFit,
   factorizedGaussianReverseKl,
-  mvnCovarianceEllipse,
   trueMarginalVariances,
 } from '@prml/math';
-import { Axes, Curve, Plot, useResolvedTokens } from '@prml/viz';
+import type { Mat, Vec } from '@prml/math';
+import { Axes, CovarianceEllipse, Plot, useResolvedTokens } from '@prml/viz';
 import { Slider } from '@prml/ui';
-import { ellipseToPolyline } from './lib.js';
 
 import '../widgets.css';
 
@@ -39,24 +38,17 @@ export default function KlDivergenceComparison() {
   const reverse = useMemo(() => factorizedGaussianReverseKl(p), [p]);
   const trueVariances = useMemo(() => trueMarginalVariances(p), [p]);
 
-  const truePolylines = MASS_LEVELS.map((mass) => ellipseToPolyline(mvnCovarianceEllipse({ mean: MEAN, cov: trueCov }, mass)));
-  const forwardPolylines = MASS_LEVELS.map((mass) =>
-    ellipseToPolyline(mvnCovarianceEllipse({ mean: [forward.q1.mu, forward.q2.mu], cov: [[forward.q1.sigma2, 0], [0, forward.q2.sigma2]] }, mass)),
-  );
-  const reversePolylines = MASS_LEVELS.map((mass) =>
-    ellipseToPolyline(mvnCovarianceEllipse({ mean: [reverse.q1.mu, reverse.q2.mu], cov: [[reverse.q1.sigma2, 0], [0, reverse.q2.sigma2]] }, mass)),
-  );
+  const forwardMean: Vec = [forward.q1.mu, forward.q2.mu];
+  const forwardCov: Mat = [[forward.q1.sigma2, 0], [0, forward.q2.sigma2]];
+  const reverseMean: Vec = [reverse.q1.mu, reverse.q2.mu];
+  const reverseCov: Mat = [[reverse.q1.sigma2, 0], [0, reverse.q2.sigma2]];
 
-  function panel(title: string, qPolylines: (readonly [number, number])[][]) {
+  function panel(title: string, qMean: Vec, qCov: Mat) {
     return (
       <Plot width={280} height={280} xDomain={DOMAIN} yDomain={DOMAIN} equalAspect label={title}>
         <Axes x={{ label: 'z1' }} y={{ label: 'z2' }} grid />
-        {truePolylines.map((pts, i) => (
-          <Curve key={`p${i}`} points={pts} color={tokens.color.success} width={1.5} />
-        ))}
-        {qPolylines.map((pts, i) => (
-          <Curve key={`q${i}`} points={pts} color={tokens.color.danger} width={1.5} dash="dashed" />
-        ))}
+        <CovarianceEllipse mean={MEAN} cov={trueCov} levels={MASS_LEVELS} color={tokens.color.success} width={1.5} />
+        <CovarianceEllipse mean={qMean} cov={qCov} levels={MASS_LEVELS} color={tokens.color.danger} width={1.5} dash="dashed" />
       </Plot>
     );
   }
@@ -64,8 +56,8 @@ export default function KlDivergenceComparison() {
   return (
     <div>
       <div className="widget-grid">
-        {panel('KL(q||p): collapses inside one mode', forwardPolylines)}
-        {panel('KL(p||q): matches the true marginal', reversePolylines)}
+        {panel('KL(q||p): collapses inside one mode', forwardMean, forwardCov)}
+        {panel('KL(p||q): matches the true marginal', reverseMean, reverseCov)}
       </div>
       <Slider
         label="correlation rho"

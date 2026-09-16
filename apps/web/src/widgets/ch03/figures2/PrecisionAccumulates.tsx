@@ -9,7 +9,7 @@ import {
   type Ellipse,
   type WeightPosterior,
 } from '@prml/math';
-import { Axes, Curve, Plot, ScatterField, useResolvedTokens } from '@prml/viz';
+import { Axes, CovarianceEllipse, Plot, ScatterField, useResolvedTokens } from '@prml/viz';
 import { StepThrough } from '@prml/ui';
 import '../../widgets.css';
 
@@ -21,7 +21,7 @@ const SEED = 20260402;
 const OBS_COUNT = 8;
 const PHI = polynomialBasis(1);
 const DOMAIN: readonly [number, number] = [-2, 2];
-const ELLIPSE_SAMPLES = 64;
+const MASS = 0.95;
 
 interface Observation {
   readonly x: number;
@@ -49,30 +49,18 @@ const POSTERIORS: WeightPosterior[] = (() => {
   return list;
 })();
 
-/** Samples an `Ellipse`'s boundary into a closed path `Curve` can stroke. */
-function ellipsePoints(ellipse: Ellipse, samples = ELLIPSE_SAMPLES): (readonly [number, number])[] {
-  const cosA = Math.cos(ellipse.angle);
-  const sinA = Math.sin(ellipse.angle);
-  return Array.from({ length: samples + 1 }, (_, i) => {
-    const t = (i / samples) * 2 * Math.PI;
-    const x = ellipse.rx * Math.cos(t);
-    const y = ellipse.ry * Math.sin(t);
-    return [ellipse.cx + x * cosA - y * sinA, ellipse.cy + x * sinA + y * cosA] as const;
-  });
-}
-
 function ellipseArea(ellipse: Ellipse): number {
   return Math.PI * ellipse.rx * ellipse.ry;
 }
 
-const ELLIPSES = POSTERIORS.map((p) => mvnCovarianceEllipse(p, 0.95));
+const ELLIPSES = POSTERIORS.map((p) => mvnCovarianceEllipse(p, MASS));
 const STEP_LABELS = ['Prior', ...OBSERVATIONS.map((_, i) => `${i + 1} observation${i === 0 ? '' : 's'}`)];
 
 export default function PrecisionAccumulates() {
   const [step, setStep] = useState(0);
   const tokens = useResolvedTokens();
 
-  const visible = ELLIPSES.slice(0, step + 1);
+  const visible = POSTERIORS.slice(0, step + 1);
   const firstArea = ellipseArea(ELLIPSES[0]!);
   const currentArea = ellipseArea(ELLIPSES[step]!);
 
@@ -86,10 +74,12 @@ export default function PrecisionAccumulates() {
         label="95% covariance ellipse of the posterior after each observation, all overlaid"
       >
         <Axes x={{ label: 'w₀' }} y={{ label: 'w₁' }} grid zeroLine />
-        {visible.map((ellipse, i) => (
-          <Curve
+        {visible.map((posterior, i) => (
+          <CovarianceEllipse
             key={i}
-            points={ellipsePoints(ellipse)}
+            mean={posterior.mean}
+            cov={posterior.cov}
+            levels={[MASS]}
             color={i === step ? tokens.color.accent : tokens.color.inkFaint}
             width={i === step ? 2.25 : 1}
             opacity={i === step ? 1 : 0.25 + 0.55 * (i / (ELLIPSES.length - 1))}

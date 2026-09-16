@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { kalmanFilter, mvnCovarianceEllipse, mvnMarginal, type Ellipse, type LdsParams } from '@prml/math';
-import { Axes, Curve, Plot, ScatterField, useResolvedTokens } from '@prml/viz';
+import { kalmanFilter, mvnCovarianceEllipse, mvnMarginal, type LdsParams } from '@prml/math';
+import { Axes, CovarianceEllipse, Curve, Plot, ScatterField, useResolvedTokens } from '@prml/viz';
 import { Slider, StepThrough } from '@prml/ui';
 import { kalmanTrackingDemo } from './data.js';
 
@@ -46,19 +46,6 @@ function buildParams(sigma: number): LdsParams {
   };
 }
 
-function ellipsePoints(ellipse: Ellipse, segments = 48): (readonly [number, number])[] {
-  const points: (readonly [number, number])[] = [];
-  const cosA = Math.cos(ellipse.angle);
-  const sinA = Math.sin(ellipse.angle);
-  for (let i = 0; i <= segments; i++) {
-    const t = (2 * Math.PI * i) / segments;
-    const ex = ellipse.rx * Math.cos(t);
-    const ey = ellipse.ry * Math.sin(t);
-    points.push([ellipse.cx + ex * cosA - ey * sinA, ellipse.cy + ex * sinA + ey * cosA]);
-  }
-  return points;
-}
-
 export default function KalmanTracker() {
   const tokens = useResolvedTokens();
   const [sigma, setSigma] = useState(0.6);
@@ -72,8 +59,10 @@ export default function KalmanTracker() {
   const steps = useMemo(() => kalmanFilter(observations, buildParams(sigma)), [observations, sigma]);
 
   const current = steps[step]!;
-  const predictedEllipse = mvnCovarianceEllipse(mvnMarginal({ mean: current.predictedMean, cov: current.predictedCov }, [0, 1]));
-  const correctedEllipse = mvnCovarianceEllipse(mvnMarginal({ mean: current.mean, cov: current.cov }, [0, 1]));
+  const predictedPosition = mvnMarginal({ mean: current.predictedMean, cov: current.predictedCov }, [0, 1]);
+  const correctedPosition = mvnMarginal({ mean: current.mean, cov: current.cov }, [0, 1]);
+  const predictedEllipse = mvnCovarianceEllipse(predictedPosition);
+  const correctedEllipse = mvnCovarianceEllipse(correctedPosition);
 
   const xs = DEMO.trueTrajectory.map((p) => p[0]!);
   const ys = DEMO.trueTrajectory.map((p) => p[1]!);
@@ -86,8 +75,8 @@ export default function KalmanTracker() {
       <Plot width={420} height={340} xDomain={xDomain} yDomain={yDomain} equalAspect label="2-D position tracking">
         <Axes x={{ label: 'x' }} y={{ label: 'y' }} grid />
         <Curve points={DEMO.trueTrajectory.map((p) => [p[0]!, p[1]!] as const)} color={tokens.color.inkFaint} width={1.5} dash="dotted" />
-        <Curve points={ellipsePoints(predictedEllipse)} color={tokens.series[1]!} width={1.5} dash="dashed" />
-        <Curve points={ellipsePoints(correctedEllipse)} color={tokens.color.accent} width={2} />
+        <CovarianceEllipse mean={predictedPosition.mean} cov={predictedPosition.cov} color={tokens.series[1]!} width={1.5} dash="dashed" />
+        <CovarianceEllipse mean={correctedPosition.mean} cov={correctedPosition.cov} color={tokens.color.accent} width={2} />
         <ScatterField points={DEMO.trueTrajectory.slice(0, step + 1).map((p) => ({ x: p[0]!, y: p[1]!, color: tokens.color.inkFaint, size: 3 }))} />
         <ScatterField
           points={[{ x: observations[step]![0]!, y: observations[step]![1]!, color: tokens.series[1]!, shape: 'cross', size: 6 }]}

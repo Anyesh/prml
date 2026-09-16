@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { dataMean, mvnCovarianceEllipse, pcg32, ppcaFitEM, ppcaMarginalCov, standardNormal, type Ellipse, type Mat, type PpcaParams } from '@prml/math';
-import { Axes, Curve, Plot, ScatterField, VectorField, useResolvedTokens } from '@prml/viz';
+import { dataMean, pcg32, ppcaFitEM, ppcaMarginalCov, standardNormal, type Mat, type PpcaParams } from '@prml/math';
+import { Axes, CovarianceEllipse, Curve, Plot, ScatterField, VectorField, useResolvedTokens } from '@prml/viz';
 import { StepThrough } from '@prml/ui';
 import { ppcaDemoData } from './data.js';
 
@@ -16,17 +16,6 @@ const DOMAIN: readonly [number, number] = [-4, 4];
 const MAX_ROUNDS = 8;
 const INIT_SEED = 20260920;
 
-function ellipsePoints(ellipse: Ellipse, samples = 64): (readonly [number, number])[] {
-  const cosA = Math.cos(ellipse.angle);
-  const sinA = Math.sin(ellipse.angle);
-  return Array.from({ length: samples + 1 }, (_, i) => {
-    const t = (i / samples) * 2 * Math.PI;
-    const x = ellipse.rx * Math.cos(t);
-    const y = ellipse.ry * Math.sin(t);
-    return [ellipse.cx + x * cosA - y * sinA, ellipse.cy + x * sinA + y * cosA] as const;
-  });
-}
-
 function buildInitial(data: Mat): PpcaParams {
   const rng = pcg32(INIT_SEED);
   const mean = dataMean(data);
@@ -40,7 +29,7 @@ export default function PpcaEmStepThrough() {
   const fit = useMemo(() => ppcaFitEM(DATA, buildInitial(DATA), MAX_ROUNDS), []);
   const clampedStep = Math.min(step, fit.paramsHistory.length - 1);
   const params = fit.paramsHistory[clampedStep]!;
-  const ellipse = mvnCovarianceEllipse({ mean: params.mean, cov: ppcaMarginalCov(params.w, params.sigma2) }, 0.95);
+  const marginalCov = ppcaMarginalCov(params.w, params.sigma2);
   const latentDir = [params.w[0]![0]!, params.w[1]![0]!] as const;
   const latentNorm = Math.hypot(latentDir[0], latentDir[1]) || 1;
 
@@ -54,7 +43,7 @@ export default function PpcaEmStepThrough() {
         <Plot height={300} xDomain={DOMAIN} yDomain={DOMAIN} equalAspect label="Data with the current marginal covariance ellipse and latent axis">
           <Axes x={{ label: 'x1' }} y={{ label: 'x2' }} grid zeroLine />
           <ScatterField points={DATA.map((p, i) => ({ x: p[0]!, y: p[1]!, id: i }))} color={tokens.color.inkMuted} size={3} opacity={0.75} />
-          <Curve points={ellipsePoints(ellipse)} color={tokens.color.accent} width={2} />
+          <CovarianceEllipse mean={params.mean} cov={marginalCov} levels={[0.95]} color={tokens.color.accent} width={2} />
           <VectorField
             origins={[[params.mean[0]!, params.mean[1]!]]}
             field={() => [(2.2 * latentDir[0]) / latentNorm, (2.2 * latentDir[1]) / latentNorm]}

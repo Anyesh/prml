@@ -19,13 +19,6 @@ Requests are absorbed into the primitives centrally between waves.
 
 ## Open
 
-### Ellipse
-- **Wanted by**: ch13/figures/KalmanWorkedStep, and independently by ch02, ch03, ch04, ch05, ch10, ch11 and ch12
-- **Shape**: a Gaussian covariance ellipse at a given mean, drawn at one or more confidence levels, from a 2x2 covariance rather than from semi-axes the caller has already diagonalised
-- **Props**: `{ mean: readonly [number, number]; cov: Mat; levels?: readonly number[]; color: string; fill?: boolean; z?: number }`
-- **Why no existing primitive fits**: nothing draws one, so eight chapters each sample the parametric form and hand the points to `Curve` as a closed polygon. Every one of them repeats the same eigendecomposition-to-angle step, and the chi-squared quantile that turns a confidence level into a radius is re-derived or hard-coded per figure. It is also the one shape in the book where `equalAspect` is load-bearing and easy to forget, since an ellipse drawn on unequal axes is a different ellipse.
-- **Note**: this is the widest-shared request so far. `Bars` was asked for by two chapters and `LogScale` by four; this is eight, and the count is evidence the workaround is not cheap.
-
 ### Simplex
 - **Wanted by**: ch02/DirichletSimplex, ch02/figures/DirichletCorners
 - **Shape**: the 2-simplex as an equilateral triangle in barycentric coordinates, so a Dirichlet density can be drawn over it the way the book's figures 2.4 and 2.5 do
@@ -33,6 +26,39 @@ Requests are absorbed into the primitives centrally between waves.
 - **Why no existing primitive fits**: `Plot` publishes two linear scales, so the widget currently renders the simplex as the right triangle in the (mu1, mu2) plane and lets the third component stay implicit. That is a correct region but the wrong picture: it hides the symmetry between the three components, which is the whole point of the Dirichlet's concentration parameter.
 
 ## Absorbed
+
+### Ellipse
+- **Wanted by**: ch13/figures/KalmanWorkedStep, and independently by ch02, ch03, ch04, ch05, ch10, ch11 and ch12
+- **Shape**: a Gaussian covariance ellipse at a given mean, drawn at one or more confidence levels, from a 2x2 covariance rather than from semi-axes the caller has already diagonalised
+- **Props**: `{ mean: readonly [number, number]; cov: Mat; levels?: readonly number[]; color: string; fill?: boolean; z?: number }`
+- **Why no existing primitive fits**: nothing draws one, so eight chapters each sample the parametric form and hand the points to `Curve` as a closed polygon. Every one of them repeats the same eigendecomposition-to-angle step, and the chi-squared quantile that turns a confidence level into a radius is re-derived or hard-coded per figure. It is also the one shape in the book where `equalAspect` is load-bearing and easy to forget, since an ellipse drawn on unequal axes is a different ellipse.
+- **Note**: this is the widest-shared request so far. `Bars` was asked for by two chapters and `LogScale` by four; this is eight, and the count is evidence the workaround is not cheap.
+- **Resolved**: added as `CovarianceEllipse`, taking `mean` and `cov` as asked. Four points
+  where the resolution differs from the request, each because the request's diagnosis was off.
+
+  The eigendecomposition and the chi-squared radius were never duplicated:
+  `mvnCovarianceEllipse` in `@prml/math` already owned both and seventeen widgets called it.
+  What was duplicated is the step after it, sampling the parametric form into a closed
+  polyline, in three independent copies at four different resolutions (40, 48, 64 and 72
+  segments) behind two incompatible signatures. The primitive therefore calls
+  `mvnCovarianceEllipse` rather than reimplementing it, which is why `@prml/viz` now depends
+  on `@prml/math`, and fixes one resolution at 72. A widget that still needs the geometry for
+  a readout or for plot bounds keeps calling `mvnCovarianceEllipse` directly; that is the
+  distribution's business, not the renderer's.
+
+  Named `CovarianceEllipse`, not `Ellipse`, because `@prml/math` exports an `Ellipse` type
+  that four of the consuming widgets import by name, and a component sharing it collides in
+  exactly the files that need both. The longer name also says which ellipse it draws.
+
+  `fill` is omitted. No call site wanted it, including the three that draw nested levels, and
+  an unused prop on a shared primitive is a promise no test covers. Ask again with a figure
+  that needs it.
+
+  `equalAspect` is now enforced rather than documented: `assertEqualAspect` throws when the
+  two axes disagree on pixels-per-unit by more than one percent. All sixteen call sites
+  already passed the flag, so this catches the seventeenth. It is exported because any
+  primitive whose shape carries meaning, PCA axes or a decision boundary, needs the same
+  guard.
 
 ### NetworkDiagram
 - **Wanted by**: ch05/BackpropStepper, ch05/NetworkFunctionExplorer
