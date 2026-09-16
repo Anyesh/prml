@@ -28,31 +28,26 @@ import BasisFunctionExplorer from '@widgets/ch03/BasisFunctionExplorer';
 
 ## Intuition
 
-The simplest regression model is a weighted sum of the inputs. It has one fatal property:
-it can only draw straight lines, planes, and their higher-dimensional equivalents. Real
-data curves.
+The simplest regression model is a weighted sum of the inputs, and it has one fatal
+property: it can only draw straight lines. Real data curves.
 
-The fix is smaller than it looks. Keep the weighted sum, but do not sum the raw inputs.
-Sum fixed nonlinear functions of them instead. Square the input, take a bump centred
-somewhere, take a step: whatever those functions are, the model is still a weighted sum, so
-the fitting problem is still linear and still has a closed-form answer. The curvature comes
-from the functions, not from the fitting.
+The fix is smaller than it looks. Keep the weighted sum, but sum fixed nonlinear functions
+of the inputs instead of the inputs themselves. The model is still a weighted sum, so
+fitting is still linear and still closed-form. The curvature comes from the functions, not
+from the fitting.
 
-That is the whole trick, and it buys a great deal. Everything from this section survives
-into Gaussian processes, support vector machines and neural networks, which differ mainly
-in where the basis functions come from.
+That trick survives into Gaussian processes, support vector machines and neural networks,
+which differ mainly in where the functions come from.
 
-It also has a real cost that the chapter spends the rest of its length addressing. The
-basis functions are fixed before any data arrives, so you have to choose how many and what
-shape without knowing what you are fitting. Choose too few and no weights can represent the
-truth. Choose too many and the fit chases the noise, producing coefficients in the
-thousands and a curve that passes through every point while being wrong everywhere between
-them. Nothing in the fitting procedure warns you, because from its point of view the second
-case is a better fit.
+It has a cost the rest of the chapter is about. The functions are fixed before any data
+arrives, so you choose how many and what shape without knowing what you are fitting. Too few
+and no weights can reach the truth. Too many and the fit chases noise, producing a curve
+through every point that is wrong between them. Nothing warns you, because to the fitting
+procedure the second case looks better.
 
 ## The math
 
-The starting point is linear in the input variables:
+Start linear in the inputs:
 
 <MathBlock id="3.1" name="linear regression">
 
@@ -60,7 +55,7 @@ $$y(\mathbf{x}, \mathbf{w}) = w_0 + w_1x_1 + \dots + w_Dx_D$$
 
 </MathBlock>
 
-Replacing the inputs with fixed functions of them gives the model this chapter is about:
+Replace them with fixed functions and you have the model:
 
 <MathBlock id="3.3" name="linear basis function model">
 
@@ -68,10 +63,8 @@ $$y(\mathbf{x}, \mathbf{w}) = \sum_{j=0}^{M-1} w_j\phi_j(\mathbf{x}) = \mathbf{w
 
 </MathBlock>
 
-with $\phi_0(\mathbf{x}) = 1$ so that $w_0$ acts as a bias. The name is about $\mathbf{w}$,
-not $\mathbf{x}$: this is a linear model however curved $\phi$ is.
-
-Two common choices. Gaussian bumps, local, controlled by a centre $\mu_j$ and a width $s$:
+with $\phi_0 = 1$ as the bias. The name refers to $\mathbf{w}$, not $\mathbf{x}$: this is
+linear however curved $\phi$ is. Two common choices, local bumps and saturating steps:
 
 <MathBlock id="3.4" name="Gaussian basis function">
 
@@ -79,20 +72,16 @@ $$\phi_j(x) = \exp\left\{-\frac{(x - \mu_j)^2}{2s^2}\right\}$$
 
 </MathBlock>
 
-and sigmoids, which saturate rather than decay:
-
 <MathBlock id="3.5" name="sigmoidal basis function">
 
 $$\phi_j(x) = \sigma\left(\frac{x - \mu_j}{s}\right), \qquad \sigma(a) = \frac{1}{1 + \exp(-a)}$$
 
 </MathBlock>
 
-Polynomials, $\phi_j(x) = x^j$, are the other obvious choice and the one that misbehaves
-most instructively, because every basis function is nonzero everywhere: moving one data
-point changes the fit across the entire domain.
+Polynomials, $\phi_j(x) = x^j$, misbehave most instructively: every function is nonzero
+everywhere, so moving one point changes the fit across the whole domain.
 
-Assume the target is the model plus Gaussian noise of precision $\beta$. Over an
-independent dataset the likelihood is
+Assume Gaussian noise of precision $\beta$:
 
 <MathBlock id="3.10" name="Gaussian likelihood">
 
@@ -100,8 +89,8 @@ $$p(\mathbf{t} \mid \mathbf{X}, \mathbf{w}, \beta) = \prod_{n=1}^{N}\mathcal{N}\
 
 </MathBlock>
 
-Maximising its log is the same as minimising sum-of-squares error, which is where least
-squares comes from rather than being assumed. Setting the gradient to zero gives
+Maximising its log *is* minimising squared error, so least squares is a consequence, not an
+assumption. Setting the gradient to zero:
 
 <MathBlock id="3.15" name="normal equations">
 
@@ -109,24 +98,19 @@ $$\mathbf{w}_{\mathrm{ML}} = \big(\boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\Phi
 
 </MathBlock>
 
-where $\boldsymbol{\Phi}$ collects one row per observation:
-
 <MathBlock id="3.16" name="design matrix">
 
 $$\boldsymbol{\Phi}_{nj} = \phi_j(\mathbf{x}_n)$$
 
 </MathBlock>
 
-Write 3.15 as code and it will let you down. The book flags the conditioning issue and it
-is not theoretical: for a degree-9 polynomial on 25 points in $[0, 1]$, the condition
-number of $\boldsymbol{\Phi}$ is about $7\times10^{7}$, and forming
-$\boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\Phi}$ squares it to $5\times10^{15}$, at the
-edge of what double precision can represent. Two correct solvers then disagree about the
-coefficients by thousands while agreeing about the residual to six digits. The fit is
-determined; the coefficients are not. Every implementation here therefore solves the
-least-squares problem through an SVD on $\boldsymbol{\Phi}$ directly.
+Write 3.15 as code and it will fail you. For a degree-9 polynomial on 25 points,
+$\boldsymbol{\Phi}$ has condition number $7\times10^{7}$; forming
+$\boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\Phi}$ squares it to $5\times10^{15}$. Two
+correct solvers then disagree about the coefficients by thousands while agreeing about the
+residual. Solve on $\boldsymbol{\Phi}$ directly, through an SVD.
 
-The usual remedy for over-fitting is to penalise large weights:
+Penalising large weights stays closed-form:
 
 <MathBlock id="3.27" name="regularised error function">
 
@@ -134,19 +118,15 @@ $$\frac{1}{2}\sum_{n=1}^{N}\{t_n - \mathbf{w}^{\mathrm{T}}\boldsymbol{\phi}(\mat
 
 </MathBlock>
 
-which stays closed-form:
-
 <MathBlock id="3.28" name="regularised solution">
 
 $$\mathbf{w} = \big(\lambda\mathbf{I} + \boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\Phi}\big)^{-1}\boldsymbol{\Phi}^{\mathrm{T}}\mathbf{t}$$
 
 </MathBlock>
 
-That $\lambda\mathbf{I}$ does two jobs at once. It shrinks the weights, and it lifts the
-eigenvalues away from zero, so the ill-conditioning above simply stops being a problem. But
-it replaces the question "how many basis functions" with "what $\lambda$", and answering it
-by trying values against held-out data spends data on model selection. Sections 3.3 to 3.5
-are about not having to.
+That $\lambda\mathbf{I}$ shrinks the weights and lifts the eigenvalues off zero, killing the
+conditioning problem. But it swaps "how many basis functions" for "what $\lambda$", and
+answering that with held-out data spends data. Sections 3.3 to 3.5 are about not having to.
 
 ## Interactive
 
@@ -214,15 +194,10 @@ minimising the other, so the loss is a consequence of the noise model.
 
 ## Connections
 
-This is the foundation for the whole chapter, and nothing later replaces it: 3.3 keeps the
-same basis functions and the same design matrix, and only changes what is done with them.
+- **Foundation for the chapter.** [3.3](/sections/3-3) keeps this basis and design matrix and
+  only changes what is done with them.
+- **[3.2](/sections/3-2)** decomposes the over-fitting seen here into two competing terms.
+- **[3.3](/sections/3-3)** resolves it, by distributing over $\mathbf{w}$ instead of picking
+  one.
+- **[3.6](/sections/3-6)** is where the cost above comes due, and why chapters 5 and 6 exist.
 
-[3.2 The Bias-Variance Decomposition](/sections/3-2) takes the over-fitting seen here apart
-into two competing quantities, which explains why the trade-off exists but not how to
-resolve it from one dataset.
-
-[3.3 Bayesian Linear Regression](/sections/3-3) resolves it, by putting a distribution over
-$\mathbf{w}$ instead of picking one.
-
-[3.6 Limitations of Fixed Basis Functions](/sections/3-6) is where the cost stated in the
-intuition comes due, and is the reason chapters 5 and 6 exist.

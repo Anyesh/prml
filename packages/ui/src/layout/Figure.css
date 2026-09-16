@@ -1,0 +1,32 @@
+.prml-figure {
+  margin: var(--prml-space-5) 0;
+}
+
+.prml-figure--wide {
+  width: min(var(--prml-layout-widget-width), 100%);
+  margin-inline: auto;
+}
+
+.prml-figure-stage {
+  border-radius: var(--prml-radius-md);
+  background: var(--prml-color-plot-bg);
+}
+
+.prml-figure-caption {
+  display: flex;
+  gap: var(--prml-space-3);
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: var(--prml-space-2);
+  color: var(--prml-color-ink-muted);
+  font-family: var(--prml-font-sans);
+  font-size: var(--prml-text-sm);
+  line-height: var(--prml-leading-snug);
+}
+
+.prml-figure-source {
+  flex: none;
+  color: var(--prml-color-ink-faint);
+  font-size: var(--prml-text-xs);
+  font-variant-numeric: tabular-nums;
+}

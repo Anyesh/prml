@@ -24,37 +24,32 @@ difficulty: 3
 ---
 
 import SequentialBayesianLearning from '@widgets/ch03/SequentialBayesianLearning';
+import PredictiveDistribution from '@widgets/ch03/PredictiveDistribution';
+import EquivalentKernel from '@widgets/ch03/EquivalentKernel';
 
 ## Intuition
 
-Least squares hands back a single set of weights and no opinion about them. Fit a
-ninth-order polynomial to ten noisy points and it will return coefficients in the
-thousands, draw a curve through every point, and offer no signal at all that anything has
-gone wrong. The usual patch is to hold out a validation set and tune a regularisation
-coefficient against it, which works, but it spends data on model selection and it still
-produces one curve with no error bars.
+Least squares hands back one set of weights and no opinion about them. Fit a ninth-order
+polynomial to ten noisy points and it returns coefficients in the thousands, draws a curve
+through every point, and gives no signal that anything went wrong.
 
-The Bayesian treatment changes what the answer is. Instead of asking which weights are
-best, we start from a distribution over weights representing what we believe before seeing
-anything, and we ask how each observation reshapes it. The answer is another distribution:
-narrower where the data is informative, still broad where it is not.
+The Bayesian version changes what the answer *is*. Start with a distribution over weights
+and ask how each observation reshapes it. The answer is another distribution: narrow where
+the data is informative, still wide where it is not.
 
-Two things follow that the point estimate cannot give you. Predictions come with a variance
-that widens away from the data, so the model says where it is guessing. And over-fitting
-stops being a thing you have to police, because a model with too many parameters spreads
-its prior thin and is penalised automatically, without a validation set and without a knob
-to tune.
+Two things follow that a point estimate cannot give you. Predictions carry a variance that
+widens away from the data, so the model says where it is guessing. And over-fitting stops
+needing policing, because a model with too many parameters spreads its prior thin and pays
+for it automatically.
 
-The catch is that this only stays tractable because of a coincidence: the likelihood is
-Gaussian in the weights, so if the prior is Gaussian too, the posterior is Gaussian, and
-everything stays in closed form forever. That is conjugacy, and it is why this section is
-arithmetic rather than integration.
+This stays tractable only because of a coincidence: a Gaussian likelihood times a Gaussian
+prior is Gaussian. That is conjugacy, and it is why this section is arithmetic rather than
+integration.
 
 ## The math
 
-Take the noise precision $\beta$ as known for now. The likelihood is the exponential of a
-quadratic in $\mathbf{w}$, so the conjugate prior is Gaussian, and the posterior is
-Gaussian as well:
+Take the noise precision $\beta$ as known. A Gaussian likelihood times a Gaussian prior
+leaves the posterior Gaussian:
 
 <MathBlock id="3.49" name="weight posterior">
 
@@ -62,8 +57,7 @@ $$p(\mathbf{w} \mid \mathbf{t}) = \mathcal{N}(\mathbf{w} \mid \mathbf{m}_N, \mat
 
 </MathBlock>
 
-For the rest of the chapter we use a zero-mean isotropic prior with a single precision
-$\alpha$, which is the simplest thing that still shows the behaviour:
+With the zero-mean isotropic prior of precision $\alpha$,
 
 <MathBlock id="3.52" name="isotropic Gaussian prior">
 
@@ -71,7 +65,7 @@ $$p(\mathbf{w} \mid \alpha) = \mathcal{N}(\mathbf{w} \mid \mathbf{0}, \alpha^{-1
 
 </MathBlock>
 
-With that prior the posterior parameters are
+the posterior parameters are
 
 <MathBlock id="3.53" name="posterior mean">
 
@@ -85,20 +79,12 @@ $$\mathbf{S}_N^{-1} = \alpha\mathbf{I} + \beta\boldsymbol{\Phi}^{\mathrm{T}}\bol
 
 </MathBlock>
 
-Read 3.54 from right to left and the whole section is in it. Every observation adds
-$\beta\,\boldsymbol{\phi}(x_n)\boldsymbol{\phi}(x_n)^{\mathrm{T}}$ to the precision, and
-precision only ever increases. Belief never widens as data arrives. It also says the
-posterior does not care in what order the points came, and that the posterior after $n$
-points is exactly the prior for point $n+1$, which is what makes the update below
-sequential rather than a refit.
+The whole section is in 3.54. It builds the *precision*, and every observation adds a
+positive term to it, so belief never widens. Order does not matter, and the posterior after
+$n$ points is the prior for point $n+1$. As $\alpha \to 0$ it collapses to least squares:
+that is the special case where you claim to have known nothing.
 
-Two limits are worth holding onto. As $\alpha \to 0$ the prior becomes infinitely broad and
-$\mathbf{m}_N$ collapses onto the maximum likelihood solution: least squares is the special
-case where you claim to have known nothing. And with $N = 0$ the posterior is the prior,
-unchanged.
-
-What we actually want is not the weights but predictions. Marginalising the weights out
-gives
+Marginalising the weights out gives the prediction:
 
 <MathBlock id="3.58" name="predictive distribution">
 
@@ -112,14 +98,19 @@ $$\sigma_N^2(\mathbf{x}) = \frac{1}{\beta} + \boldsymbol{\phi}(\mathbf{x})^{\mat
 
 </MathBlock>
 
-The variance has two parts and they behave differently. The first is the noise in the data
-itself and it never goes away, however many points arrive. The second is uncertainty about
-$\mathbf{w}$, and it shrinks towards zero as $\mathbf{S}_N$ contracts. So the error bars
-narrow to a floor of $1/\beta$ and stop, which is the honest answer: more data tells you
-more about the function, never about the noise on the next measurement.
+Two terms behaving differently: noise in the data, which never goes away, and uncertainty
+about $\mathbf{w}$, which shrinks to nothing. Error bars narrow to a floor of $1/\beta$ and
+stop. More data tells you about the function, never about the noise on the next measurement.
 
-Substituting 3.53 into the predictive mean rearranges it into a weighted sum of the
-training targets, with weights
+<Figure
+  caption="Reveal points one at a time. The band tightens where they land and stays wide where they do not, and it stops tightening at the noise floor rather than collapsing."
+  source="3.8"
+  width="wide"
+>
+  <PredictiveDistribution client:visible />
+</Figure>
+
+Rearranging the predictive mean turns it into a weighted sum of training targets:
 
 <MathBlock id="3.62" name="equivalent kernel">
 
@@ -127,11 +118,17 @@ $$k(\mathbf{x}, \mathbf{x}') = \beta\boldsymbol{\phi}(\mathbf{x})^{\mathrm{T}}\m
 
 </MathBlock>
 
-This is worth pausing on, because it says a parametric model was secretly doing something
-local all along: the prediction at $\mathbf{x}$ is a smoothing of nearby targets. The
-weights sum to one over the training inputs but are not constrained to be positive, so
-$k$ is a smoother rather than a probability, and it is the doorway to chapter 6, where we
-drop the basis functions and work with the kernel directly.
+A model built from global basis functions was doing local smoothing all along. The weights
+sum to one but can go negative, so this is a smoother, not a probability, and it is the
+doorway to chapter 6.
+
+<Figure
+  caption="Move the query point and watch the smoothing weights follow it. Note where they dip below zero, which is why this is a smoother rather than a probability."
+  source="3.10"
+  width="wide"
+>
+  <EquivalentKernel client:visible />
+</Figure>
 
 ## Interactive
 
@@ -151,12 +148,11 @@ longer.
 
 ## Worked example
 
-Take a straight line, $y(x, \mathbf{w}) = w_0 + w_1x$, with $\alpha = 2$ and $\beta = 25$,
-which is the setting of the book's figure 3.7. Before any data, the posterior is the prior:
-mean $\mathbf{0}$, covariance $0.5\,\mathbf{I}$.
+A straight line, $\alpha = 2$, $\beta = 25$, the setting of figure 3.7. Before data the
+posterior is the prior: mean $\mathbf{0}$, covariance $0.5\,\mathbf{I}$.
 
-Now observe one point, $x_1 = 0.9$, $t_1 = 0.1$. The design row is
-$\boldsymbol{\phi}(0.9) = (1, 0.9)^{\mathrm{T}}$, and 3.54 gives
+Observe one point, $x_1 = 0.9$, $t_1 = 0.1$. With
+$\boldsymbol{\phi}(0.9) = (1, 0.9)^{\mathrm{T}}$, equation 3.54 gives
 
 $$
 \mathbf{S}_1^{-1}
@@ -165,65 +161,48 @@ $$
 = \begin{pmatrix} 27 & 22.5 \\ 22.5 & 22.25 \end{pmatrix}
 $$
 
-That matrix has eigenvalues of about $48.3$ and $0.95$. The large one belongs to the
-direction the observation constrained; the small one is barely above the prior's $2$,
-because a single point pins down where the line passes but says almost nothing about its
-slope. In the widget this is the moment the circular blob becomes a diagonal ridge.
+Its eigenvalues are about $48.3$ and $0.95$. The large one is the direction the point
+constrained; the small one is barely above the prior's $2$, because one point fixes where
+the line passes but not its slope. That is the blob becoming a ridge in the widget.
 
-Inverting and applying 3.53 gives $\mathbf{m}_1 \approx (0.045,\ 0.041)^{\mathrm{T}}$,
-which is still close to the origin: one observation against a prior of precision 2 does not
-move the mean far. Predicting at $x = 0.9$, the predictive variance from 3.59 is
-$1/25 + \boldsymbol{\phi}^{\mathrm{T}}\mathbf{S}_1\boldsymbol{\phi} \approx 0.04 + 0.022$,
-so about $0.062$. Predicting out at $x = 3$, where nothing was observed, the same
-expression gives roughly $0.30$: five times the variance, from the same posterior, purely
-because the second term grows away from the data.
+Predicting at $x = 0.9$, equation 3.59 gives $0.04 + 0.022 \approx 0.062$. Out at $x = 3$,
+where nothing was seen, the same expression gives about $0.30$: five times the variance from
+the same posterior, purely because the second term grows away from the data.
 
 ## Recall
 
 <Recall question="Why does the posterior covariance only ever shrink as data arrives?" concepts={["posterior-distribution"]}>
-Because 3.54 builds the *precision*, not the covariance, and each observation adds a
-positive semi-definite outer product $\beta\boldsymbol{\phi}\boldsymbol{\phi}^{\mathrm{T}}$
-to it. Adding to a precision can never decrease it, so the covariance never grows.
+Because 3.54 builds the *precision*, and each observation adds a positive semi-definite
+outer product to it. Adding to a precision cannot decrease it.
 </Recall>
 
-<Recall question="What does the predictive variance converge to as N grows, and why not zero?" concepts={["predictive-distribution"]}>
-It converges to $1/\beta$, the noise precision's reciprocal. The second term of 3.59 is
-uncertainty about $\mathbf{w}$ and vanishes with enough data, but the first term is the
-noise on the observation itself, which no amount of data removes.
+<Recall question="What does the predictive variance converge to, and why not zero?" concepts={["predictive-distribution"]}>
+To $1/\beta$. The second term of 3.59 is uncertainty about $\mathbf{w}$ and vanishes; the
+first is noise on the observation itself, which no amount of data removes.
 </Recall>
 
-<Recall question="What happens to the Bayesian solution as the prior precision α goes to zero?" concepts={["conjugate-prior"]}>
+<Recall question="What happens as the prior precision α goes to zero?" concepts={["conjugate-prior"]}>
 The prior becomes infinitely broad and $\mathbf{m}_N$ reduces to the maximum likelihood
-weights of 3.15. Least squares is the limiting case of claiming to know nothing beforehand.
+weights. Least squares is the limit of claiming to know nothing beforehand.
 </Recall>
 
 <Recall question="Why is the equivalent kernel surprising for a parametric model?" concepts={["equivalent-kernel"]}>
-Because it shows the predictive mean is a weighted sum of training targets, with weights
-concentrated near the query point. A model defined by global basis functions and a weight
-vector turns out to be doing local smoothing, which is what makes the jump to kernel
-methods in chapter 6 possible.
+It shows the predictive mean is a weighted sum of training targets, concentrated near the
+query point. A model of global basis functions turns out to smooth locally.
 </Recall>
 
-<Recall question="Why can the posterior be updated one observation at a time without refitting?" concepts={["sequential-learning"]}>
-Because conjugacy makes the posterior the same family as the prior. The posterior after
-$n$ points is a valid prior for point $n + 1$, so 3.49 applies again with the old posterior
-in the prior's place, and the result equals a batch fit over all $n + 1$ points.
+<Recall question="Why can the posterior be updated one point at a time without refitting?" concepts={["sequential-learning"]}>
+Conjugacy keeps the posterior in the prior's family, so it serves as the prior for the next
+point. The result equals a batch fit over all of them.
 </Recall>
 
 ## Connections
 
-Builds directly on the basis-function models and the design matrix from
-[3.1 Linear Basis Function Models](/sections/3-1), and on the Gaussian conditional and
-marginal results from chapter 2, which are what make the posterior available in closed form.
+- **Builds on** [3.1](/sections/3-1) for the design matrix, and chapter 2 for the Gaussian
+  results that make the posterior closed-form.
+- **Answers** what [3.2](/sections/3-2) could only diagnose, from one dataset rather than an
+  ensemble.
+- **Leads to** [3.4](/sections/3-4), which marginalises one level up, and
+  [3.5](/sections/3-5), which infers $\alpha$ and $\beta$ too.
+- **The equivalent kernel** is the thread to pull for chapter 6.
 
-It answers the question [3.2 The Bias-Variance Decomposition](/sections/3-2) leaves open.
-That decomposition explains the over-fitting trade-off but needs an ensemble of datasets to
-evaluate, so it cannot guide model choice from one dataset. The Bayesian treatment can.
-
-Leads into [3.4 Bayesian Model Comparison](/sections/3-4), which compares whole models by
-the same marginalisation used here on weights, and
-[3.5 The Evidence Approximation](/sections/3-5), which stops treating $\alpha$ and $\beta$
-as known and infers them from the data too.
-
-The equivalent kernel is the thread to pull for chapter 6: once predictions are a kernel
-smoothing of targets, the basis functions can be dropped entirely.

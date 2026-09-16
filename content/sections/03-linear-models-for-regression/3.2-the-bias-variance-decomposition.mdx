@@ -23,36 +23,22 @@ import BiasVarianceTradeoff from '@widgets/ch03/BiasVarianceTradeoff';
 
 ## Intuition
 
-Over-fitting and under-fitting sound like opposites, and the previous section treated them
-that way: too few basis functions and the model cannot reach the truth, too many and it
-chases noise. This section shows they are two terms in one equation, and that a knob which
-improves one always worsens the other.
+Over-fitting and under-fitting sound like opposites. They are two terms in one equation, and
+any knob improving one worsens the other.
 
-The idea is to stop asking how a model does on the dataset in front of you and ask how it
-does on average over every dataset you might have drawn. Imagine fitting the same model to
-a hundred different samples from the same source. You get a hundred different fitted curves.
-Two separate things can go wrong with that cloud of curves.
+Stop asking how a model does on the dataset in front of you. Ask how it does averaged over
+every dataset you might have drawn. Fit the same model to a hundred samples and you get a
+hundred curves. Two things can go wrong with that cloud.
 
-The cloud can sit in the wrong place. A heavily constrained model produces nearly the same
-curve every time, so the cloud is tight, but if the model cannot represent the truth then
-every curve in it misses in the same direction. That is bias.
+It can sit in the wrong place. A constrained model gives nearly the same curve every time,
+so the cloud is tight, but if it cannot reach the truth every curve misses the same way.
+That is bias.
 
-Or the cloud can be spread out. A flexible model produces a very different curve for each
-sample, because it is fitting the noise, which differs between samples. Individual curves
-are wild even though their average may be close to the truth. That is variance.
+Or it can spread out. A flexible model gives a different curve per sample, because it is
+fitting noise. Individual curves are wild even when their average is right. That is variance.
 
-There is also a floor. Even a perfect model cannot predict the noise on the next
-measurement, and that part of the error belongs to the data, not the model.
-
-The reason this is a trade-off rather than two independent problems is that both are
-controlled by the same thing: how much freedom the model has. Constrain it and bias grows
-while variance shrinks. Release it and the reverse. Somewhere in between their sum is
-smallest.
-
-The catch, and it is severe, is that computing any of this requires the ensemble of
-datasets. In practice you have one. If you had a hundred you would not need the
-decomposition, you would pool them and fit a better model. So this explains the trade-off
-without providing a way to act on it, which is exactly why the next three sections exist.
+Both are set by how much freedom the model has, which is why this is a trade-off. The catch
+is severe: computing either needs the ensemble, and you have one dataset.
 
 ## The math
 
@@ -125,24 +111,19 @@ average is not, and that is the observation chapter 14 turns into a method.
 
 ## Worked example
 
-Take the crudest possible model: ignore the input entirely and always predict a constant
-$c$. Its variance is zero, because every dataset produces the same curve, so the entire
-expected loss above the noise floor is bias.
+The crudest model: ignore the input, always predict a constant. Variance is zero, because
+every dataset gives the same curve, so everything above the noise floor is bias.
 
-Against $h(x) = \sin(2\pi x)$ on $[0, 1]$, the best such constant is the mean of the sine
-over that interval, which is $0$. The squared bias is then the mean of $\sin^2(2\pi x)$,
-which is $1/2$. So this model carries a squared bias of $0.5$ and a variance of $0$.
+Against $h(x) = \sin(2\pi x)$ on $[0, 1]$, the best constant is $0$, and the squared bias is
+the mean of $\sin^2(2\pi x)$, which is $1/2$. So: bias $0.5$, variance $0$.
 
-Now the opposite extreme: interpolate, passing exactly through every data point. Bias is
-essentially zero, because averaged over many datasets the interpolants' noise cancels and
-their average tracks the sine closely. But each individual fit reproduces its own dataset's
-noise, so with noise standard deviation $0.2$ the variance at the data points is about
-$0.2^2 = 0.04$ per point, and between points it is far worse, because an interpolant through
-noisy values oscillates violently in the gaps.
+The opposite extreme, an interpolant through every point, has bias near zero, because the
+noise cancels when averaged across datasets. But each fit reproduces its own noise, so with
+noise standard deviation $0.2$ the variance is about $0.04$ at the data points and far worse
+between them, where an interpolant oscillates.
 
-Neither extreme is close to optimal, and neither can be improved by adjusting the same knob
-in the same direction: the constant model needs more freedom, the interpolant needs less.
-That is the trade-off, and 3.41 says it is not avoidable, only balanced.
+Neither is close to optimal, and they need the knob turned in opposite directions. That is
+the trade-off: 3.41 says it can be balanced, not avoided.
 
 ## Recall
 
@@ -178,13 +159,8 @@ other loss functions the terms do not split apart so cleanly.
 
 ## Connections
 
-Follows directly from [3.1 Linear Basis Function Models](/sections/3-1), which introduced
-the over-fitting this section decomposes, and from the squared-loss result of chapter 1.
+- **Follows** [3.1](/sections/3-1), decomposing the over-fitting it introduced.
+- **[3.3](/sections/3-3)** answers the practical objection above: averaging over a posterior
+  does what averaging over an ensemble does here, and a posterior comes from one dataset.
+- **Chapter 14** is built on the observation that an average of high-variance fits is good.
 
-[3.3 Bayesian Linear Regression](/sections/3-3) is the answer to the practical objection
-raised above. It avoids the trade-off rather than balancing it, because averaging over the
-posterior plays the role the ensemble of datasets plays here, and a posterior is available
-from a single dataset.
-
-The observation that an average of high-variance fits is a good fit is the seed of the
-ensemble methods in chapter 14.

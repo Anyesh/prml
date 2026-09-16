@@ -5,5 +5,6 @@ export * from './controls/StepThrough.js';
 export * from './controls/Select.js';
 export * from './layout/Panel.js';
 export * from './layout/WidgetFrame.js';
+export * from './layout/Figure.js';
 export * from './content/MathBlock.js';
 export * from './content/Recall.js';

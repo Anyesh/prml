@@ -1,6 +1,7 @@
 ---
 import SectionLayout from '../../layouts/SectionLayout.astro';
 import WidgetMount from '../../components/WidgetMount.astro';
+import FigureMount from '../../components/FigureMount.astro';
 import { MathBlock, Recall } from '@prml/ui';
 import { getCollection, getEntry, render, type CollectionEntry } from 'astro:content';
 import { sectionSlug } from '../../layouts/routes';
@@ -39,5 +40,5 @@ const sectionConcepts = allConcepts.filter((c) => section.data.concepts.includes
 ---
 
 <SectionLayout section={section} chapter={chapter} siblingSections={siblingSections} concepts={sectionConcepts}>
-  <Content components={{ Widget: WidgetMount, MathBlock, Recall }} />
+  <Content components={{ Widget: WidgetMount, Figure: FigureMount, MathBlock, Recall }} />
 </SectionLayout>

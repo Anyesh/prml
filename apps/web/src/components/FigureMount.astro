@@ -1,0 +1,19 @@
+---
+// Astro wrapper around @prml/ui's Figure, for the same reason WidgetMount exists: the
+// child carries the client directive, and Astro can only turn it into an island when it
+// owns the slot. Nesting the island inside a React parent would hand rendering to React's
+// server renderer, which emits static markup and no hydration script.
+import { Figure } from '@prml/ui';
+
+export interface Props {
+  caption: string;
+  source?: string;
+  width?: 'column' | 'wide';
+}
+
+const { caption, source, width = 'column' } = Astro.props;
+---
+
+<Figure caption={caption} source={source} width={width}>
+  <slot />
+</Figure>

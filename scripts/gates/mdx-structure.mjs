@@ -8,6 +8,8 @@
  *   - Intuition holds no $-delimited math and no <MathBlock>
  *   - Interactive holds at least one widget element and a caption
  *   - Recall holds between 3 and 6 <Recall> elements
+ *   - each block stays inside its word budget (see WORD_BUDGET)
+ *   - the section carries enough visuals for its length (see WORDS_PER_VISUAL)
  *   - every <MathBlock id="x.y"> in the body is in frontmatter.equations, and
  *     vice versa
  */
@@ -33,6 +35,43 @@ const MATHBLOCK_TAG_RE = /<MathBlock\b/;
 const MATHBLOCK_ID_RE = /<MathBlock\b[^>]*\bid=["']([^"']+)["']/g;
 const RECALL_TAG_RE = /<Recall\b/g;
 const JSX_COMPONENT_RE = /<([A-Z][A-Za-z0-9]*)\b/g;
+
+/**
+ * Words of prose allowed per block, excluding display equations and markup.
+ *
+ * The site's whole promise is landing on a section and having the idea in under a minute,
+ * and a reader who must wade through 300 words before the first equation has already lost
+ * that. Display math does not count, because equations are the content of the maths block
+ * rather than padding in it; the budget constrains the prose that connects them.
+ *
+ * These are deliberately tight. Cutting to fit is the work: it forces one analogy carried
+ * properly instead of three started and abandoned.
+ */
+/**
+ * Prose words allowed per visual, and the floor regardless of length.
+ *
+ * One figure parked in the Interactive block satisfies a "has a widget" check while leaving
+ * every other idea in the section as text. That is the failure this replaces: anything that
+ * can be shown as a curve, a field, a trajectory or a worked plot should be, and the count
+ * has to scale with the argument rather than sit at one.
+ *
+ * Visuals may appear in any block. The maths block in particular must carry at least one,
+ * because an equation with a picture beside it is the single highest-value pairing on the
+ * page.
+ */
+export const WORDS_PER_VISUAL = 130;
+export const MIN_VISUALS = 3;
+
+const VISUAL_TAG_RE = /<(Widget|Figure)\b/g;
+
+export const WORD_BUDGET = {
+  intuition: 170,
+  'the math': 200,
+  interactive: 70,
+  'worked example': 170,
+  recall: 190,
+  connections: 80,
+};
 // A widget's caption is authored in the section as a `caption=` prop rather than a
 // separate element, because the frame renders exactly one caption and two would drift.
 const CAPTION_RE = /<Caption\b|<figcaption\b|\bcaption=/i;
@@ -74,6 +113,12 @@ export async function runMdxStructureGate({ sectionsDir = SECTIONS_DIR } = {}) {
     if (interactive) {
       checkInteractiveHasWidgetAndCaption(interactive, rel, failures);
     }
+
+    for (const [name, text] of sections) {
+      checkWordBudget(name, text, rel, failures);
+    }
+
+    checkVisualDensity(scannable, sections, rel, failures);
 
     const recall = sections.get('recall');
     if (recall) {
@@ -199,6 +244,51 @@ function checkInteractiveHasWidgetAndCaption(sectionText, rel, failures) {
   }
   if (!CAPTION_RE.test(sectionText)) {
     failures.push({ file: rel, message: 'Interactive section has no caption (<Caption> or <figcaption>)' });
+  }
+}
+
+function countProseWords(sectionText) {
+  return sectionText
+    .replace(/\$\$[\s\S]*?\$\$/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\$[^$\n]*\$/g, ' x ')
+    .replace(/^##\s+.*$/m, ' ')
+    .split(/\s+/)
+    .filter(Boolean).length;
+}
+
+function checkWordBudget(name, sectionText, rel, failures) {
+  const budget = WORD_BUDGET[name];
+  if (!budget) return;
+  const words = countProseWords(sectionText);
+  if (words > budget) {
+    failures.push({
+      file: rel,
+      message: `"## ${titleCase(name)}" is ${words} words, over its ${budget}-word budget. Cut it rather than raising the budget.`,
+    });
+  }
+}
+
+function checkVisualDensity(body, sections, rel, failures) {
+  const visuals = [...body.matchAll(VISUAL_TAG_RE)].length;
+  const words = [...sections.values()].reduce((sum, text) => sum + countProseWords(text), 0);
+  const required = Math.max(MIN_VISUALS, Math.ceil(words / WORDS_PER_VISUAL));
+
+  if (visuals < required) {
+    failures.push({
+      file: rel,
+      message:
+        `${visuals} visual(s) for ${words} words of prose; needs ${required}. ` +
+        'Add a <Figure> wherever an idea is currently carried by text alone.',
+    });
+  }
+
+  const math = sections.get('the math');
+  if (math && [...math.matchAll(VISUAL_TAG_RE)].length === 0) {
+    failures.push({
+      file: rel,
+      message: 'the maths block has no <Figure>; at least one equation here must be shown, not only stated',
+    });
   }
 }
 
