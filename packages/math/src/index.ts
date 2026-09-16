@@ -18,3 +18,8 @@ export * from './neural/index.js';
 export * from './kernels/index.js';
 export * from './sparse/index.js';
 export * from './latent/index.js';
+export * from './graphical/index.js';   // ch8
+export * from './variational/index.js'; // ch10
+export * from './sampling/index.js';    // ch11
+export * from './sequential/index.js';  // ch13
+export * from './ensemble/index.js';    // ch14

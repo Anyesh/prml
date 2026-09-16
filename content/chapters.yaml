@@ -38,6 +38,31 @@
   summary: "Kernel methods that depend on only a fraction of the training data, which is what makes prediction affordable. The support vector machine arrives from a margin argument and a constrained optimisation, the relevance vector machine from a prior that drives most weights to exactly zero and returns probabilistic predictions the SVM cannot."
   bookPages: [325, 358]
 
+- number: 8
+  title: "Graphical Models"
+  summary: "Probability distributions drawn as diagrams, so that a structure which is invisible in an algebraic expression becomes something you can read off a picture. Directed graphs first, then undirected ones, then the factor graph that unifies both, and finally the sum-product and max-sum algorithms, which turn the picture into an inference procedure by passing messages along its edges."
+  bookPages: [359, 422]
+
+- number: 10
+  title: "Approximate Inference"
+  summary: "What to do when the posterior has no closed form and sampling is too slow. Variational inference restates the problem as optimisation: pick a family of tractable distributions and find the member closest to the true posterior, which turns out to give a lower bound on the evidence for free. Runs the argument on Gaussian mixtures and logistic regression, then closes with expectation propagation, which minimises the same divergence the other way round."
+  bookPages: [461, 522]
+
+- number: 11
+  title: "Sampling Methods"
+  summary: "Approximating expectations by averaging over samples when the distribution cannot be integrated and will not factorise. Starts with the transformations and rejection arguments that work in low dimensions, shows why they collapse in high ones, and then builds Markov chain methods whose samples are correlated but whose stationary distribution is the one you wanted."
+  bookPages: [523, 558]
+
+- number: 13
+  title: "Sequential Data"
+  summary: "Models for data where order carries information and the independence assumption everything earlier relied on is simply false. A latent chain does the work: discrete states give the hidden Markov model with its forward-backward and Viterbi recursions, continuous ones give the linear dynamical system and the Kalman filter, and both are the same message passing seen in chapter 8."
+  bookPages: [605, 652]
+
+- number: 14
+  title: "Combining Models"
+  summary: "Several models used together, and the different things that can mean. Averaging over models under the posterior is not the same as averaging their predictions, boosting fits each model to what the previous ones got wrong, and a mixture of experts lets the choice of model depend on the input, which is where combination stops being a wrapper and becomes a model in its own right."
+  bookPages: [653, 676]
+
 - number: 12
   title: "Continuous Latent Variables"
   summary: "Data that lives near a surface of far lower dimension than the space it is recorded in, and how to find that surface. Principal component analysis twice, first as a variance argument and then as maximum likelihood in a latent-variable model, which is what turns it into something you can put a prior on, fit with EM and extend to nonlinear surfaces."
