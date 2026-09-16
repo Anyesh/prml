@@ -19,12 +19,6 @@ Requests are absorbed into the primitives centrally between waves.
 
 ## Open
 
-### NetworkDiagram
-- **Wanted by**: ch05/BackpropStepper, ch05/NetworkFunctionExplorer
-- **Shape**: a node-link diagram laying out units in layers with weighted edges between them, so a forward and backward pass can be highlighted edge by edge the way the book's figures 5.1, 5.2 and 5.7 do
-- **Props**: `{ layers: readonly number[]; edgeValue?: (from, to) => number; highlight?: ... }`
-- **Why no existing primitive fits**: nothing lays out nodes and edges at all. Both widgets stand in with `ScatterField` for units and `Annotation` for the numbers on them, which reads as a scatter plot of dots rather than as a network, and cannot draw the edges that carry the deltas.
-
 ### Simplex
 - **Wanted by**: ch02/DirichletSimplex, ch02/figures/DirichletCorners
 - **Shape**: the 2-simplex as an equilateral triangle in barycentric coordinates, so a Dirichlet density can be drawn over it the way the book's figures 2.4 and 2.5 do
@@ -33,7 +27,19 @@ Requests are absorbed into the primitives centrally between waves.
 
 ## Absorbed
 
-### LogScale
+### NetworkDiagram
+- **Wanted by**: ch05/BackpropStepper, ch05/NetworkFunctionExplorer
+- **Shape**: a node-link diagram laying out units in layers with weighted edges between them, so a forward and backward pass can be highlighted edge by edge the way the book's figures 5.1, 5.2 and 5.7 do
+- **Props**: `{ layers: readonly number[]; edgeValue?: (from, to) => number; highlight?: ... }`
+- **Why no existing primitive fits**: nothing lays out nodes and edges at all. Both widgets stand in with `ScatterField` for units and `Annotation` for the numbers on them, which reads as a scatter plot of dots rather than as a network, and cannot draw the edges that carry the deltas.
+- **Resolved**: added as `NetworkDiagram`, but taking explicit node positions in data coordinates
+  rather than the requested `layers` auto-layout. A layered layout fits chapter 5 and nothing in
+  chapter 8: Bayesian networks, Markov random fields and factor graphs all place their nodes to
+  make an argument about structure, which no generic layout can recover from an edge list. The
+  feed-forward case is served instead by `layeredLayout`, a pure function returning positions,
+  which is also what makes the layout testable without rendering. Nodes are circles or squares,
+  shaded when observed, and edges are trimmed to both node boundaries so an arrowhead never sits
+  on a node's fill.
 - **Wanted by**: ch05/figures/EigenvalueSpectrum, with prior workarounds in ch03, ch06 and ch09
 - **Shape**: a logarithmic axis on `Plot`, for quantities spanning decades
 - **Props**: `xScaleKind?: 'linear' | 'log'` and the same for y
