@@ -1,0 +1,95 @@
+- id: markov-chain
+  name: "Markov chain"
+  definition: "A sequence of random variables where each one depends on the immediately preceding value and nothing earlier, so the joint distribution factorises into an initial term and a chain of one-step conditionals."
+  introducedIn: "13.1"
+  usedIn: ["13.2", "13.3"]
+  requires: []
+  aliases: ["first-order Markov chain", "Markov assumption"]
+
+- id: higher-order-markov-chain
+  name: "Higher-order Markov chain"
+  definition: "A Markov chain in which each variable depends on the previous M values rather than just one, trading a first-order chain's limited memory for a number of free parameters that grows exponentially in M."
+  introducedIn: "13.1"
+  usedIn: []
+  requires: ["markov-chain"]
+  aliases: ["Mth-order Markov chain"]
+
+- id: state-space-model
+  name: "State space model"
+  definition: "A Markov chain of latent variables, one per observation, with each observation depending only on the latent variable at its own time step. Buys back the unbounded dependence between observations that an i.i.d. or finite-order Markov model cannot represent, at the cost of an inference problem over the latent chain."
+  introducedIn: "13.1"
+  usedIn: ["13.2", "13.3"]
+  requires: ["markov-chain"]
+  aliases: ["latent Markov model"]
+
+- id: hidden-markov-model
+  name: "Hidden Markov model"
+  definition: "A state space model whose latent variables are discrete: a Markov chain over K states, each state emitting an observation from its own distribution. A mixture model whose component choice is itself a Markov chain rather than drawn independently at every step."
+  introducedIn: "13.2"
+  usedIn: ["13.3"]
+  requires: ["state-space-model", "expectation-maximisation"]
+  aliases: ["HMM"]
+
+- id: emission-probability
+  name: "Emission probability"
+  definition: "The distribution p(x|z) of an observation given the latent state that generated it. Every HMM recursion only ever needs its value at each of the K states, never its functional form, which is why the same recursions serve discrete, Gaussian, or any other emission density."
+  introducedIn: "13.2"
+  usedIn: []
+  requires: ["hidden-markov-model"]
+  aliases: []
+
+- id: forward-backward-algorithm
+  name: "Forward-backward algorithm"
+  definition: "Two linear-cost message-passing sweeps along an HMM's latent chain, forward (alpha) and backward (beta), whose product gives the exact posterior marginal at every time step without ever summing over the exponentially many latent paths directly."
+  introducedIn: "13.2"
+  usedIn: ["13.3"]
+  requires: ["hidden-markov-model"]
+  aliases: ["alpha-beta algorithm", "Baum-Welch algorithm"]
+
+- id: scaled-recursion
+  name: "Scaled forward-backward recursion"
+  definition: "The forward-backward recursion rewritten to propagate normalised probability distributions instead of raw joint probabilities, so a chain long enough to underflow double precision in the raw form stays numerically well behaved."
+  introducedIn: "13.2"
+  usedIn: []
+  requires: ["forward-backward-algorithm"]
+  aliases: ["alpha-hat beta-hat recursion"]
+
+- id: viterbi-algorithm
+  name: "Viterbi algorithm"
+  definition: "Max-sum on an HMM's latent chain: it finds the single most probable state sequence in time linear in chain length, by keeping only the best path into each state at every step and backtracking once the chain ends. Not the same computation as maximising every marginal separately, and can disagree with it."
+  introducedIn: "13.2"
+  usedIn: []
+  requires: ["hidden-markov-model"]
+  aliases: []
+
+- id: linear-dynamical-system
+  name: "Linear dynamical system"
+  definition: "A state space model whose latent and observed variables are both Gaussian, with means that are linear functions of their parents. The continuous-state counterpart to the hidden Markov model, and a generalisation of probabilistic PCA and factor analysis across time."
+  introducedIn: "13.3"
+  usedIn: []
+  requires: ["state-space-model"]
+  aliases: ["LDS"]
+
+- id: kalman-filter
+  name: "Kalman filter"
+  definition: "The forward recursion of a linear dynamical system: a predict step that projects the previous Gaussian belief forward through the transition model, and a correct step that folds in the new observation, weighted by the Kalman gain."
+  introducedIn: "13.3"
+  usedIn: []
+  requires: ["linear-dynamical-system"]
+  aliases: []
+
+- id: kalman-smoother
+  name: "Kalman smoother"
+  definition: "The backward recursion of a linear dynamical system, combining an already-completed forward filtering pass with information from later observations to sharpen every earlier state estimate. The Rauch-Tung-Striebel (RTS) equations."
+  introducedIn: "13.3"
+  usedIn: []
+  requires: ["kalman-filter"]
+  aliases: ["RTS smoother"]
+
+- id: particle-filter
+  name: "Particle filter"
+  definition: "A sequential Monte Carlo approximation to filtering in a state space model that need not be linear-Gaussian: a weighted set of particles is propagated through the transition model and reweighted by each new observation's likelihood, with resampling to keep the weights from collapsing onto one particle."
+  introducedIn: "13.3"
+  usedIn: []
+  requires: ["state-space-model"]
+  aliases: ["sequential Monte Carlo", "bootstrap filter"]

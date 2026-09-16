@@ -1,0 +1,270 @@
+---
+chapter: 13
+section: "13.3"
+title: Linear Dynamical Systems
+bookPages: [635, 652]
+summary: The same latent chain as the hidden Markov model, now Gaussian instead of discrete, turns forward-backward into the Kalman filter and smoother and gives a sampling route when it does not.
+concepts:
+  - linear-dynamical-system
+  - kalman-filter
+  - kalman-smoother
+  - particle-filter
+  - state-space-model
+prereqs: ["13.2", "2.3", "12.2"]
+equations:
+  - { id: "13.75", name: linear-Gaussian transition }
+  - { id: "13.76", name: linear-Gaussian emission }
+  - { id: "13.77", name: initial state distribution }
+  - { id: "13.84", name: normalised forward message }
+  - { id: "13.88", name: predicted covariance }
+  - { id: "13.89", name: filtered mean }
+  - { id: "13.90", name: filtered covariance }
+  - { id: "13.92", name: Kalman gain }
+  - { id: "13.100", name: smoothed mean }
+  - { id: "13.101", name: smoothed covariance }
+  - { id: "13.102", name: smoother gain }
+  - { id: "13.113", name: transition matrix M-step }
+  - { id: "13.114", name: process noise M-step }
+  - { id: "13.115", name: emission matrix M-step }
+  - { id: "13.116", name: observation noise M-step }
+  - { id: "13.117", name: particle expectation }
+  - { id: "13.118", name: particle weights }
+  - { id: "13.119", name: particle predictive mixture }
+widgets: [KalmanTracker]
+difficulty: 4
+---
+
+import KalmanTracker from '@widgets/ch13/KalmanTracker';
+import StateSpaceGraph from '@widgets/ch13/figures/StateSpaceGraph';
+import KalmanDiffusionCorrection from '@widgets/ch13/figures/KalmanDiffusionCorrection';
+import RtsSmootherComparison from '@widgets/ch13/figures/RtsSmootherComparison';
+import EmLdsLikelihoodClimb from '@widgets/ch13/figures/EmLdsLikelihoodClimb';
+import ParticleFilterSketch from '@widgets/ch13/figures/ParticleFilterSketch';
+import KalmanWorkedStep from '@widgets/ch13/figures/KalmanWorkedStep';
+
+## Intuition
+
+Averaging every measurement of a fixed quantity beats trusting any one of them, because
+independent noise cancels. Averaging stops working the moment the quantity itself is
+moving, since old measurements are now evidence about somewhere the target used to be,
+not where it is. The honest fix is not a cleverer weighted average; it is a model of how
+the quantity moves between measurements, so that old evidence can be aged appropriately
+rather than discarded or blindly trusted.
+
+That is the same latent chain as the hidden Markov model, with one change: the hidden
+state is now a continuous, Gaussian quantity instead of a label from a finite set. The
+same two-pass message-passing structure still applies, but the messages themselves
+become entire Gaussian distributions rather than tables of K numbers, and updating one
+becomes an exercise in completing the square rather than table lookup.
+
+## The math
+
+Both latent and observed variables are Gaussian with means linear in their parents:
+
+<MathBlock id="13.75" name="linear-Gaussian transition">
+
+$$p(\mathbf{z}_n\mid\mathbf{z}_{n-1}) = \mathcal N(\mathbf{z}_n\mid\mathbf{A}\mathbf{z}_{n-1},\boldsymbol\Gamma)$$
+
+</MathBlock>
+
+<MathBlock id="13.76" name="linear-Gaussian emission">
+
+$$p(\mathbf{x}_n\mid\mathbf{z}_n) = \mathcal N(\mathbf{x}_n\mid\mathbf{C}\mathbf{z}_n,\boldsymbol\Sigma)$$
+
+</MathBlock>
+
+<MathBlock id="13.77" name="initial state distribution">
+
+$$p(\mathbf{z}_1) = \mathcal N(\mathbf{z}_1\mid\boldsymbol\mu_0,\mathbf{V}_0)$$
+
+</MathBlock>
+
+<Figure caption="The same chain as 13.2's, zn now continuous. Sum-product's sums become integrals; Gaussian closure keeps every message Gaussian." width="wide">
+  <StateSpaceGraph client:visible />
+</Figure>
+
+A Gaussian prior and a Gaussian likelihood integrate to a Gaussian, so the forward
+message $\alpha(\mathbf z_n)=\mathcal N(\mathbf z_n\mid\boldsymbol\mu_n,\mathbf V_n)$
+never changes family, only parameters:
+
+<MathBlock id="13.84" name="normalised forward message">
+
+$$\alpha(\mathbf z_n) = \mathcal N(\mathbf z_n\mid\boldsymbol\mu_n,\mathbf V_n)$$
+
+</MathBlock>
+
+<MathBlock id="13.88" name="predicted covariance">
+
+$$\mathbf P_{n-1} = \mathbf A\mathbf V_{n-1}\mathbf A^{\mathrm T}+\boldsymbol\Gamma$$
+
+</MathBlock>
+
+<Figure caption="Left: last step's belief. Diffusion through A, Gamma broadens and shifts it (centre, red). The emission density in zn (dotted) then narrows it back (right)." source="13.21">
+  <KalmanDiffusionCorrection client:visible />
+</Figure>
+
+Predict, then correct against the new observation with the Kalman gain:
+
+<MathBlock id="13.89" name="filtered mean">
+
+$$\boldsymbol\mu_n = \mathbf A\boldsymbol\mu_{n-1} + \mathbf K_n(\mathbf x_n - \mathbf{CA}\boldsymbol\mu_{n-1})$$
+
+</MathBlock>
+
+<MathBlock id="13.90" name="filtered covariance">
+
+$$\mathbf V_n = (\mathbf I - \mathbf K_n\mathbf C)\mathbf P_{n-1}$$
+
+</MathBlock>
+
+<MathBlock id="13.92" name="Kalman gain">
+
+$$\mathbf K_n = \mathbf P_{n-1}\mathbf C^{\mathrm T}(\mathbf C\mathbf P_{n-1}\mathbf C^{\mathrm T}+\boldsymbol\Sigma)^{-1}$$
+
+</MathBlock>
+
+The filter only ever looks backward. A completed forward pass plus a backward RTS
+recursion sharpens every earlier estimate with the data that came after it:
+
+<MathBlock id="13.100" name="smoothed mean">
+
+$$\hat{\boldsymbol\mu}_n = \boldsymbol\mu_n + \mathbf J_n(\hat{\boldsymbol\mu}_{n+1}-\mathbf A\boldsymbol\mu_n)$$
+
+</MathBlock>
+
+<MathBlock id="13.101" name="smoothed covariance">
+
+$$\hat{\mathbf V}_n = \mathbf V_n + \mathbf J_n(\hat{\mathbf V}_{n+1}-\mathbf P_n)\mathbf J_n^{\mathrm T}$$
+
+</MathBlock>
+
+<MathBlock id="13.102" name="smoother gain">
+
+$$\mathbf J_n = \mathbf V_n\mathbf A^{\mathrm T}\mathbf P_n^{-1}$$
+
+</MathBlock>
+
+<Figure caption="Same noisy run, filtered (dashed) against smoothed (solid). The smoother's early estimates move toward the true path because they now use data the filter had not seen yet.">
+  <RtsSmootherComparison client:visible />
+</Figure>
+
+EM learns $\theta=\{\mathbf A,\boldsymbol\Gamma,\mathbf C,\boldsymbol\Sigma,\boldsymbol\mu_0,\mathbf V_0\}$
+from the smoother's expectations, $\mathbf A$ before $\boldsymbol\Gamma$ and $\mathbf C$
+before $\boldsymbol\Sigma$, each substituting the previous update:
+
+<MathBlock id="13.113" name="transition matrix M-step">
+
+$$\mathbf A^{\text{new}} = \left(\sum_{n=2}^{N}E[\mathbf z_n\mathbf z_{n-1}^{\mathrm T}]\right)\left(\sum_{n=2}^{N}E[\mathbf z_{n-1}\mathbf z_{n-1}^{\mathrm T}]\right)^{-1}$$
+
+</MathBlock>
+
+<MathBlock id="13.114" name="process noise M-step">
+
+$$\boldsymbol\Gamma^{\text{new}} = \frac{1}{N-1}\sum_{n=2}^{N}\Big(E[\mathbf z_n\mathbf z_n^{\mathrm T}] - \mathbf A^{\text{new}}E[\mathbf z_{n-1}\mathbf z_n^{\mathrm T}] - E[\mathbf z_n\mathbf z_{n-1}^{\mathrm T}]\mathbf A^{\text{new}\mathrm T} + \mathbf A^{\text{new}}E[\mathbf z_{n-1}\mathbf z_{n-1}^{\mathrm T}]\mathbf A^{\text{new}\mathrm T}\Big)$$
+
+</MathBlock>
+
+<MathBlock id="13.115" name="emission matrix M-step">
+
+$$\mathbf C^{\text{new}} = \left(\sum_{n=1}^{N}\mathbf x_n E[\mathbf z_n^{\mathrm T}]\right)\left(\sum_{n=1}^{N}E[\mathbf z_n\mathbf z_n^{\mathrm T}]\right)^{-1}$$
+
+</MathBlock>
+
+<MathBlock id="13.116" name="observation noise M-step">
+
+$$\boldsymbol\Sigma^{\text{new}} = \frac{1}{N}\sum_{n=1}^{N}\Big(\mathbf x_n\mathbf x_n^{\mathrm T} - \mathbf C^{\text{new}}E[\mathbf z_n]\mathbf x_n^{\mathrm T} - \mathbf x_n E[\mathbf z_n^{\mathrm T}]\mathbf C^{\text{new}\mathrm T} + \mathbf C^{\text{new}}E[\mathbf z_n\mathbf z_n^{\mathrm T}]\mathbf C^{\text{new}\mathrm T}\Big)$$
+
+</MathBlock>
+
+<Figure caption="Log-likelihood across EM iterations from a deliberately wrong initial guess for A, C, Gamma, Sigma. Never falls, same guarantee as every other EM instance in this book.">
+  <EmLdsLikelihoodClimb client:visible />
+</Figure>
+
+Gaussian closure breaks the moment the emission or transition leaves the exponential
+family: a $K$-component Gaussian mixture emission turns $\alpha(\mathbf z_n)$ into a
+mixture of $K^n$ Gaussians. The particle filter trades exactness for a weighted sample
+that survives any emission density:
+
+<MathBlock id="13.117" name="particle expectation">
+
+$$E[f(\mathbf z_n)] \approx \sum_{l=1}^{L} w_n^{(l)} f(\mathbf z_n^{(l)})$$
+
+</MathBlock>
+
+<MathBlock id="13.118" name="particle weights">
+
+$$w_n^{(l)} = \frac{p(\mathbf x_n\mid\mathbf z_n^{(l)})}{\sum_m p(\mathbf x_n\mid\mathbf z_n^{(m)})}$$
+
+</MathBlock>
+
+<MathBlock id="13.119" name="particle predictive mixture">
+
+$$p(\mathbf z_{n+1}\mid X_n) = \sum_l w_n^{(l)}\,p(\mathbf z_{n+1}\mid\mathbf z_n^{(l)})$$
+
+</MathBlock>
+
+<Figure caption="One predict-reweight step: particle size is its weight. Resampling before drawing from 13.119 is what keeps weight from collapsing onto a single survivor." source="13.23">
+  <ParticleFilterSketch client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Tracking with a Kalman filter"
+  figure="13.22"
+  caption="Drag the noise slider, then step through time. Watch the prediction ellipse shrink onto the correction when the sensor is trusted, and stay close to the raw measurement when it is not."
+>
+  <KalmanTracker client:visible />
+</Widget>
+
+## Worked example
+
+Tracking a 2-D position with velocity, sensor noise $\sigma=0.6$: at step 4 the predicted
+covariance's longer axis, before that step's measurement arrives, has radius $2.32$ at
+95% mass.
+
+<Figure caption="The predicted ellipse's longer axis against the corrected one, step 4 of the run above.">
+  <KalmanWorkedStep client:visible />
+</Figure>
+
+After folding in the measurement through 13.89-13.92, the corrected covariance's longer
+axis shrinks to $1.24$, a 46% reduction from one observation. Push $\sigma$ far higher in
+the widget above and this same step barely shrinks at all: the gain $\mathbf K_n$ goes to
+zero exactly when $\boldsymbol\Sigma$ dominates $\mathbf C\mathbf P_{n-1}\mathbf C^{\mathrm T}$.
+
+## Recall
+
+<Recall question="What changes, and what does not, going from the HMM to the LDS?" concepts={["linear-dynamical-system", "state-space-model"]}>
+The latent chain's graph and the two-pass message-passing structure are identical.
+What changes is the latent variable's type: discrete states become a continuous Gaussian,
+so sums over K states become integrals, and Gaussian closure keeps every message Gaussian.
+</Recall>
+
+<Recall question="What do the predict and correct steps of the Kalman filter each do?" concepts={["kalman-filter"]}>
+Predict projects the previous belief forward through A and adds process noise Gamma,
+widening it. Correct folds in the new observation through the Kalman gain, narrowing the
+belief back down in proportion to how much the sensor is trusted.
+</Recall>
+
+<Recall question="Why does the smoother need the whole sequence, while the filter does not?" concepts={["kalman-smoother"]}>
+The filter's estimate at step n only ever uses data up to n, which is what makes it
+usable in real time. The smoother's backward pass folds in every later observation too,
+which sharpens earlier estimates but is only available once the run has finished.
+</Recall>
+
+<Recall question="Why is a particle filter needed once the emission density is not Gaussian?" concepts={["particle-filter"]}>
+A non-Gaussian emission breaks the closure that keeps alpha(zn) a single Gaussian: with a
+K-component mixture emission, alpha(zn) becomes a mixture of Kn Gaussians. A weighted
+particle sample approximates the same posterior without that blow-up.
+</Recall>
+
+## Connections
+
+- **Builds on** [13.2](/sections/13-2)'s message passing and **2.3**'s Gaussian
+  identities, and reads as chapter 12's latent variable models strung along a chain
+  instead of applied independently to each point.
+- **The Kalman filter is sum-product** on this chain, the RTS smoother its backward half,
+  under the LDS literature's own names for chapter 8's general algorithm.
+- **Particle filter resampling** is where this chapter meets chapter 11's sampling
+  machinery, needed once Gaussian closure no longer holds.
+

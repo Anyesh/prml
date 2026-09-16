@@ -1,0 +1,314 @@
+---
+chapter: 13
+section: "13.2"
+title: Hidden Markov Models
+bookPages: [610, 634]
+summary: Letting the hidden label of a mixture model move through a Markov chain instead of being redrawn independently gives the hidden Markov model, solved by message passing along the chain.
+concepts:
+  - hidden-markov-model
+  - emission-probability
+  - forward-backward-algorithm
+  - scaled-recursion
+  - viterbi-algorithm
+  - responsibility
+  - expectation-maximisation
+prereqs: ["13.1", "9.2", "9.4"]
+equations:
+  - { id: "13.7", name: transition probabilities }
+  - { id: "13.8", name: initial state distribution }
+  - { id: "13.9", name: emission probabilities }
+  - { id: "13.10", name: HMM joint distribution }
+  - { id: "13.17", name: expected complete-data log likelihood }
+  - { id: "13.18", name: initial state M-step }
+  - { id: "13.19", name: transition matrix M-step }
+  - { id: "13.20", name: Gaussian mean M-step }
+  - { id: "13.21", name: Gaussian covariance M-step }
+  - { id: "13.36", name: alpha recursion }
+  - { id: "13.38", name: beta recursion }
+  - { id: "13.42", name: likelihood from alpha }
+  - { id: "13.43", name: pairwise posterior }
+  - { id: "13.59", name: scaled alpha recursion }
+  - { id: "13.62", name: scaled beta recursion }
+  - { id: "13.63", name: likelihood from scaling factors }
+  - { id: "13.65", name: scaled pairwise posterior }
+  - { id: "13.68", name: Viterbi recursion }
+  - { id: "13.69", name: Viterbi initial condition }
+  - { id: "13.71", name: Viterbi backtracking }
+widgets: [TrellisViterbi, ForwardBackwardScaling]
+difficulty: 4
+---
+
+import TrellisViterbi from '@widgets/ch13/TrellisViterbi';
+import ForwardBackwardScaling from '@widgets/ch13/ForwardBackwardScaling';
+import StateSpaceGraph from '@widgets/ch13/figures/StateSpaceGraph';
+import EmissionSamplesFigure from '@widgets/ch13/figures/EmissionSamplesFigure';
+import FactorGraphChain from '@widgets/ch13/figures/FactorGraphChain';
+import LogLikelihoodClimb from '@widgets/ch13/figures/LogLikelihoodClimb';
+import FactorialHmmDependence from '@widgets/ch13/figures/FactorialHmmDependence';
+import ViterbiWorkedExample from '@widgets/ch13/figures/ViterbiWorkedExample';
+
+## Intuition
+
+A mixture model already lets one observation come from any of several sources, chosen by
+a hidden label. It insists the label is redrawn independently every time, so a component
+responsible for the last ten points has no bearing on which one takes the next. That is a strange thing to insist on for a speech spectrogram, a pen
+stroke sequence, or a currency chart, where whichever regime produced the last few points
+is the strongest clue to what produced the next one.
+
+The hidden Markov model drops exactly that restriction. The hidden label still moves
+through the same finite set of choices, but which one comes next depends on which one is
+active now. Everything else about a mixture survives: the same component densities, the
+same blindness to the raw label. What is new is a second layer of inference: not just
+which component explains each point, but which sequence explains the whole run, and
+there are two different, both useful, answers to that second question.
+
+## The math
+
+Component choice is now a Markov chain over $K$ states:
+
+<MathBlock id="13.7" name="transition probabilities">
+
+$$p(z_n \mid z_{n-1}, \mathbf{A}) = \prod_{k=1}^{K}\prod_{j=1}^{K} A_{jk}^{z_{n-1,j}z_{nk}}$$
+
+</MathBlock>
+
+<MathBlock id="13.8" name="initial state distribution">
+
+$$p(z_1 \mid \boldsymbol\pi) = \prod_{k=1}^{K} \pi_k^{z_{1k}}$$
+
+</MathBlock>
+
+and each state emits from its own density:
+
+<MathBlock id="13.9" name="emission probabilities">
+
+$$p(x_n \mid z_n, \boldsymbol\phi) = \prod_{k=1}^{K} p(x_n \mid \phi_k)^{z_{nk}}$$
+
+</MathBlock>
+
+<Figure caption="The same latent chain as 13.1's state space model, now with discrete zn. The horizontal links are exactly what an i.i.d. mixture deletes." width="wide">
+  <StateSpaceGraph discreteLatent client:visible />
+</Figure>
+
+<MathBlock id="13.10" name="HMM joint distribution">
+
+$$p(\mathbf{X}, \mathbf{Z}\mid\boldsymbol\theta) = p(z_1\mid\boldsymbol\pi)\left[\prod_{n=2}^{N}p(z_n\mid z_{n-1},\mathbf{A})\right]\prod_{n=1}^{N}p(x_n\mid z_n,\boldsymbol\phi)$$
+
+</MathBlock>
+
+<Figure caption="Fifty points sampled ancestrally from a 3-state Gaussian HMM, coloured by the state that generated them. Runs, not scatter, because the diagonal of A is 0.85." source="13.8">
+  <EmissionSamplesFigure client:visible />
+</Figure>
+
+Summing 13.10 over every path costs $K^N$ terms. EM instead maximises the expected
+complete-data log likelihood, with $\gamma$ and $\xi$ held fixed:
+
+<MathBlock id="13.17" name="expected complete-data log likelihood">
+
+$$Q(\boldsymbol\theta,\boldsymbol\theta^{\text{old}}) = \sum_k \gamma(z_{1k})\ln\pi_k + \sum_{n=2}^{N}\sum_{j,k}\xi(z_{n-1,j},z_{nk})\ln A_{jk} + \sum_{n=1}^{N}\sum_k \gamma(z_{nk})\ln p(x_n\mid\phi_k)$$
+
+</MathBlock>
+
+giving closed-form updates, since $\gamma(z_{nk})$ is a responsibility again:
+
+<MathBlock id="13.18" name="initial state M-step">
+
+$$\pi_k = \frac{\gamma(z_{1k})}{\sum_j \gamma(z_{1j})}$$
+
+</MathBlock>
+
+<MathBlock id="13.19" name="transition matrix M-step">
+
+$$A_{jk} = \frac{\sum_{n=2}^{N}\xi(z_{n-1,j},z_{nk})}{\sum_l\sum_{n=2}^{N}\xi(z_{n-1,j},z_{nl})}$$
+
+</MathBlock>
+
+<MathBlock id="13.20" name="Gaussian mean M-step">
+
+$$\boldsymbol\mu_k = \frac{\sum_n \gamma(z_{nk})\mathbf{x}_n}{\sum_n \gamma(z_{nk})}$$
+
+</MathBlock>
+
+<MathBlock id="13.21" name="Gaussian covariance M-step">
+
+$$\boldsymbol\Sigma_k = \frac{\sum_n \gamma(z_{nk})(\mathbf{x}_n-\boldsymbol\mu_k)(\mathbf{x}_n-\boldsymbol\mu_k)^{\mathrm T}}{\sum_n \gamma(z_{nk})}$$
+
+</MathBlock>
+
+<Figure caption="Log-likelihood across EM iterations from a deliberately wrong initial guess. It never falls, the same guarantee chapter 9 proved for any mixture.">
+  <LogLikelihoodClimb client:visible />
+</Figure>
+
+$\gamma$ and $\xi$ come from forward-backward: a forward pass
+$\alpha(z_n)=p(x_1,\ldots,x_n,z_n)$ and a backward pass
+$\beta(z_n)=p(x_{n+1},\ldots,x_N\mid z_n)$, linear recursions in $p(x_n\mid z_n)$ alone:
+
+<MathBlock id="13.36" name="alpha recursion">
+
+$$\alpha(z_n) = p(x_n\mid z_n)\sum_{z_{n-1}}\alpha(z_{n-1})\,p(z_n\mid z_{n-1})$$
+
+</MathBlock>
+
+<MathBlock id="13.38" name="beta recursion">
+
+$$\beta(z_n) = \sum_{z_{n+1}}\beta(z_{n+1})\,p(x_{n+1}\mid z_{n+1})\,p(z_{n+1}\mid z_n)$$
+
+</MathBlock>
+
+This is sum-product on a chain: $\alpha$ and $\beta$ are exactly chapter 8's messages,
+specialised.
+
+<Figure caption="h absorbs pi and the first emission; every fn absorbs one transition and one emission. Sum-product on this graph is forward-backward." source="13.15">
+  <FactorGraphChain client:visible />
+</Figure>
+
+$\gamma(z_n)=\alpha(z_n)\beta(z_n)/p(\mathbf{X})$, $p(\mathbf{X})=\sum_{z_N}\alpha(z_N)$, and
+
+<MathBlock id="13.42" name="likelihood from alpha">
+
+$$p(\mathbf{X}) = \sum_{z_N} \alpha(z_N)$$
+
+</MathBlock>
+
+<MathBlock id="13.43" name="pairwise posterior">
+
+$$\xi(z_{n-1},z_n) = \frac{\alpha(z_{n-1})\,p(x_n\mid z_n)\,p(z_n\mid z_{n-1})\,\beta(z_n)}{p(\mathbf{X})}$$
+
+</MathBlock>
+
+Raw $\alpha$ underflows on a real chain. Rescaling to a true distribution
+$\hat\alpha(z_n)=p(z_n\mid x_1,\ldots,x_n)$ fixes it, at the cost of one scaling factor
+$c_n=p(x_n\mid x_1,\ldots,x_{n-1})$ per step:
+
+<MathBlock id="13.59" name="scaled alpha recursion">
+
+$$c_n\hat\alpha(z_n) = p(x_n\mid z_n)\sum_{z_{n-1}}\hat\alpha(z_{n-1})\,p(z_n\mid z_{n-1})$$
+
+</MathBlock>
+
+<MathBlock id="13.62" name="scaled beta recursion">
+
+$$c_{n+1}\hat\beta(z_n) = \sum_{z_{n+1}}\hat\beta(z_{n+1})\,p(x_{n+1}\mid z_{n+1})\,p(z_{n+1}\mid z_n)$$
+
+</MathBlock>
+
+<MathBlock id="13.63" name="likelihood from scaling factors">
+
+$$p(\mathbf{X}) = \prod_{n=1}^{N} c_n$$
+
+</MathBlock>
+
+<MathBlock id="13.65" name="scaled pairwise posterior">
+
+$$\xi(z_{n-1},z_n) = \frac{\hat\alpha(z_{n-1})\,p(x_n\mid z_n)\,p(z_n\mid z_{n-1})\,\hat\beta(z_n)}{c_n}$$
+
+</MathBlock>
+
+Every $\hat\alpha(z_n)$ and $\hat\beta(z_n)$ stays within machine precision by
+construction, and $\gamma(z_n)=\hat\alpha(z_n)\hat\beta(z_n)$ with no further division.
+
+Maximising each $\gamma(z_n)$ alone need not give the single best sequence, and can even
+name one a zero transition forbids. Viterbi is max-sum on the same chain, in log space:
+
+<MathBlock id="13.68" name="Viterbi recursion">
+
+$$\omega(z_n) = \ln p(x_n\mid z_n) + \max_{z_{n-1}}\left\{\ln p(z_n\mid z_{n-1}) + \omega(z_{n-1})\right\}$$
+
+</MathBlock>
+
+<MathBlock id="13.69" name="Viterbi initial condition">
+
+$$\omega(z_1) = \ln p(z_1) + \ln p(x_1\mid z_1)$$
+
+</MathBlock>
+
+<MathBlock id="13.71" name="Viterbi backtracking">
+
+$$k^{\max}_n = \psi(k^{\max}_{n+1})$$
+
+</MathBlock>
+
+Extensions mostly add edges. Autoregressive and input-output HMMs keep one path between
+latent variables, so forward-backward survives. A factorial HMM does not: two chains
+sharing an observed child become dependent once it is seen.
+
+<Figure caption="Two latent chains, one shared observation per step. The accent path is head-to-head at x and head-to-tail at z(2): unblocked once x is observed, so the chains are not independent given the data." source="13.20">
+  <FactorialHmmDependence client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="The trellis: Viterbi against the marginals"
+  figure="13.16"
+  caption="Sweep forward to watch the surviving edge into every state, then step once more to reveal the single best path against the largest node in each column."
+>
+  <TrellisViterbi client:visible />
+</Widget>
+
+<Widget
+  title="Forward-backward, scaled"
+  figure="13.12"
+  caption="Step through a short chain to see alpha-hat and beta-hat at each point, then compare against the unscaled alpha on a long chain, which reaches exactly zero."
+>
+  <ForwardBackwardScaling client:visible />
+</Widget>
+
+## Worked example
+
+Two states, three steps, transition matrix $A=\begin{pmatrix}0.94&0.06\\0.42&0.58\end{pmatrix}$,
+$\pi=(0.69,0.31)$, and emission table $B$ giving state 1 probability $0.19$, $0.74$,
+$0.15$ at each step in turn. Running scaled forward-backward gives posterior marginals
+$\gamma = \big[(0.341,0.659),\ (0.594,0.406),\ (0.482,0.518)\big]$: state 2 is
+individually favoured at step 1, state 1 at steps 2 and 3.
+
+<Figure caption="Per-column argmax(gamma) against the Viterbi path for the numbers above.">
+  <ViterbiWorkedExample client:visible />
+</Figure>
+
+Viterbi returns state 2 at every one of the three steps: the single most probable
+sequence disagrees with the column-by-column argmax at steps 2 and 3, because $A_{21}$
+is small enough that no path is better off leaving state 2 this early, even though state
+1 briefly looks better in isolation.
+
+## Recall
+
+<Recall question="What does the hidden Markov model add to a mixture model for i.i.d. data?" concepts={["hidden-markov-model"]}>
+A Markov chain over the mixture's hidden label, so which component produced the last
+point influences which one produces the next. Setting every row of A equal recovers the
+ordinary mixture as a special case.
+</Recall>
+
+<Recall question="Why do gamma(znk) and the M-step formulas 13.20-13.21 look identical to a Gaussian mixture's?" concepts={["responsibility", "expectation-maximisation"]}>
+Because gamma(znk) is exactly a responsibility: the posterior probability that state k
+produced x_n. Only how gamma and xi are computed (forward-backward instead of a single
+softmax) differs between the two models.
+</Recall>
+
+<Recall question="Why does the forward-backward recursion need rescaling in practice?" concepts={["scaled-recursion"]}>
+Raw alpha multiplies probabilities at every one of N steps and underflows on any chain of
+real length. The scaled recursion propagates genuine distributions instead, each bounded
+between 0 and 1, and reconstructs the likelihood from the scaling factors' product.
+</Recall>
+
+<Recall question="Is the Viterbi path the same as the sequence of individually most probable states?" concepts={["viterbi-algorithm"]}>
+Not in general. Maximising each gamma(zn) separately can even name a sequence with zero
+probability if the transition connecting two individually-favoured states is forbidden.
+Viterbi maximises the joint probability of the whole sequence instead.
+</Recall>
+
+<Recall question="Why does a factorial HMM lose the efficient exact E-step a plain HMM has?" concepts={["hidden-markov-model"]}>
+Because observing x makes it a collider: the path between the two latent chains through
+a shared observed child becomes unblocked, so the chains are no longer conditionally
+independent and forward-backward cannot be run on each separately.
+</Recall>
+
+## Connections
+
+- **Builds on** [13.1](/sections/13-1)'s state space model and chapter 9's mixture model
+  and EM machinery, reusing responsibility and the M-step almost unchanged.
+- **Forward-backward is sum-product on this chain**, and Viterbi is max-sum on it: chapter
+  8's general algorithms specialise to exactly these two recursions here.
+- **Leads to** [13.3](/sections/13-3), the same chain with Gaussian latent variables
+  instead of discrete ones, and the same forward/backward split under new names.
+

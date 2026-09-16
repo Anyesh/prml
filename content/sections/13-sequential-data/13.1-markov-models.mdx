@@ -1,0 +1,171 @@
+---
+chapter: 13
+section: "13.1"
+title: Markov Models
+bookPages: [607, 609]
+summary: Treating observations as independent throws away everything sequential about them, and a Markov chain is the smallest fix that keeps the model tractable.
+concepts:
+  - markov-chain
+  - higher-order-markov-chain
+  - state-space-model
+prereqs: ["8.2"]
+equations:
+  - { id: "13.1", name: general factorisation by the product rule }
+  - { id: "13.2", name: first-order Markov chain joint distribution }
+  - { id: "13.3", name: first-order Markov property }
+  - { id: "13.4", name: second-order Markov chain joint distribution }
+  - { id: "13.5", name: latent chain conditional independence }
+  - { id: "13.6", name: state space model joint distribution }
+widgets: [MarkovChainSampler]
+difficulty: 2
+---
+
+import MarkovChainSampler from '@widgets/ch13/MarkovChainSampler';
+import ChainGraphs from '@widgets/ch13/figures/ChainGraphs';
+import StateSpaceGraph from '@widgets/ch13/figures/StateSpaceGraph';
+import ParameterGrowth from '@widgets/ch13/figures/ParameterGrowth';
+import SequenceProbabilityComparison from '@widgets/ch13/figures/SequenceProbabilityComparison';
+
+## Intuition
+
+Every model in this book so far has quietly assumed the data points do not know about
+each other: shuffle them and nothing changes. That assumption is what makes the
+likelihood a simple product, and it is also exactly wrong for a time series. Today's
+weather is not drawn independently of yesterday's; a currency does not forget where it
+closed last night.
+
+The cheapest fix is to let each observation depend on the one before it and stop there.
+That single dependency already buys something real: a run of rainy days makes tomorrow's
+rain more likely than the long-run frequency alone would say, which an independence
+model can never express no matter how much data it sees.
+
+The expensive fix is to let dependence reach arbitrarily far back without adding a latent
+variable. This section shows why that road is a dead end, and points at the one that
+is not: pushing the memory into a hidden variable instead of the observations themselves.
+
+## The math
+
+Any joint distribution factorises by the product rule with no assumptions at all:
+
+<MathBlock id="13.1" name="general factorisation by the product rule">
+
+$$p(x_1, \ldots, x_N) = \prod_{n=1}^{N} p(x_n \mid x_1, \ldots, x_{n-1})$$
+
+</MathBlock>
+
+Truncating every conditional to depend on only the previous value gives a first-order
+Markov chain:
+
+<MathBlock id="13.2" name="first-order Markov chain joint distribution">
+
+$$p(x_1, \ldots, x_N) = p(x_1)\prod_{n=2}^{N} p(x_n \mid x_{n-1})$$
+
+</MathBlock>
+
+<Figure caption="Solid arrows: a first-order chain. Adding the dashed arrows extends it to second order, doubling how far back each node can see." width="wide">
+  <ChainGraphs client:visible />
+</Figure>
+
+which carries the defining property that the future depends on the past only through the
+present:
+
+<MathBlock id="13.3" name="first-order Markov property">
+
+$$p(x_n \mid x_1, \ldots, x_{n-1}) = p(x_n \mid x_{n-1})$$
+
+</MathBlock>
+
+An $M$th-order chain reaches further back at a steep price. A first-order chain over $K$
+states needs $K(K-1)$ parameters; an $M$th-order one needs $K^{M-1}(K-1)$, exponential in
+$M$:
+
+<MathBlock id="13.4" name="second-order Markov chain joint distribution">
+
+$$p(x_1, \ldots, x_N) = p(x_1)p(x_2 \mid x_1)\prod_{n=3}^{N} p(x_n \mid x_{n-1}, x_{n-2})$$
+
+</MathBlock>
+
+<Figure caption="Exact parameter counts for K=4, computed for orders 1 through 6: the accent curve is the table this section warns about, the dashed line the linear growth a tapped delay line would give instead.">
+  <ParameterGrowth client:visible />
+</Figure>
+
+Latent variables sidestep the trade entirely. Give every observation its own latent
+$z_n$ and make the $z_n$ a Markov chain instead:
+
+<MathBlock id="13.5" name="latent chain conditional independence">
+
+$$z_{n+1} \perp\!\!\!\perp z_{n-1} \mid z_n$$
+
+</MathBlock>
+
+<MathBlock id="13.6" name="state space model joint distribution">
+
+$$p(x_1, \ldots, x_N, z_1, \ldots, z_N) = p(z_1)\left[\prod_{n=2}^{N} p(z_n \mid z_{n-1})\right]\prod_{n=1}^{N} p(x_n \mid z_n)$$
+
+</MathBlock>
+
+<Figure caption="Every xn now reaches every other xm through the latent chain, a dependence no finite Markov order on the observations alone could reproduce." width="wide">
+  <StateSpaceGraph client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Persistence in a first-order chain"
+  figure="13.3"
+  caption="Raise persistence and watch runs lengthen; resample at a fixed value to see run length vary while its average tracks 1/(1-p)."
+>
+  <MarkovChainSampler client:visible />
+</Widget>
+
+## Worked example
+
+Five days, coded rain as 0 and sun as 1: R, R, R, S, S. An i.i.d. model fits the
+relative frequency of rain, $3/5$, and assigns this exact sequence probability
+$(0.6)^3(0.4)^2 \approx 0.0346$ regardless of the order the five days came in.
+
+<Figure caption="The streak sequence RRRSS under each model, same axes.">
+  <SequenceProbabilityComparison client:visible />
+</Figure>
+
+A first-order chain with $\pi = (0.5, 0.5)$ and persistence $0.7$ on each diagonal
+assigns the same sequence probability $\approx 0.0514$, about $49\%$ higher, purely
+because it rewards the streak instead of only counting rainy days. Shuffle the same five
+labels into S, R, S, R, S and the i.i.d. model gives back the identical $0.0346$; the
+Markov model does not, because now it is being asked to price four state changes instead
+of one.
+
+## Recall
+
+<Recall question="What does the first-order Markov property actually assert?" concepts={["markov-chain"]}>
+That $p(x_n \mid x_1, \ldots, x_{n-1}) = p(x_n \mid x_{n-1})$: conditioning on the full
+history gives the same answer as conditioning on only the immediately preceding value.
+</Recall>
+
+<Recall question="Why does raising the Markov order stop being a practical fix quickly?" concepts={["higher-order-markov-chain"]}>
+Because the conditional table for an Mth-order chain has $K^{M-1}(K-1)$ entries: it grows
+exponentially in $M$, unlike the state space route below, which adds no parameters at
+all for reaching arbitrarily far back.
+</Recall>
+
+<Recall question="What does the state space model buy that no finite Markov order can?" concepts={["state-space-model"]}>
+Every observation becomes dependent on every other through the latent chain, at a fixed
+cost per time step, instead of a cost that grows with how far back the dependence must
+reach.
+</Recall>
+
+<Recall question="What conditional independence makes the latent chain tractable?" concepts={["state-space-model"]}>
+$z_{n+1} \perp\!\!\!\perp z_{n-1} \mid z_n$: the latent chain screens off everything on
+one side of $z_n$ from everything on the other, which is exactly what a Markov chain
+requires of its own variables.
+</Recall>
+
+## Connections
+
+- **Builds on** the product rule from chapter 1 and d-separation from **8.2**, which is
+  what proves 13.5 rather than merely asserting it.
+- **Leads to** [13.2](/sections/13-2), where the latent chain becomes discrete, and
+  [13.3](/sections/13-3), where it becomes Gaussian.
+- **Answers** the question chapter 9's mixture models left open: what happens when the
+  component chosen for one point is not independent of the component chosen for the last.
+

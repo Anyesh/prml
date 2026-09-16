@@ -1,0 +1,120 @@
+{
+  "cases": [
+    {
+      "fn": "particleFilterWeights",
+      "raw": [
+        0.2,
+        0.5,
+        0.3
+      ],
+      "expected": [
+        0.2,
+        0.5,
+        0.3
+      ]
+    },
+    {
+      "fn": "particleFilterWeights",
+      "raw": [
+        0.0001,
+        0.0001,
+        100.0
+      ],
+      "expected": [
+        9.99998000004e-07,
+        9.99998000004e-07,
+        0.999998000004
+      ]
+    },
+    {
+      "fn": "particleFilterWeights",
+      "raw": [
+        3.0,
+        1.0
+      ],
+      "expected": [
+        0.75,
+        0.25
+      ]
+    },
+    {
+      "fn": "systematicResampleIndices",
+      "u0": 0.05,
+      "weights": [
+        0.1,
+        0.2,
+        0.3,
+        0.4
+      ],
+      "L": 4,
+      "expected": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "fn": "systematicResampleIndices",
+      "u0": 0.5,
+      "weights": [
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "L": 8,
+      "expected": [
+        0,
+        0,
+        1,
+        1,
+        2,
+        2,
+        3,
+        3
+      ]
+    },
+    {
+      "fn": "systematicResampleIndices",
+      "u0": 0.0,
+      "weights": [
+        0.7,
+        0.1,
+        0.1,
+        0.1
+      ],
+      "L": 10,
+      "expected": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2,
+        3
+      ]
+    },
+    {
+      "fn": "systematicResampleIndices",
+      "u0": 0.9,
+      "weights": [
+        0.05,
+        0.9,
+        0.05
+      ],
+      "L": 6,
+      "expected": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2
+      ]
+    }
+  ]
+}
