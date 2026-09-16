@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { scaleLinear } from 'd3-scale';
+import { scaleLinear, scaleLog } from 'd3-scale';
 
 import {
   DEFAULT_MARGIN,
@@ -18,7 +18,17 @@ import {
   type Domain,
   type Frame,
   type Margin,
+  type PlotScale,
+  type ScaleKind,
 } from './frame.js';
+
+export function buildScale(kind: ScaleKind, domain: Domain, range: Domain, axis: 'x' | 'y'): PlotScale {
+  if (kind === 'linear') return scaleLinear().domain([...domain]).range([...range]);
+  if (domain[0] <= 0 || domain[1] <= 0) {
+    throw new Error(`@prml/viz: a log ${axis} axis needs a strictly positive domain, got [${domain[0]}, ${domain[1]}]`);
+  }
+  return scaleLog().domain([...domain]).range([...range]);
+}
 
 const FrameContext = createContext<Frame | null>(null);
 const CanvasContext = createContext<CanvasRegistry | null>(null);
@@ -62,6 +72,9 @@ export interface PlotProps {
   height: number;
   xDomain: Domain;
   yDomain: Domain;
+  /** A log axis needs a strictly positive domain; `Plot` throws rather than drawing NaNs. */
+  xScaleKind?: ScaleKind;
+  yScaleKind?: ScaleKind;
   margin?: Partial<Margin>;
   /**
    * Forces the same pixels-per-unit on both axes by widening whichever domain is
@@ -80,6 +93,8 @@ export function Plot({
   height,
   xDomain,
   yDomain,
+  xScaleKind = 'linear',
+  yScaleKind = 'linear',
   margin: marginOverride,
   equalAspect = false,
   label,
@@ -201,8 +216,8 @@ export function Plot({
       y1 += yPad;
     }
 
-    const xScale = scaleLinear().domain([x0, x1]).range([0, innerWidth]);
-    const yScale = scaleLinear().domain([y0, y1]).range([innerHeight, 0]);
+    const xScale = buildScale(xScaleKind, [x0, x1], [0, innerWidth], 'x');
+    const yScale = buildScale(yScaleKind, [y0, y1], [innerHeight, 0], 'y');
 
     return {
       width: outerWidth,
@@ -217,7 +232,7 @@ export function Plot({
       toData: (px, py) => [xScale.invert(px), yScale.invert(py)] as const,
       requestRedraw,
     };
-  }, [measured, height, x0Prop, x1Prop, y0Prop, y1Prop, margin, equalAspect, dpr, requestRedraw]);
+  }, [measured, height, x0Prop, x1Prop, y0Prop, y1Prop, margin, equalAspect, dpr, requestRedraw, xScaleKind, yScaleKind]);
 
   frameRef.current = frame;
 

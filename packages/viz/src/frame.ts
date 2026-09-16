@@ -1,4 +1,16 @@
-import type { ScaleLinear } from 'd3-scale';
+/**
+ * The part of a d3 scale the primitives actually use. Narrower than `ScaleLinear` on purpose:
+ * `scaleLog` satisfies this too, so a log axis needs no change anywhere downstream of `Plot`.
+ */
+export interface PlotScale {
+  (value: number): number;
+  invert(px: number): number;
+  domain(): number[];
+  ticks(count?: number): number[];
+  tickFormat(count?: number, specifier?: string): (value: number | { valueOf(): number }) => string;
+}
+
+export type ScaleKind = 'linear' | 'log';
 
 export interface Margin {
   readonly top: number;
@@ -24,8 +36,8 @@ export interface Frame {
   readonly innerWidth: number;
   readonly innerHeight: number;
   readonly margin: Margin;
-  readonly xScale: ScaleLinear<number, number>;
-  readonly yScale: ScaleLinear<number, number>;
+  readonly xScale: PlotScale;
+  readonly yScale: PlotScale;
   /** Data coordinates to inner pixels. */
   readonly toPx: (x: number, y: number) => readonly [number, number];
   /** Inner pixels back to data coordinates, for pointer handling. */
