@@ -12,7 +12,7 @@ const ISOTROPIC_COV = [
   [0, 0.8],
 ];
 
-function computeHistory(): number[] {
+function computeHistory(): readonly number[] {
   const rng = pcg32(SEED);
   const initialMeans = kmeansInit(rng, DATA, K);
   const initialParams: GmmParams = {
