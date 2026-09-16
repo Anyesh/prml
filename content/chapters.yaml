@@ -22,3 +22,24 @@
   title: "Mixture Models and EM"
   summary: "What to do when the thing that explains your data was never observed. K-means first, as the hard-assignment version whose limitations motivate everything after, then Gaussian mixtures fitted by expectation-maximisation. The general form of EM at the end shows it is not a clustering trick but a lower-bound argument that reappears throughout the rest of the book."
   bookPages: [423, 460]
+
+- number: 5
+  title: "Neural Networks"
+  summary: "What changes when the basis functions stop being fixed and start being learned. The price is a likelihood that is no longer convex and no longer has a closed-form maximum, so the chapter is largely about gradients: how to compute them efficiently by backpropagation, what the Hessian buys, and how to stop a flexible model from fitting its own noise."
+  bookPages: [225, 290]
+
+- number: 6
+  title: "Kernel Methods"
+  summary: "Rewriting a linear model so the data appears only through inner products, which lets a kernel stand in for a feature space you never build. Covers how to construct valid kernels, then Gaussian processes, where the prior sits directly over functions rather than over weights."
+  bookPages: [291, 324]
+
+- number: 7
+  title: "Sparse Kernel Machines"
+  summary: "Kernel methods that depend on only a fraction of the training data, which is what makes prediction affordable. The support vector machine arrives from a margin argument and a constrained optimisation, the relevance vector machine from a prior that drives most weights to exactly zero and returns probabilistic predictions the SVM cannot."
+  bookPages: [325, 358]
+
+- number: 12
+  title: "Continuous Latent Variables"
+  summary: "Data that lives near a surface of far lower dimension than the space it is recorded in, and how to find that surface. Principal component analysis twice, first as a variance argument and then as maximum likelihood in a latent-variable model, which is what turns it into something you can put a prior on, fit with EM and extend to nonlinear surfaces."
+  bookPages: [559, 604]
+

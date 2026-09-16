@@ -14,3 +14,7 @@ export * from './information/index.js';
 export * from './gaussian/index.js';
 export * from './classification/index.js';
 export * from './mixtures/index.js';
+export * from './neural/index.js';
+export * from './kernels/index.js';
+export * from './sparse/index.js';
+export * from './latent/index.js';
