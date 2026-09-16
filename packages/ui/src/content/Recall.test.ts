@@ -26,12 +26,18 @@ describe('Recall markup', () => {
     expect(html).toContain('data-pagefind-filter="type:recall"');
   });
 
-  it('keeps the answer in the DOM but hidden before reveal', () => {
+  it('keeps the answer in the DOM but collapsed before reveal', () => {
     const html = renderToStaticMarkup(
       createElement(Recall, { question: 'Q', children: 'The hidden answer text' }),
     );
     expect(html).toContain('The hidden answer text');
-    expect(html).toContain('hidden=""');
-    expect(html).toContain('aria-expanded="false"');
+    expect(html).not.toContain('open=""');
+  });
+
+  it('reveals through native details, so a page shipping no JavaScript still works', () => {
+    const html = renderToStaticMarkup(createElement(Recall, { question: 'Q', children: 'A' }));
+    expect(html).toMatch(/^<details/);
+    expect(html).toContain('<summary');
+    expect(html).not.toContain('<button');
   });
 });
