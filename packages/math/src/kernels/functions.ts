@@ -20,9 +20,10 @@ export function linearKernel(): KernelFunction {
 /**
  * PRML 6.11-6.12 generalised to `(x^T x' + c)^degree`. `c = 0` is the homogeneous kernel of
  * (6.11), containing only degree-`degree` monomials; `c > 0` mixes in every lower degree too,
- * as (6.12) shows by direct expansion for `degree = 2`.
+ * as (6.12) shows by direct expansion for `degree = 2`. `c` is required because the two are
+ * different feature spaces and a default would silently pick one of them.
  */
-export function polynomialKernel(degree: number, c = 0): KernelFunction {
+export function polynomialKernel(degree: number, c: number): KernelFunction {
   return (x, xp) => Math.pow(dot(x, xp) + c, degree);
 }
 
@@ -51,6 +52,15 @@ export function rbfKernel(lengthScale: number | Vec): KernelFunction {
     }
     return Math.exp(-0.5 * acc);
   };
+}
+
+/**
+ * The same Gaussian kernel as `rbfKernel`, in the parameterisation the support vector
+ * literature uses: `gamma = 1 / (2 * lengthScale^2)`. Both exist because converting at every
+ * call site is how a factor of two ends up in the wrong place.
+ */
+export function rbfKernelGamma(gamma: number): KernelFunction {
+  return (x, xp) => Math.exp(-gamma * squaredDistance(x, xp));
 }
 
 /** PRML 6.56: the Ornstein-Uhlenbeck / exponential kernel, `exp(-theta * ||x - x'||)`. */

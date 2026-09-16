@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { linspace, pcg32, rvmRegressionFit, rvmRegressionPredictive, smoFitRegression, sparseRbfKernel, standardNormal, svrPredictFunction } from '@prml/math';
+import { linspace, pcg32, rvmRegressionFit, rvmRegressionPredictive, smoFitRegression, rbfKernelGamma, standardNormal, svrPredictFunction } from '@prml/math';
 import { Axes, Band, Curve, Plot, ScatterField, useResolvedTokens } from '@prml/viz';
 import '../../widgets.css';
 
@@ -29,7 +29,7 @@ export default function RvmVsSvmComparison() {
     const rvmRelevant = rvm.relevanceVectors.filter((i) => i > 0).map((i) => i - 1);
 
     const points = xs.map((x) => [x]);
-    const kernel = sparseRbfKernel(GAMMA);
+    const kernel = rbfKernelGamma(GAMMA);
     const svm = smoFitRegression(points, ts, kernel, { C: 8, epsilon: 0.08 });
     const predictSvm = svrPredictFunction(svm, points, kernel);
     const svmCurve = GRID.map((x) => [x, predictSvm([x])] as const);

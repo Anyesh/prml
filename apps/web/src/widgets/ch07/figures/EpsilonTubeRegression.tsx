@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { linspace, pcg32, smoFitRegression, sparseRbfKernel, standardNormal, svrPredictFunction } from '@prml/math';
+import { linspace, pcg32, smoFitRegression, rbfKernelGamma, standardNormal, svrPredictFunction } from '@prml/math';
 import { Axes, Band, Curve, Plot, ScatterField, useResolvedTokens } from '@prml/viz';
 import '../../widgets.css';
 
@@ -21,7 +21,7 @@ export default function EpsilonTubeRegression() {
   const { xs, ts, curve, band, outside } = useMemo(() => {
     const { xs, ts } = buildData();
     const points = xs.map((x) => [x]);
-    const kernel = sparseRbfKernel(GAMMA);
+    const kernel = rbfKernelGamma(GAMMA);
     const fit = smoFitRegression(points, ts, kernel, { C: 4, epsilon: EPSILON });
     const predict = svrPredictFunction(fit, points, kernel);
     const curve = GRID.map((x) => [x, predict([x])] as const);

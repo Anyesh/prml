@@ -1,5 +1,5 @@
 import type { Mat, Vec } from '../types.js';
-import { sparseGramMatrix, type Kernel } from './kernels.js';
+import { gramMatrix, type KernelFunction } from '../kernels/index.js';
 
 export interface BoxQpResult {
   readonly alpha: number[];
@@ -185,9 +185,9 @@ export interface SmoOptions {
 const ALPHA_EPS = 1e-8;
 
 /** PRML 7.10-7.18 for the separable case and 7.32-7.37 for the soft margin: the same dual, since a finite `C` just bounds the box. */
-export function smoFitClassifier(points: Mat, labels: readonly (1 | -1)[], kernel: Kernel, options: SmoOptions): SvmFit {
+export function smoFitClassifier(points: Mat, labels: readonly (1 | -1)[], kernel: KernelFunction, options: SmoOptions): SvmFit {
   const n = points.length;
-  const k = sparseGramMatrix(kernel, points);
+  const k = gramMatrix(kernel, points);
   const q = k.map((row, i) => row.map((v, j) => v * labels[i]! * labels[j]!));
   const p = new Array(n).fill(1);
   const upperBound = new Array(n).fill(options.C);
@@ -223,13 +223,13 @@ export function smoFitClassifier(points: Mat, labels: readonly (1 | -1)[], kerne
 }
 
 /** PRML 7.13: the decision function evaluated at a new point, from a fitted `SvmFit`. */
-export function svmDecisionFunction(fit: SvmFit, points: Mat, labels: readonly (1 | -1)[], kernel: Kernel): (x: Vec) => number {
+export function svmDecisionFunction(fit: SvmFit, points: Mat, labels: readonly (1 | -1)[], kernel: KernelFunction): (x: Vec) => number {
   return (x: Vec) =>
     fit.supportVectors.reduce((s, i) => s + fit.alpha[i]! * labels[i]! * kernel(points[i]!, x), 0) + fit.bias;
 }
 
 /** The sign of PRML 7.13. */
-export function svmPredict(fit: SvmFit, points: Mat, labels: readonly (1 | -1)[], kernel: Kernel): (x: Vec) => 1 | -1 {
+export function svmPredict(fit: SvmFit, points: Mat, labels: readonly (1 | -1)[], kernel: KernelFunction): (x: Vec) => 1 | -1 {
   const decision = svmDecisionFunction(fit, points, labels, kernel);
   return (x: Vec) => (decision(x) >= 0 ? 1 : -1);
 }

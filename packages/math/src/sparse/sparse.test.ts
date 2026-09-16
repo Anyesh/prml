@@ -9,13 +9,11 @@ import {
   smoFitClassifier,
   smoFitRegression,
   solveBoxConstrainedQp,
-  sparseLinearKernel,
-  sparsePolynomialKernel,
-  sparseRbfKernel,
   squaredMarginLoss,
   svmDecisionFunction,
   svrPredictFunction,
 } from './index.js';
+import { linearKernel, polynomialKernel, rbfKernelGamma } from '../kernels/index.js';
 import {
   rvmClassificationFit,
   rvmOptimalSingleAlpha,
@@ -55,21 +53,21 @@ function expectMatClose(actual: Mat, expected: readonly (readonly number[])[], t
 
 describe('kernels', () => {
   it('matches numpy for the linear kernel', () => {
-    for (const c of pick('sparseLinearKernel')) {
-      expectClose(sparseLinearKernel(c['a'] as Vec, c['b'] as Vec), c['expected'] as number);
+    for (const c of pick('linearKernel')) {
+      expectClose(linearKernel()(c['a'] as Vec, c['b'] as Vec), c['expected'] as number);
     }
   });
 
   it('matches numpy for the polynomial kernel', () => {
-    for (const c of pick('sparsePolynomialKernel')) {
-      const kernel = sparsePolynomialKernel({ degree: c['degree'] as number, offset: c['offset'] as number });
+    for (const c of pick('polynomialKernel')) {
+      const kernel = polynomialKernel(c['degree'] as number, c['offset'] as number);
       expectClose(kernel(c['a'] as Vec, c['b'] as Vec), c['expected'] as number);
     }
   });
 
   it('matches numpy for the RBF kernel', () => {
-    for (const c of pick('sparseRbfKernel')) {
-      const kernel = sparseRbfKernel(c['gamma'] as number);
+    for (const c of pick('rbfKernelGamma')) {
+      const kernel = rbfKernelGamma(c['gamma'] as number);
       expectClose(kernel(c['a'] as Vec, c['b'] as Vec), c['expected'] as number);
     }
   });
@@ -121,11 +119,11 @@ describe('SMO for classification (7.10-7.18, 7.32-7.37)', () => {
       const C = c['C'] as number;
       const expected = c['expected'] as { alpha: number[]; bias: number; decision: number[] };
 
-      const fit = smoFitClassifier(points, labels, sparseLinearKernel, { C, tol: 1e-13, maxIterations: 20_000 });
+      const fit = smoFitClassifier(points, labels, linearKernel(), { C, tol: 1e-13, maxIterations: 20_000 });
       expectVecClose(fit.alpha, expected.alpha, 1e-9);
       expectClose(fit.bias, expected.bias, 1e-9);
 
-      const decision = svmDecisionFunction(fit, points, labels, sparseLinearKernel);
+      const decision = svmDecisionFunction(fit, points, labels, linearKernel());
       const probe = c['probe'] as Mat;
       const decisionValues = probe.map((x) => decision(x));
       expectVecClose(decisionValues, expected.decision, 1e-9);
@@ -151,11 +149,11 @@ describe('SMO for regression (7.50-7.69)', () => {
       const epsilon = c['epsilon'] as number;
       const expected = c['expected'] as { coefficients: number[]; bias: number; predictions: number[] };
 
-      const fit = smoFitRegression(points, targets, sparseLinearKernel, { C, epsilon, tol: 1e-13, maxIterations: 20_000 });
+      const fit = smoFitRegression(points, targets, linearKernel(), { C, epsilon, tol: 1e-13, maxIterations: 20_000 });
       expectVecClose(fit.coefficients, expected.coefficients, 1e-9);
       expectClose(fit.bias, expected.bias, 1e-9);
 
-      const predict = svrPredictFunction(fit, points, sparseLinearKernel);
+      const predict = svrPredictFunction(fit, points, linearKernel());
       const probe = c['probe'] as Mat;
       expectVecClose(
         probe.map((x) => predict(x)),

@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
-import { evalGrid, linspace, smoFitClassifier, sparseLinearKernel, svmDecisionFunction } from '@prml/math';
+import { evalGrid, linspace, smoFitClassifier, linearKernel, svmDecisionFunction } from '@prml/math';
 import { Axes, ContourField, Plot, ScatterField, useResolvedTokens } from '@prml/viz';
 import '../../widgets.css';
+
+const LINEAR_KERNEL = linearKernel();
 
 const POS: readonly (readonly [number, number])[] = [
   [1.0, 1.2], [2.1, 1.8], [1.6, -0.3], [2.8, 1.1], [0.6, -1.4], [-0.4, 0.6],
@@ -18,8 +20,8 @@ export default function SlackVariablesOverlap() {
   const { classified, field } = useMemo(() => {
     const points = [...POS, ...NEG];
     const labels = [...POS.map(() => 1 as const), ...NEG.map(() => -1 as const)];
-    const fit = smoFitClassifier(points, labels, sparseLinearKernel, { C });
-    const decision = svmDecisionFunction(fit, points, labels, sparseLinearKernel);
+    const fit = smoFitClassifier(points, labels, LINEAR_KERNEL, { C });
+    const decision = svmDecisionFunction(fit, points, labels, LINEAR_KERNEL);
     const classified = points.map((p, i) => {
       const margin = labels[i]! * decision(p);
       const slack = Math.max(0, 1 - margin);

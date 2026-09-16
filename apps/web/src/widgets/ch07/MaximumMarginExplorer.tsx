@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
-import { evalGrid, linspace, norm, pcg32, smoFitClassifier, sparseLinearKernel, sparseRbfKernel, standardNormal, svmDecisionFunction } from '@prml/math';
+import { evalGrid, linspace, norm, pcg32, smoFitClassifier, linearKernel, rbfKernelGamma, standardNormal, svmDecisionFunction } from '@prml/math';
 import { Axes, ContourField, Plot, ScatterField, useResolvedTokens } from '@prml/viz';
 import { Select, Slider } from '@prml/ui';
 import '../widgets.css';
+
+const LINEAR_KERNEL = linearKernel();
 
 const DOMAIN: readonly [number, number] = [-6, 6];
 const GRID = linspace(-6, 6, 70);
@@ -26,7 +28,7 @@ export default function MaximumMarginExplorer() {
 
   const points = useMemo(() => [...classA.map((p) => [p.x, p.y]), ...classB.map((p) => [p.x, p.y])], [classA, classB]);
   const labels = useMemo(() => [...classA.map(() => 1 as const), ...classB.map(() => -1 as const)], [classA, classB]);
-  const kernel = useMemo(() => (kernelName === 'linear' ? sparseLinearKernel : sparseRbfKernel(RBF_GAMMA)), [kernelName]);
+  const kernel = useMemo(() => (kernelName === 'linear' ? LINEAR_KERNEL : rbfKernelGamma(RBF_GAMMA)), [kernelName]);
 
   const fit = useMemo(
     () => smoFitClassifier(points, labels, kernel, { C, tol: 1e-10, maxIterations: 5000 }),

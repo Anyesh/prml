@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
-import { smoFitClassifier, sparseLinearKernel } from '@prml/math';
+import { smoFitClassifier, linearKernel } from '@prml/math';
 import { Axes, Curve, Plot, ScatterField, useResolvedTokens } from '@prml/viz';
 import '../../widgets.css';
+
+const LINEAR_KERNEL = linearKernel();
 
 const POS: readonly (readonly [number, number])[] = [
   [1.0, 1.2], [2.1, 1.8], [1.6, -0.3], [2.8, 1.1], [0.6, -1.4], [-0.4, 0.6],
@@ -18,7 +20,7 @@ export default function SupportVectorCountVsC() {
     const points = [...POS, ...NEG];
     const labels = [...POS.map(() => 1 as const), ...NEG.map(() => -1 as const)];
     return C_GRID.map((C) => {
-      const fit = smoFitClassifier(points, labels, sparseLinearKernel, { C });
+      const fit = smoFitClassifier(points, labels, LINEAR_KERNEL, { C });
       return { logC: Math.log10(C), count: fit.supportVectors.length };
     });
   }, []);

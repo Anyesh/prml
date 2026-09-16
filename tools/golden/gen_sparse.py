@@ -40,7 +40,7 @@ kernel_pairs = [
 for a, b in kernel_pairs:
     a_arr, b_arr = np.array(a), np.array(b)
     cases.append(
-        {"fn": "sparseLinearKernel", "a": a, "b": b, "expected": float(a_arr @ b_arr)}
+        {"fn": "linearKernel", "a": a, "b": b, "expected": float(a_arr @ b_arr)}
     )
 
 poly_cases = [
@@ -53,7 +53,7 @@ for a, b, degree, offset in poly_cases:
     expected = float((offset + a_arr @ b_arr) ** degree)
     cases.append(
         {
-            "fn": "sparsePolynomialKernel",
+            "fn": "polynomialKernel",
             "a": a,
             "b": b,
             "degree": degree,
@@ -71,7 +71,7 @@ for a, b, gamma in rbf_cases:
     a_arr, b_arr = np.array(a), np.array(b)
     expected = float(np.exp(-gamma * np.sum((a_arr - b_arr) ** 2)))
     cases.append(
-        {"fn": "sparseRbfKernel", "a": a, "b": b, "gamma": gamma, "expected": expected}
+        {"fn": "rbfKernelGamma", "a": a, "b": b, "gamma": gamma, "expected": expected}
     )
 
 margins = [-2.0, -1.0, -0.5, 0.0, 0.3, 1.0, 2.0]

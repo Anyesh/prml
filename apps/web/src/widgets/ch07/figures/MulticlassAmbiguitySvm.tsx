@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
-import { evalGrid, linspace, pcg32, smoFitClassifier, sparseLinearKernel, standardNormal, svmDecisionFunction } from '@prml/math';
+import { evalGrid, linspace, pcg32, smoFitClassifier, linearKernel, standardNormal, svmDecisionFunction } from '@prml/math';
 import { Axes, Heatmap, Plot, ScatterField, useResolvedTokens } from '@prml/viz';
 import '../../widgets.css';
+
+const LINEAR_KERNEL = linearKernel();
 
 const CENTERS: readonly (readonly [number, number])[] = [
   [-2.2, 1.6],
@@ -25,8 +27,8 @@ export default function MulticlassAmbiguitySvm() {
 
     const decisions = clusters.map((_, k) => {
       const labels = clusters.flatMap((cl, j) => cl.map(() => (j === k ? (1 as const) : (-1 as const))));
-      const fit = smoFitClassifier(allPoints, labels, sparseLinearKernel, { C: 5 });
-      return svmDecisionFunction(fit, allPoints, labels, sparseLinearKernel);
+      const fit = smoFitClassifier(allPoints, labels, LINEAR_KERNEL, { C: 5 });
+      return svmDecisionFunction(fit, allPoints, labels, LINEAR_KERNEL);
     });
 
     const field = evalGrid(GRID, GRID, (x, y) => {

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { evalGrid, linspace, pcg32, rvmClassificationFit, smoFitClassifier, sparseRbfKernel, standardNormal, svmDecisionFunction } from '@prml/math';
+import { evalGrid, linspace, pcg32, rvmClassificationFit, smoFitClassifier, rbfKernelGamma, standardNormal, svmDecisionFunction } from '@prml/math';
 import { Axes, ContourField, Plot, ScatterField, useResolvedTokens } from '@prml/viz';
 import '../../widgets.css';
 
@@ -22,7 +22,7 @@ export default function RelevanceVsSupportLocation() {
     const labels01 = [...c0.map(() => 0), ...c1.map(() => 1)];
     const labelsPm = labels01.map((t) => (t === 1 ? (1 as const) : (-1 as const)));
 
-    const kernel = sparseRbfKernel(GAMMA);
+    const kernel = rbfKernelGamma(GAMMA);
     const svm = smoFitClassifier(points, labelsPm, kernel, { C: 3 });
     const decision = svmDecisionFunction(svm, points, labelsPm, kernel);
     const field = evalGrid(GRID, GRID, (x, y) => decision([x, y]));

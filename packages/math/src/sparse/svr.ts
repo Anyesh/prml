@@ -1,5 +1,5 @@
 import type { Mat, Vec } from '../types.js';
-import { sparseGramMatrix, type Kernel } from './kernels.js';
+import { gramMatrix, type KernelFunction } from '../kernels/index.js';
 import { solveBoxConstrainedQp } from './smo.js';
 
 export interface SvrFit {
@@ -34,9 +34,9 @@ const ALPHA_EPS = 1e-8;
  * 0` is then exactly 7.58. No second SMO implementation is written; this is the same
  * two-variable analytic step doing the same job on a relabelled problem.
  */
-export function smoFitRegression(points: Mat, targets: Vec, kernel: Kernel, options: SvrOptions): SvrFit {
+export function smoFitRegression(points: Mat, targets: Vec, kernel: KernelFunction, options: SvrOptions): SvrFit {
   const n = points.length;
-  const k = sparseGramMatrix(kernel, points);
+  const k = gramMatrix(kernel, points);
   const m = 2 * n;
   const y = new Array<1 | -1>(m);
   const p = new Array<number>(m);
@@ -90,6 +90,6 @@ export function smoFitRegression(points: Mat, targets: Vec, kernel: Kernel, opti
 }
 
 /** PRML 7.64: the regression function evaluated at a new point, from a fitted `SvrFit`. */
-export function svrPredictFunction(fit: SvrFit, points: Mat, kernel: Kernel): (x: Vec) => number {
+export function svrPredictFunction(fit: SvrFit, points: Mat, kernel: KernelFunction): (x: Vec) => number {
   return (x: Vec) => fit.supportVectors.reduce((s, i) => s + fit.coefficients[i]! * kernel(points[i]!, x), 0) + fit.bias;
 }
