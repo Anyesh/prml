@@ -1,0 +1,298 @@
+---
+chapter: 2
+section: "2.3"
+title: The Gaussian Distribution
+bookPages: [78, 112]
+summary: One density does more work than any other in the book, and this section is every closed-form trick that makes it tractable, from splitting it in two to letting it forget its own mean.
+concepts:
+  - multivariate-gaussian
+  - gaussian-conditioning
+  - linear-gaussian-model
+  - maximum-likelihood
+  - sequential-maximum-likelihood
+  - sequential-learning
+  - bayesian-gaussian-inference
+  - student-t-distribution
+  - von-mises-distribution
+  - gaussian-mixture
+prereqs: ["1.2"]
+equations:
+  - { id: "2.43", name: multivariate Gaussian density }
+  - { id: "2.50", name: quadratic form in eigencoordinates }
+  - { id: "2.81", name: conditional mean }
+  - { id: "2.82", name: conditional covariance }
+  - { id: "2.92", name: marginal mean and covariance }
+  - { id: "2.114", name: linear-Gaussian marginal }
+  - { id: "2.116", name: linear-Gaussian posterior }
+  - { id: "2.122", name: ML covariance estimate }
+  - { id: "2.124", name: bias of the ML covariance }
+  - { id: "2.126", name: sequential mean update }
+  - { id: "2.142", name: posterior precision additivity }
+  - { id: "2.150", name: gamma posterior shape }
+  - { id: "2.159", name: Student's t density }
+  - { id: "2.179", name: von Mises density }
+  - { id: "2.188", name: mixture of Gaussians }
+widgets: [PartitionedGaussianExplorer]
+difficulty: 4
+---
+
+import PartitionedGaussianExplorer from '@widgets/ch02/PartitionedGaussianExplorer';
+import EigenDecomposition from '@widgets/ch02/figures2/EigenDecomposition';
+import PartitionAndConditional from '@widgets/ch02/figures2/PartitionAndConditional';
+import LinearGaussianMarginalFigure from '@widgets/ch02/figures2/LinearGaussianMarginalFigure';
+import LinearGaussianPosteriorFigure from '@widgets/ch02/figures2/LinearGaussianPosteriorFigure';
+import MLVarianceBias from '@widgets/ch02/figures2/MLVarianceBias';
+import SequentialMeanConvergenceFigure from '@widgets/ch02/figures2/SequentialMeanConvergenceFigure';
+import BayesianMeanNarrowing from '@widgets/ch02/figures2/BayesianMeanNarrowing';
+import BayesianPrecisionNarrowing from '@widgets/ch02/figures2/BayesianPrecisionNarrowing';
+import StudentTHeavyTail from '@widgets/ch02/figures2/StudentTHeavyTail';
+import VonMisesCircle from '@widgets/ch02/figures2/VonMisesCircle';
+import GaussianMixtureFit from '@widgets/ch02/figures2/GaussianMixtureFit';
+import VonMisesNaiveMeanFails from '@widgets/ch02/figures2/VonMisesNaiveMeanFails';
+
+## Intuition
+
+Nine ideas live in this section and every one answers the same question: what can you still
+do in closed form once a Gaussian is not the whole story. Split a vector Gaussian in two and
+both the leftover piece and the relationship between the pieces stay Gaussian. Chain a
+Gaussian prior into a Gaussian observation and both the prediction and the update stay
+Gaussian. Even the Gaussian's own blind spots, its light tails, its straight-line notion of
+distance on a circle, its single bump, are each fixed by a distribution built from
+Gaussians rather than by abandoning them.
+
+That closure under so many operations is the actual reason the Gaussian is everywhere in
+this book rather than a rival density. Chapter 3's predictive distribution, its sequential
+updating, and its evidence are this section's results wearing a regression problem's
+clothes.
+
+## The math
+
+The density and the shape of its contours:
+
+<MathBlock id="2.43" name="multivariate Gaussian density">
+
+$$\mathcal{N}(\mathbf{x}\mid\boldsymbol{\mu},\boldsymbol{\Sigma}) = \frac{1}{(2\pi)^{D/2}|\boldsymbol{\Sigma}|^{1/2}}\exp\left\{-\frac{1}{2}(\mathbf{x}-\boldsymbol{\mu})^{\mathrm{T}}\boldsymbol{\Sigma}^{-1}(\mathbf{x}-\boldsymbol{\mu})\right\}$$
+
+</MathBlock>
+
+<MathBlock id="2.50" name="quadratic form in eigencoordinates">
+
+$$\Delta^2 = \sum_{i=1}^{D}\frac{y_i^2}{\lambda_i}$$
+
+</MathBlock>
+
+<Figure caption="The covariance's eigenvectors are the contour's axes; eigenvalues are the axis lengths squared." source="2.7">
+  <EigenDecomposition client:visible />
+</Figure>
+
+**Conditioning and marginalising** (2.3.1-2.3.2). Split $\mathbf{x}$ into $\mathbf{x}_a,
+\mathbf{x}_b$: the conditional stays Gaussian,
+
+<MathBlock id="2.81" name="conditional mean">
+
+$$\boldsymbol{\mu}_{a|b} = \boldsymbol{\mu}_a + \boldsymbol{\Sigma}_{ab}\boldsymbol{\Sigma}_{bb}^{-1}(\mathbf{x}_b-\boldsymbol{\mu}_b)$$
+
+</MathBlock>
+
+<MathBlock id="2.82" name="conditional covariance">
+
+$$\boldsymbol{\Sigma}_{a|b} = \boldsymbol{\Sigma}_{aa} - \boldsymbol{\Sigma}_{ab}\boldsymbol{\Sigma}_{bb}^{-1}\boldsymbol{\Sigma}_{ba}$$
+
+</MathBlock>
+
+and the marginal is simply the corresponding block:
+
+<MathBlock id="2.92" name="marginal mean and covariance">
+
+$$\mathbb{E}[\mathbf{x}_a]=\boldsymbol{\mu}_a,\qquad \mathrm{cov}[\mathbf{x}_a]=\boldsymbol{\Sigma}_{aa}$$
+
+</MathBlock>
+
+<Figure caption="Same joint density: a horizontal slice gives the conditional, dropping a coordinate gives the marginal." source="2.9">
+  <PartitionAndConditional client:visible />
+</Figure>
+
+**The linear-Gaussian model** (2.3.3) chains a prior into a linear-Gaussian likelihood and
+keeps both directions closed-form:
+
+<MathBlock id="2.114" name="linear-Gaussian marginal">
+
+$$p(\mathbf{y}) = \mathcal{N}(\mathbf{y}\mid \mathbf{A}\boldsymbol{\mu}+\mathbf{b},\ \mathbf{L}^{-1}+\mathbf{A}\boldsymbol{\Lambda}^{-1}\mathbf{A}^{\mathrm{T}})$$
+
+</MathBlock>
+
+<Figure caption="p(x) pushed through a linear-Gaussian map: the marginal variance is the map's own plus the observation noise." source="2.10">
+  <LinearGaussianMarginalFigure client:visible />
+</Figure>
+
+<MathBlock id="2.116" name="linear-Gaussian posterior">
+
+$$p(\mathbf{x}\mid\mathbf{y}) = \mathcal{N}\big(\mathbf{x}\mid \boldsymbol{\Sigma}\{\mathbf{A}^{\mathrm{T}}\mathbf{L}(\mathbf{y}-\mathbf{b})+\boldsymbol{\Lambda}\boldsymbol{\mu}\},\ \boldsymbol{\Sigma}\big)$$
+
+</MathBlock>
+
+<Figure caption="Three observed y, one posterior variance: only the mean depends on what was seen." source="2.10">
+  <LinearGaussianPosteriorFigure client:visible />
+</Figure>
+
+**Maximum likelihood** (2.3.4) is again the sample mean, but the covariance is biased low:
+
+<MathBlock id="2.122" name="ML covariance estimate">
+
+$$\boldsymbol{\Sigma}_{\mathrm{ML}} = \frac{1}{N}\sum_{n=1}^{N}(\mathbf{x}_n-\boldsymbol{\mu}_{\mathrm{ML}})(\mathbf{x}_n-\boldsymbol{\mu}_{\mathrm{ML}})^{\mathrm{T}}$$
+
+</MathBlock>
+
+<MathBlock id="2.124" name="bias of the ML covariance">
+
+$$\mathbb{E}[\boldsymbol{\Sigma}_{\mathrm{ML}}] = \frac{N-1}{N}\boldsymbol{\Sigma}$$
+
+</MathBlock>
+
+<Figure caption="Averaged over thousands of small datasets, the ML variance sits exactly on the (N-1)/N line, not on the truth." source="2.14">
+  <MLVarianceBias client:visible />
+</Figure>
+
+**Sequential estimation** (2.3.5) updates the same estimate one point at a time, derived
+from Robbins-Monro root-finding rather than rearranged algebra:
+
+<MathBlock id="2.126" name="sequential mean update">
+
+$$\mu_{\mathrm{ML}}^{(N)} = \mu_{\mathrm{ML}}^{(N-1)} + \frac{1}{N}\left(x_N-\mu_{\mathrm{ML}}^{(N-1)}\right)$$
+
+</MathBlock>
+
+<Figure caption="Equation 2.126 applied one point at a time, converging on the generating mean without ever storing the data." source="2.11">
+  <SequentialMeanConvergenceFigure client:visible />
+</Figure>
+
+**Bayesian inference for the Gaussian** (2.3.6) puts a conjugate prior on the mean, the
+precision, or both. Known variance, unknown mean, precisions add:
+
+<MathBlock id="2.142" name="posterior precision additivity">
+
+$$\frac{1}{\sigma_N^2} = \frac{1}{\sigma_0^2} + \frac{N}{\sigma^2}$$
+
+</MathBlock>
+
+<Figure caption="Prior and posterior over the mean after 0, 1, 2, and 10 observations, narrowing exactly as 2.142 predicts." source="2.12">
+  <BayesianMeanNarrowing client:visible />
+</Figure>
+
+Known mean, unknown precision, a gamma prior updates its shape by half a count per point:
+
+<MathBlock id="2.150" name="gamma posterior shape">
+
+$$a_N = a_0 + \frac{N}{2}$$
+
+</MathBlock>
+
+<Figure caption="Gamma posterior over a precision, four sample sizes, tightening around the true value." source="2.13">
+  <BayesianPrecisionNarrowing client:visible />
+</Figure>
+
+**Student's t** (2.3.7) is what a Gaussian looks like once its own precision is uncertain
+and integrated out, an infinite mixture over a gamma-distributed precision:
+
+<MathBlock id="2.159" name="Student's t density">
+
+$$\mathrm{St}(x\mid\mu,\lambda,\nu) = \frac{\Gamma(\nu/2+1/2)}{\Gamma(\nu/2)}\left(\frac{\lambda}{\pi\nu}\right)^{1/2}\left[1+\frac{\lambda(x-\mu)^2}{\nu}\right]^{-\nu/2-1/2}$$
+
+</MathBlock>
+
+<Figure caption="Same variance, very different tails: t survives an outlier that would move a Gaussian fit substantially." source="2.16">
+  <StudentTHeavyTail client:visible />
+</Figure>
+
+**Periodic variables** (2.3.8): the von Mises distribution is the Gaussian shape built to
+close on itself,
+
+<MathBlock id="2.179" name="von Mises density">
+
+$$p(\theta\mid\theta_0,\kappa) = \frac{1}{2\pi I_0(\kappa)}\exp\{\kappa\cos(\theta-\theta_0)\}$$
+
+</MathBlock>
+
+<Figure caption="Density as radial bulge on the unit circle: higher concentration, tighter bulge, always periodic." source="2.19">
+  <VonMisesCircle client:visible />
+</Figure>
+
+**Mixtures of Gaussians** (2.3.9) sum weighted components to reach shapes no single Gaussian
+can:
+
+<MathBlock id="2.188" name="mixture of Gaussians">
+
+$$p(\mathbf{x}) = \sum_{k=1}^{K}\pi_k\,\mathcal{N}(\mathbf{x}\mid\boldsymbol{\mu}_k,\boldsymbol{\Sigma}_k)$$
+
+</MathBlock>
+
+<Figure caption="One Gaussian fit by maximum likelihood sits in the valley between two real modes; the true two-component mixture does not." source="2.21">
+  <GaussianMixtureFit client:visible />
+</Figure>
+
+## Interactive
+
+<Widget title="Conditioning and marginalising a 2D Gaussian" figure="2.9" caption="Reshape the ellipse with the sliders, then drag the handle to change what x2 is conditioned on.">
+  <PartitionedGaussianExplorer client:visible />
+</Widget>
+
+Push correlation toward its limits and watch the conditional collapse toward a spike:
+knowing $x_2$ exactly determines $x_1$ once the two are perfectly tied together.
+
+## Worked example
+
+<Figure caption="1° and 359° averaged the ordinary way land at 180°, on the wrong side of the circle entirely." source="2.17">
+  <VonMisesNaiveMeanFails client:visible />
+</Figure>
+
+Two compass headings, 1° and 359°, both pointing almost due east. The arithmetic mean is
+180°, due west: the worst possible answer. Fitting a von Mises distribution instead, via
+`vonMisesFit`, recovers a mean direction within a degree of due east and a large
+concentration, because it works with the headings as points on a circle rather than numbers
+on a line. Nothing about the *data* was unusual; only the wrong distance function was.
+
+## Recall
+
+<Recall question="Why does conditioning a Gaussian never need to touch an integral?" concepts={["gaussian-conditioning"]}>
+Because the conditional's mean and covariance (2.81-2.82) come straight from the joint's own
+mean and covariance blocks. What would be an integral for a general distribution is matrix
+algebra here.
+</Recall>
+
+<Recall question="What does the linear-Gaussian model let you compute that plain conditioning cannot?" concepts={["linear-gaussian-model"]}>
+The marginal and posterior when you only have p(x) and p(y|x) separately, as in Bayesian
+linear regression's predictive distribution, without ever assembling the full joint over
+(x, y).
+</Recall>
+
+<Recall question="Why is the maximum-likelihood covariance estimate biased low, and by how much?" concepts={["maximum-likelihood"]}>
+It measures spread around its own sample mean rather than the true one, which is always at
+least as tight a fit. The bias is exact: (N-1)/N times the true covariance (2.124).
+</Recall>
+
+<Recall question="How does sequential estimation (2.126) differ from Bayesian sequential learning?" concepts={["sequential-maximum-likelihood"]}>
+It updates one point estimate with no posterior at all, derived from Robbins-Monro
+root-finding. Bayesian sequential learning instead keeps a full distribution and lets
+today's posterior become tomorrow's prior.
+</Recall>
+
+<Recall question="What kind of uncertainty does Student's t add on top of a Gaussian?" concepts={["student-t-distribution"]}>
+Uncertainty about the precision itself. Averaging a Gaussian over a gamma-distributed
+precision (2.158) is what produces its heavier tails, not an arbitrary reshaping.
+</Recall>
+
+<Recall question="Why does an ordinary arithmetic mean fail for angles?" concepts={["von-mises-distribution"]}>
+Because it depends on where zero is drawn on the circle, so 1° and 359° average to 180°
+instead of to the direction they actually cluster near. A circular mean, via the resultant
+vector, does not have this problem.
+</Recall>
+
+## Connections
+
+- **Builds on** [2.1](/sections/2-1) and [2.2](/sections/2-2) for the conjugate-prior pattern
+  this section repeats for the mean and precision.
+- **Feeds** [3.3](/sections/3-3) directly: its predictive distribution and sequential
+  updating are this section's linear-Gaussian model and precision-additivity, applied to
+  weights instead of a scalar mean.
+- **Mixtures of Gaussians** return with a fitting algorithm in chapter 9, once latent
+  variables are available to derive one.

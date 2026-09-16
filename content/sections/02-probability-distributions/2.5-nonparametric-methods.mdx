@@ -1,0 +1,153 @@
+---
+chapter: 2
+section: "2.5"
+title: Nonparametric Methods
+bookPages: [120, 136]
+summary: Fixing a distribution's shape in advance can be wrong before any data arrives, and one relation, K points in a region of volume V, generates a whole family of alternatives that do not.
+concepts:
+  - nonparametric-density-estimation
+  - kernel-density-estimation
+  - k-nearest-neighbours
+  - curse-of-dimensionality
+prereqs: ["1.4"]
+equations:
+  - { id: "2.241", name: histogram estimator }
+  - { id: "2.246", name: density from a local count }
+  - { id: "2.250", name: Gaussian kernel estimator }
+  - { id: "2.253", name: class-conditional density }
+  - { id: "2.254", name: unconditional density }
+  - { id: "2.256", name: KNN posterior }
+widgets: [SmoothingParameterExplorer]
+difficulty: 3
+---
+
+import SmoothingParameterExplorer from '@widgets/ch02/SmoothingParameterExplorer';
+import HistogramBinWidth from '@widgets/ch02/figures3/HistogramBinWidth';
+import KnnClassification from '@widgets/ch02/figures3/KnnClassification';
+import CurseOfDimensionalityBins from '@widgets/ch02/figures3/CurseOfDimensionalityBins';
+
+## Intuition
+
+Every distribution in this chapter so far commits to a shape before seeing data: a
+Gaussian, a beta, a mixture of a chosen number of components. That commitment is a real
+risk. Real data is under no obligation to be unimodal, symmetric, or a mixture of any
+particular count of anything.
+
+Nonparametric methods sidestep the commitment by tying the model to the data itself: count
+how many points fall near a query location, in a region whose size is the one thing you
+choose. Shrink the region and the estimate chases every wrinkle in the sample, most of it
+noise. Grow it and real structure gets smoothed away. There is no shape assumption doing the
+picking, which is also why there is no shortcut around the trade-off itself.
+
+## The math
+
+A histogram assigns each bin's own share of the data to its own width:
+
+<MathBlock id="2.241" name="histogram estimator">
+
+$$p_i = \frac{n_i}{N\Delta_i}$$
+
+</MathBlock>
+
+<Figure caption="Same 50 points, three bin widths: too fine catches noise, too coarse hides the second mode." source="2.24">
+  <HistogramBinWidth client:visible />
+</Figure>
+
+Generalising: a region of volume $V$ around $x$ catching $K$ of $N$ points estimates the
+density there directly,
+
+<MathBlock id="2.246" name="density from a local count">
+
+$$p(x) = \frac{K}{NV}$$
+
+</MathBlock>
+
+Fixing $V$ and letting $K$ vary with the data gives kernel density estimation; the smoothed,
+Gaussian-kernel version replaces every bin edge with a soft bump per point:
+
+<MathBlock id="2.250" name="Gaussian kernel estimator">
+
+$$p(x) = \frac{1}{N}\sum_{n=1}^{N}\frac{1}{(2\pi h^2)^{1/2}}\exp\left(-\frac{\|x-x_n\|^2}{2h^2}\right)$$
+
+</MathBlock>
+
+Fixing $K$ instead and growing $V$ until it holds exactly that many points gives K-nearest-
+neighbours, the same 2.246 read the other way. Applied per class it gives a classifier:
+
+<MathBlock id="2.253" name="class-conditional density">
+
+$$p(x \mid \mathcal{C}_k) = \frac{K_k}{N_k V}$$
+
+</MathBlock>
+
+<MathBlock id="2.254" name="unconditional density">
+
+$$p(x) = \frac{K}{NV}$$
+
+</MathBlock>
+
+<MathBlock id="2.256" name="KNN posterior">
+
+$$p(\mathcal{C}_k \mid x) = \frac{K_k}{K}$$
+
+</MathBlock>
+
+<Figure caption="K-nearest-neighbour decision regions for two class blobs, K=1 against K=15: small K traces every point, large K smooths the boundary." source="2.27">
+  <KnnClassification client:visible />
+</Figure>
+
+## Interactive
+
+<Widget title="Three smoothers, one dataset" figure="2.26" caption="Pick a method and drag its one smoothing parameter. All three chase the same bias-variance trade-off from a different knob.">
+  <SmoothingParameterExplorer client:visible />
+</Widget>
+
+Switch between all three on the same data: the parameter names differ but the failure modes
+line up exactly, small-parameter noise against large-parameter blur.
+
+## Worked example
+
+<Figure caption="log10 of the bin count against dimension, at 3 bins per axis: exponential growth reads as a straight line here." source="1.6">
+  <CurseOfDimensionalityBins client:visible />
+</Figure>
+
+Three bins per input dimension, ten dimensions: $3^{10} = 59{,}049$ bins. Almost every bin is
+empty for any dataset smaller than tens of thousands of points, and this was the *gentle*
+case, three bins rather than the ten or so a real histogram would want. K-nearest-neighbours
+and kernel methods inherit the same growth: a fixed-radius neighbourhood in high dimensions
+is nearly always empty too.
+
+## Recall
+
+<Recall question="What single relation unifies histograms, kernel density estimation, and K-nearest-neighbours?" concepts={["nonparametric-density-estimation"]}>
+$p(x) = K/(NV)$ (2.246). Fixing $V$ and reading off $K$ gives kernel methods; fixing $K$ and
+solving for $V$ gives K-nearest-neighbours; a histogram is the same idea with $V$ fixed to a
+grid cell.
+</Recall>
+
+<Recall question="Why does a K-nearest-neighbour density estimate fail to be a genuine density?" concepts={["k-nearest-neighbours"]}>
+Its integral over all space diverges: the volume needed to catch $K$ points never stops
+growing far from the data, so the "density" there falls too slowly to integrate to a finite
+total.
+</Recall>
+
+<Recall question="What is the real cost of the curse of dimensionality for these methods?" concepts={["curse-of-dimensionality"]}>
+A neighbourhood or bin that would be well populated in one or two dimensions becomes almost
+certainly empty once dimension grows, because covering a space with local structure costs
+exponentially in its dimension.
+</Recall>
+
+<Recall question="What does bandwidth or K actually trade off, and what is it a special case of?" concepts={["kernel-density-estimation"]}>
+Variance against bias in the estimate, the same split section 3.2's bias-variance
+decomposition names for model complexity generally. A smoothing parameter is a complexity
+knob under another name.
+</Recall>
+
+## Connections
+
+- **Answers a gap chapter 1's** [1.4](/sections/1-4) curse of dimensionality leaves open:
+  what to do when a fixed-shape model is too strong an assumption.
+- **The bias-variance trade-off here** is the same one [3.2](/sections/3-2) names formally
+  for model complexity; this section is its nonparametric face.
+- **Closes chapter 2**, which began with a coin's single parameter and ends with a method
+  that fits no fixed parameter count at all.

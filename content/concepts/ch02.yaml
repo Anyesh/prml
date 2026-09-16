@@ -1,0 +1,135 @@
+- id: bernoulli-distribution
+  name: "Bernoulli distribution"
+  definition: "The distribution over a single binary outcome, governed by one parameter: the probability of the outcome coded as 1. Every count-based discrete distribution in this chapter is built by summing or extending it."
+  introducedIn: "2.1"
+  usedIn: ["2.2", "2.4"]
+  requires: []
+  aliases: []
+
+- id: beta-distribution
+  name: "Beta distribution"
+  definition: "The conjugate prior for a Bernoulli or binomial parameter. Its two hyperparameters act as fictitious prior counts of each outcome, so observing real data just adds to them, and the posterior never leaves the beta family."
+  introducedIn: "2.1"
+  usedIn: []
+  requires: ["bernoulli-distribution"]
+  aliases: []
+
+- id: multinomial-distribution
+  name: "Multinomial distribution"
+  definition: "The distribution over counts across more than two categories, the many-outcome generalisation of the binomial. A single trial under it is a 1-of-K indicator vector rather than a single bit."
+  introducedIn: "2.2"
+  usedIn: []
+  requires: ["bernoulli-distribution"]
+  aliases: ["categorical distribution"]
+
+- id: dirichlet-distribution
+  name: "Dirichlet distribution"
+  definition: "The conjugate prior over the probability simplex for a multinomial parameter. Concentration parameters play the same fictitious-count role as the beta distribution's, one per category, and the posterior after observing counts is again Dirichlet."
+  introducedIn: "2.2"
+  usedIn: []
+  requires: ["multinomial-distribution"]
+  aliases: []
+
+- id: multivariate-gaussian
+  name: "Multivariate Gaussian"
+  definition: "The Gaussian over a vector, whose covariance matrix carries all the geometry: its eigenvectors are the density's axes and its eigenvalues their lengths. Every closed-form result in the rest of the chapter and much of the book leans on this one density."
+  introducedIn: "2.3"
+  usedIn: ["2.4"]
+  requires: []
+  aliases: ["Gaussian", "normal distribution"]
+
+- id: gaussian-conditioning
+  name: "Conditioning and marginalising a Gaussian"
+  definition: "Splitting a jointly Gaussian vector into two blocks, then reading off both the conditional of one block given the other and the marginal of either block alone, in closed form, straight from the joint mean and covariance."
+  introducedIn: "2.3"
+  usedIn: ["3.3"]
+  requires: ["multivariate-gaussian"]
+  aliases: ["partitioned Gaussian"]
+
+- id: linear-gaussian-model
+  name: "Linear-Gaussian model"
+  definition: "A Gaussian prior over x paired with a Gaussian likelihood over y whose mean is a linear function of x. Marginalising x out and conditioning on y both stay Gaussian and closed-form, which is the pattern behind Bayesian linear regression's predictive distribution and, later, the Kalman filter."
+  introducedIn: "2.3"
+  usedIn: ["3.3"]
+  requires: ["gaussian-conditioning"]
+  aliases: ["Bayes theorem for Gaussians"]
+
+- id: sequential-maximum-likelihood
+  name: "Sequential maximum likelihood"
+  definition: "Updating a maximum-likelihood estimate one observation at a time by taking a small step toward the new point, derived as a Robbins-Monro root-finding update rather than an algebraic shortcut. Unlike Bayesian sequential updating, there is no posterior here, only a running point estimate."
+  introducedIn: "2.3"
+  usedIn: []
+  requires: ["maximum-likelihood"]
+  aliases: ["Robbins-Monro estimation"]
+
+- id: bayesian-gaussian-inference
+  name: "Bayesian inference for the Gaussian"
+  definition: "Placing a conjugate prior on a Gaussian's mean, its precision, or both, and updating in closed form as data arrives: a Gaussian prior on the mean stays Gaussian, a gamma prior on the precision stays gamma, and the joint prior on both is normal-gamma."
+  introducedIn: "2.3"
+  usedIn: ["3.5"]
+  requires: ["multivariate-gaussian", "conjugate-prior"]
+  aliases: ["normal-gamma", "precision-additivity"]
+
+- id: student-t-distribution
+  name: "Student's t-distribution"
+  definition: "An infinite mixture of Gaussians of the same mean but a gamma-distributed precision, which gives it heavier tails than any single Gaussian. It is what a Gaussian's uncertainty about its own precision looks like once that precision is integrated out."
+  introducedIn: "2.3"
+  usedIn: []
+  requires: ["multivariate-gaussian"]
+  aliases: []
+
+- id: von-mises-distribution
+  name: "Von Mises distribution"
+  definition: "The Gaussian-shaped analogue for a variable that lives on a circle rather than a line, built so that its density is automatically periodic. An ordinary mean is meaningless for angles because it depends on where zero is drawn; this distribution's mean direction does not."
+  introducedIn: "2.3"
+  usedIn: []
+  requires: []
+  aliases: ["circular normal distribution"]
+
+- id: gaussian-mixture
+  name: "Mixture of Gaussians"
+  definition: "A weighted sum of several Gaussian components, capable of shapes no single Gaussian can reach, most visibly more than one mode. The weight on each component doubles as the prior probability of a discrete label that says which component generated a given point."
+  introducedIn: "2.3"
+  usedIn: []
+  requires: ["multivariate-gaussian"]
+  aliases: ["Gaussian mixture model"]
+
+- id: exponential-family
+  name: "Exponential family"
+  definition: "The canonical form h(x) g(eta) exp(eta^T u(x)) that the Bernoulli, the Gaussian, and most named distributions in this chapter all turn out to share. Its existence is why conjugate priors, and closed-form maximum likelihood through a single sufficient statistic, are the rule rather each distribution's private accident."
+  introducedIn: "2.4"
+  usedIn: []
+  requires: ["bernoulli-distribution", "multivariate-gaussian"]
+  aliases: []
+
+- id: sufficient-statistics
+  name: "Sufficient statistics"
+  definition: "The fixed-size summary of a dataset that a distribution's maximum-likelihood parameters depend on and nothing else. In the exponential family this is exactly the u(x) that appears in the canonical form, summed over the data."
+  introducedIn: "2.4"
+  usedIn: []
+  requires: ["exponential-family"]
+  aliases: []
+
+- id: nonparametric-density-estimation
+  name: "Nonparametric density estimation"
+  definition: "Estimating a density from the single relation p(x) = K/(NV): count K points inside a region of volume V around x, out of N total. Fixing V and counting K gives kernel density estimation; fixing K and measuring V gives K-nearest-neighbours."
+  introducedIn: "2.5"
+  usedIn: []
+  requires: []
+  aliases: []
+
+- id: kernel-density-estimation
+  name: "Kernel density estimation"
+  definition: "Nonparametric density estimation with a fixed region size, placing one kernel per data point and summing them, most commonly a Gaussian of bandwidth h. The bandwidth trades a noisy, spiky estimate against an over-smoothed one that hides real structure."
+  introducedIn: "2.5"
+  usedIn: []
+  requires: ["nonparametric-density-estimation"]
+  aliases: ["Parzen window"]
+
+- id: k-nearest-neighbours
+  name: "K-nearest-neighbours"
+  definition: "Nonparametric density estimation with a fixed point count K, growing the region around x until it holds exactly K points. The same K/(NV) count, read as class fractions among K neighbours rather than a density, gives the K-NN classification rule."
+  introducedIn: "2.5"
+  usedIn: []
+  requires: ["nonparametric-density-estimation"]
+  aliases: ["KNN"]

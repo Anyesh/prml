@@ -1,0 +1,148 @@
+---
+chapter: 2
+section: "2.4"
+title: The Exponential Family
+bookPages: [113, 119]
+summary: The Bernoulli, the Gaussian, and most distributions in this chapter turn out to be one shape wearing different parameters, and that shape is why conjugacy is the rule rather than the exception.
+concepts:
+  - exponential-family
+  - sufficient-statistics
+  - conjugate-prior
+  - maximum-likelihood
+prereqs: ["2.1", "2.3"]
+equations:
+  - { id: "2.194", name: canonical exponential family form }
+  - { id: "2.200", name: Bernoulli in canonical form }
+  - { id: "2.220", name: Gaussian natural parameters }
+  - { id: "2.228", name: ML via sufficient statistics }
+  - { id: "2.229", name: general conjugate prior }
+  - { id: "2.230", name: conjugate posterior }
+widgets: [ExponentialFamilyPicker]
+difficulty: 3
+---
+
+import ExponentialFamilyPicker from '@widgets/ch02/ExponentialFamilyPicker';
+import SufficientStatisticConvergence from '@widgets/ch02/figures/SufficientStatisticConvergence';
+import ConjugatePriorFamily from '@widgets/ch02/figures/ConjugatePriorFamily';
+
+## Intuition
+
+Every conjugate prior built so far, the beta for a coin and the Dirichlet for a die, was
+found by staring at a specific likelihood until a matching prior fell out. That is not a
+coincidence to be rediscovered per distribution: it is one algebraic fact about a shape
+almost every named distribution shares, discovered once and then inherited.
+
+Knowing the shape pays twice. It tells you in advance which distributions have a conjugate
+prior at all, without a fresh derivation each time. And it tells you exactly which summary
+of the data a maximum-likelihood fit depends on, throwing away everything else about the
+dataset as irrelevant to the parameters, a claim strong enough to be worth stating in one
+place rather than proving distribution by distribution.
+
+## The math
+
+Every member fits one template, $h(x)$ a base measure, $g(\eta)$ a normaliser, $u(x)$ the
+statistic $\eta$ pairs with:
+
+<MathBlock id="2.194" name="canonical exponential family form">
+
+$$p(x \mid \boldsymbol{\eta}) = h(x)\,g(\boldsymbol{\eta})\exp\{\boldsymbol{\eta}^{\mathrm{T}}\mathbf{u}(x)\}$$
+
+</MathBlock>
+
+The Bernoulli's natural parameter is the log-odds, $\eta = \ln(\mu/(1-\mu))$, giving
+
+<MathBlock id="2.200" name="Bernoulli in canonical form">
+
+$$p(x\mid\eta) = \sigma(-\eta)\exp(\eta x)$$
+
+</MathBlock>
+
+and the Gaussian's is a pair built from its ordinary mean and variance,
+
+<MathBlock id="2.220" name="Gaussian natural parameters">
+
+$$\boldsymbol{\eta} = \left(\frac{\mu}{\sigma^2},\ -\frac{1}{2\sigma^2}\right)^{\mathrm{T}}$$
+
+</MathBlock>
+
+<Figure caption="Two seemingly unrelated distributions, the same three-part shape underneath. Switch families and watch η, u(x), and g(η) rewrite themselves." source="2.4">
+  <ExponentialFamilyPicker client:visible />
+</Figure>
+
+Differentiating the normalisation condition gives the ML condition directly in terms of a
+sum over the data:
+
+<MathBlock id="2.228" name="ML via sufficient statistics">
+
+$$-\nabla \ln g(\boldsymbol{\eta}_{\mathrm{ML}}) = \frac{1}{N}\sum_{n=1}^{N}\mathbf{u}(x_n)$$
+
+</MathBlock>
+
+<Figure caption="Running averages of u(x) for a Gaussian sample settling on their true expectations: the fit only ever needs these two numbers." source="2.11">
+  <SufficientStatisticConvergence client:visible />
+</Figure>
+
+Every exponential-family member has a matching conjugate prior of the same canonical shape,
+with $\nu$ a pseudo-count and $\chi$ a pseudo-observation of $\mathbf{u}(x)$:
+
+<MathBlock id="2.229" name="general conjugate prior">
+
+$$p(\boldsymbol{\eta}\mid\boldsymbol{\chi},\nu) = f(\boldsymbol{\chi},\nu)\,g(\boldsymbol{\eta})^{\nu}\exp\{\nu\boldsymbol{\eta}^{\mathrm{T}}\boldsymbol{\chi}\}$$
+
+</MathBlock>
+
+<MathBlock id="2.230" name="conjugate posterior">
+
+$$p(\boldsymbol{\eta}\mid X,\boldsymbol{\chi},\nu) \propto g(\boldsymbol{\eta})^{\nu+N}\exp\left\{\boldsymbol{\eta}^{\mathrm{T}}\left(\sum_n\mathbf{u}(x_n)+\nu\boldsymbol{\chi}\right)\right\}$$
+
+</MathBlock>
+
+which is the same shape again: the beta and Dirichlet posteriors of 2.1 and 2.2 are this
+equation, not an analogy to it.
+
+## Interactive
+
+<Widget title="One canonical form, several distributions" figure="2.4" caption="Switch distributions and watch the same h(x) g(η) exp(ηᵀu(x)) shape absorb each one.">
+  <ExponentialFamilyPicker client:visible />
+</Widget>
+
+Watch $g(\eta)$ specifically: it changes formula between families, but its job, keeping the
+density integrating to one, never does.
+
+## Worked example
+
+<Figure caption="A Beta(3,3) prior on µ, redrawn as the general conjugate prior 2.229 over the Bernoulli's natural parameter η, updated by 9 heads and 3 tails." source="2.229">
+  <ConjugatePriorFamily client:visible />
+</Figure>
+
+Beta(3, 3) on $\mu$ is $\nu=6$ pseudo-observations split evenly. Observing 9 heads and 3
+tails adds their sum, 9, to $\nu\chi$, giving exactly Beta(12, 6) after the change of
+variables back from $\eta$: the same posterior 2.18 gives directly, reached instead through
+2.230's general machinery.
+
+## Recall
+
+<Recall question="What single fact does the exponential family's canonical form buy you?" concepts={["exponential-family"]}>
+That conjugacy and closed-form ML are properties of the shape $h(x)g(\eta)\exp(\eta^Tu(x))$
+itself, provable once, rather than a private accident of the beta or the Gaussian
+individually.
+</Recall>
+
+<Recall question="What does maximum likelihood in the exponential family depend on, and what does it discard?" concepts={["sufficient-statistics"]}>
+Only $\sum_n \mathbf{u}(x_n)$, the sufficient statistic (2.228). Every other detail of the
+dataset, its order, its individual values beyond that sum, is irrelevant to the fitted
+parameters.
+</Recall>
+
+<Recall question="Why is the general conjugate prior 2.229 not a new idea next to the beta and Dirichlet?" concepts={["conjugate-prior"]}>
+Because the beta-binomial and Dirichlet-multinomial updates of 2.1 and 2.2 are this equation
+with $u(x)$ specialised to the Bernoulli or categorical case: one derivation, several
+instances.
+</Recall>
+
+## Connections
+
+- **Builds on** [2.1](/sections/2-1) and [2.3](/sections/2-3), whose conjugate priors this
+  section explains rather than replaces.
+- **Generalises** every maximum-likelihood fit seen so far into one condition, 2.228.
+- **The same machinery** underlies logistic regression's likelihood in chapter 4.

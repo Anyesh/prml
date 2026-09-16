@@ -1,0 +1,168 @@
+---
+chapter: 2
+section: "2.1"
+title: Binary Variables
+bookPages: [68, 73]
+summary: A single yes/no outcome forces the question of where a prior belief comes from, and the beta distribution is the one prior that answers it in closed form.
+concepts:
+  - bernoulli-distribution
+  - beta-distribution
+  - maximum-likelihood
+  - conjugate-prior
+  - posterior-distribution
+prereqs: ["1.2"]
+equations:
+  - { id: "2.1", name: Bernoulli distribution }
+  - { id: "2.7", name: maximum likelihood estimate }
+  - { id: "2.13", name: beta distribution }
+  - { id: "2.15", name: beta mean }
+  - { id: "2.18", name: beta posterior }
+  - { id: "2.20", name: predictive distribution }
+widgets: [CoinFlipPosterior]
+difficulty: 2
+---
+
+import CoinFlipPosterior from '@widgets/ch02/CoinFlipPosterior';
+import BetaShapes from '@widgets/ch02/figures/BetaShapes';
+import MLThreeHeads from '@widgets/ch02/figures/MLThreeHeads';
+import SequentialPosteriorStaysBeta from '@widgets/ch02/figures/SequentialPosteriorStaysBeta';
+import PosteriorMeanConverges from '@widgets/ch02/figures/PosteriorMeanConverges';
+
+## Intuition
+
+A coin has one unknown number: how often it lands heads. Flip it three times and see three
+heads, and the maximum-likelihood answer is that it always will. Nothing in the estimate
+carries a sense of how little evidence it rests on.
+
+A prior belief fixes that, but only if updating it stays cheap. Otherwise every new flip
+means re-deriving a distribution from scratch, which is not something you can do by hand or
+afford in a running system. The beta distribution is the belief that survives its own
+updating: multiply it by a single flip's evidence and what comes out is another beta,
+just with two counters nudged. That is why this one distribution, out of every possible
+prior, is the one worth knowing first.
+
+## The math
+
+A single trial with outcome $x \in \{0, 1\}$ is Bernoulli:
+
+<MathBlock id="2.1" name="Bernoulli distribution">
+
+$$p(x=1 \mid \mu) = \mu$$
+
+</MathBlock>
+
+Its maximum-likelihood estimate from $N$ trials is the sample mean,
+
+<MathBlock id="2.7" name="maximum likelihood estimate">
+
+$$\mu_{\mathrm{ML}} = \frac{1}{N}\sum_{n=1}^{N} x_n$$
+
+</MathBlock>
+
+which is exactly the count of heads over trials, $m/N$, and exactly what fails with three
+heads out of three below.
+
+<Figure caption="ML certainty versus a Beta(2,2) prior's predictive probability, both computed from the same three flips." source="2.3">
+  <MLThreeHeads client:visible />
+</Figure>
+
+A conjugate prior over $\mu$ closes the loop. The beta distribution,
+
+<MathBlock id="2.13" name="beta distribution">
+
+$$\mathrm{Beta}(\mu \mid a, b) = \frac{\Gamma(a+b)}{\Gamma(a)\Gamma(b)}\mu^{a-1}(1-\mu)^{b-1}$$
+
+</MathBlock>
+
+has mean
+
+<MathBlock id="2.15" name="beta mean">
+
+$$\mathbb{E}[\mu] = \frac{a}{a+b}$$
+
+</MathBlock>
+
+and, multiplied by the Bernoulli likelihood of $m$ heads and $l$ tails, gives a posterior in
+the same family:
+
+<MathBlock id="2.18" name="beta posterior">
+
+$$p(\mu \mid m, l, a, b) = \mathrm{Beta}(\mu \mid a+m, b+l)$$
+
+</MathBlock>
+
+<Figure caption="Prior, the single-flip likelihood, and posterior on the same axes: multiplying a beta by a Bernoulli term never leaves the family." source="2.3">
+  <SequentialPosteriorStaysBeta client:visible />
+</Figure>
+
+$a$ and $b$ behave as fictitious prior counts of heads and tails, which is why they add
+directly. Averaging $\mu$ over that posterior gives the predictive probability of the next
+flip:
+
+<MathBlock id="2.20" name="predictive distribution">
+
+$$p(x=1 \mid \mathcal{D}) = \frac{m+a}{m+a+l+b}$$
+
+</MathBlock>
+
+<Figure caption="Beta(µ|a,b) for four hyperparameter pairs: a=b weights symmetrically, a≠b skews, and both above 1 pulls the mode off the boundary." source="2.2">
+  <BetaShapes client:visible />
+</Figure>
+
+## Interactive
+
+<Widget title="Coin-flip posterior" figure="2.3" caption="Set a prior with the sliders, then click to flip. Watch the posterior tighten around the true rate and compare it with the ML estimate, which has no memory of how little data it saw.">
+  <CoinFlipPosterior client:visible />
+</Widget>
+
+Push $a_0, b_0$ high before flipping and the posterior barely moves for a dozen flips: a
+confident prior is exactly a claim to have already seen that many observations.
+
+## Worked example
+
+Prior Beta(2, 2), then a fair-looking run of 80 flips from a coin actually biased at
+$\mu=0.7$, fed through equation 2.18 flip by flip.
+
+<Figure caption="Posterior mean over 80 identical flips under a weak prior (worth one flip each way) against a strong one (worth 20)." source="2.12">
+  <PosteriorMeanConverges client:visible />
+</Figure>
+
+The weak prior's posterior mean is within 0.05 of 0.7 after roughly ten flips. The strong
+prior, equivalent to 40 fictitious observations split evenly, is still above 0.55 after
+thirty and only closes in near the end of the run. Same data, same posterior *family*,
+different speed, because the strength of a beta prior is literally how many observations it
+takes to overrule.
+
+## Recall
+
+<Recall question="Why does a single Beta(2,2) update always land on another beta distribution?" concepts={["conjugate-prior"]}>
+Because the Bernoulli likelihood contributes factors of $\mu^{x}(1-\mu)^{1-x}$, which have
+the same $\mu^{a-1}(1-\mu)^{b-1}$ shape the beta density already has. Multiplying just adds
+exponents (2.18).
+</Recall>
+
+<Recall question="What do the hyperparameters a and b mean, concretely?" concepts={["beta-distribution"]}>
+Fictitious prior counts of heads and tails. Observing $m$ real heads and $l$ real tails adds
+directly: $a \to a+m$, $b \to b+l$.
+</Recall>
+
+<Recall question="Why is three heads out of three a genuine failure of maximum likelihood, not just a small-sample quirk?" concepts={["maximum-likelihood"]}>
+Because $\mu_{\mathrm{ML}}=1$ asserts certainty from three trials, and nothing in the ML
+estimate itself signals that this certainty is unwarranted. It takes a prior to express
+"three flips is not enough to know that."
+</Recall>
+
+<Recall question="What does the predictive distribution 2.20 reduce to as data accumulates?" concepts={["posterior-distribution"]}>
+The maximum-likelihood estimate $m/N$, since $a$ and $b$ become negligible next to $m$ and
+$l$. A confident-enough prior is just a claim that this limit has effectively been reached
+already.
+</Recall>
+
+## Connections
+
+- **Builds on** [1.2](/sections/1-2) for the product and sum rules Bayes' theorem here is
+  built from.
+- **Generalises to** [2.2](/sections/2-2), where more than two outcomes replace heads and
+  tails.
+- **The same conjugacy pattern** returns for the Gaussian mean and precision in
+  [2.3](/sections/2-3), and for weights in [3.3](/sections/3-3).

@@ -1,0 +1,158 @@
+---
+chapter: 2
+section: "2.2"
+title: Multinomial Variables
+bookPages: [74, 77]
+summary: More than two outcomes turns a single probability into a vector on a simplex, and the Dirichlet distribution is the beta distribution's conjugate answer for that shape.
+concepts:
+  - multinomial-distribution
+  - dirichlet-distribution
+  - maximum-likelihood
+  - conjugate-prior
+prereqs: ["2.1"]
+equations:
+  - { id: "2.25", name: 1-of-K coding }
+  - { id: "2.26", name: categorical distribution }
+  - { id: "2.33", name: multinomial ML estimate }
+  - { id: "2.34", name: multinomial distribution }
+  - { id: "2.38", name: Dirichlet distribution }
+  - { id: "2.41", name: Dirichlet posterior }
+widgets: [DirichletSimplex]
+difficulty: 2
+---
+
+import DirichletSimplex from '@widgets/ch02/DirichletSimplex';
+import OneOfKCoding from '@widgets/ch02/figures/OneOfKCoding';
+import DirichletCorners from '@widgets/ch02/figures/DirichletCorners';
+import MultinomialPosteriorUpdate from '@widgets/ch02/figures/MultinomialPosteriorUpdate';
+
+## Intuition
+
+A coin has one number to estimate. A die has six, and they cannot be estimated one at a
+time, because they are tied together: raise the chance of rolling a six and something else
+must give. The right object for "several tied-together probabilities" is not a list of
+numbers but a point on a simplex, the flat surface where every coordinate is non-negative
+and the whole vector sums to one.
+
+The beta distribution priced belief over a point on a line segment. Its extension to a
+simplex is the Dirichlet distribution, built the same way and for the same reason: so that
+updating a belief about a die, or a mixture, or any set of competing categories, stays
+closed-form addition rather than a fresh integral every time.
+
+## The math
+
+A single trial over $K$ categories is a 1-of-K vector,
+
+<MathBlock id="2.25" name="1-of-K coding">
+
+$$\mathbf{x} = (0, 0, 1, 0, 0, 0)^{\mathrm{T}}$$
+
+</MathBlock>
+
+<Figure caption="One coordinate on, the rest off: category 3 of 6 as a 1-of-K vector." source="2.25">
+  <OneOfKCoding client:visible />
+</Figure>
+
+with categorical density $p(\mathbf{x}\mid\boldsymbol{\mu}) = \prod_k \mu_k^{x_k}$,
+
+<MathBlock id="2.26" name="categorical distribution">
+
+$$p(\mathbf{x} \mid \boldsymbol{\mu}) = \prod_{k=1}^{K} \mu_k^{x_k}$$
+
+</MathBlock>
+
+Summed over $N$ trials, the category counts $m_k$ are Multinomial,
+
+<MathBlock id="2.34" name="multinomial distribution">
+
+$$\mathrm{Mult}(m_1,\dots,m_K \mid \boldsymbol{\mu}, N) = \binom{N}{m_1\,\cdots\,m_K}\prod_{k=1}^{K}\mu_k^{m_k}$$
+
+</MathBlock>
+
+and maximum likelihood is again just the observed proportions,
+
+<MathBlock id="2.33" name="multinomial ML estimate">
+
+$$\mu_k^{\mathrm{ML}} = \frac{m_k}{N}$$
+
+</MathBlock>
+
+The Dirichlet distribution puts a prior over $\boldsymbol{\mu}$ itself,
+
+<MathBlock id="2.38" name="Dirichlet distribution">
+
+$$\mathrm{Dir}(\boldsymbol{\mu}\mid\boldsymbol{\alpha}) = \frac{\Gamma(\alpha_0)}{\Gamma(\alpha_1)\cdots\Gamma(\alpha_K)}\prod_{k=1}^{K}\mu_k^{\alpha_k-1}$$
+
+</MathBlock>
+
+<Figure caption="The Dirichlet on the 2-simplex for three concentrations: below 1 pulls mass to the corners, above 1 pulls it to the centre." source="2.5">
+  <DirichletCorners client:visible />
+</Figure>
+
+with $\alpha_0 = \sum_k \alpha_k$, and, as with the beta, observing counts $m_k$ just adds
+them onto the concentrations:
+
+<MathBlock id="2.41" name="Dirichlet posterior">
+
+$$p(\boldsymbol{\mu}\mid\mathcal{D},\boldsymbol{\alpha}) = \mathrm{Dir}(\boldsymbol{\mu}\mid\boldsymbol{\alpha}+\mathbf{m})$$
+
+</MathBlock>
+
+<Figure caption="A uniform Dirichlet(2,2,2) prior against its posterior after three categories are observed 5, 2, and 9 times." source="2.41">
+  <MultinomialPosteriorUpdate client:visible />
+</Figure>
+
+## Interactive
+
+<Widget title="Dirichlet on the simplex" figure="2.5" caption="Move the three concentrations. Equal and above 1 peaks the density at the centre; below 1 pulls it out toward the corners.">
+  <DirichletSimplex client:visible />
+</Widget>
+
+Set one concentration far above the other two: the density collapses onto the edge of the
+simplex nearest that category, the geometric picture of one outcome dominating a prior
+belief before any data arrives.
+
+## Worked example
+
+A uniform Dirichlet(2, 2, 2) prior over three categories A, B, C, and 16 observations
+landing 5, 2, and 9 times respectively (the figure above). Equation 2.41 gives posterior
+Dirichlet(7, 4, 11).
+
+The posterior mean, $\alpha_k/\alpha_0$, moves from $(0.33, 0.33, 0.33)$ to
+$(0.32, 0.18, 0.50)$: close to the raw proportions $(0.31, 0.13, 0.56)$ but pulled slightly
+toward uniform, exactly the two fictitious counts per category still present in
+$\alpha_0=22$ against $N=16$ real ones.
+
+## Recall
+
+<Recall question="Why is a simplex, rather than K independent numbers, the right object for a categorical parameter?" concepts={["multinomial-distribution"]}>
+Because the $\mu_k$ are not independent: they must be non-negative and sum to one, so
+raising one probability necessarily lowers the others. A simplex is exactly that
+constrained set.
+</Recall>
+
+<Recall question="What role does alpha0 play in the Dirichlet posterior?" concepts={["dirichlet-distribution"]}>
+It is the total fictitious prior count, $\sum_k \alpha_k$. Larger $\alpha_0$ relative to $N$
+means the posterior mean sits closer to the prior's own mean than to the observed
+proportions.
+</Recall>
+
+<Recall question="How does the Dirichlet posterior update after observing counts m?" concepts={["conjugate-prior"]}>
+By addition: $\boldsymbol{\alpha} \to \boldsymbol{\alpha} + \mathbf{m}$, the same
+fictitious-count mechanism as the beta-binomial case, one counter per category instead of
+two.
+</Recall>
+
+<Recall question="What does the multinomial ML estimate reduce to, and why is that unsurprising?" concepts={["maximum-likelihood"]}>
+The observed category proportions $m_k/N$ (2.33): the same result as the Bernoulli case,
+because a multinomial trial is just several correlated Bernoulli-like counts sharing one
+normalisation constraint.
+</Recall>
+
+## Connections
+
+- **Generalises** [2.1](/sections/2-1) from two outcomes to $K$.
+- **Feeds forward into** [2.3](/sections/2-3), where mixing coefficients over Gaussian
+  components are exactly a categorical parameter.
+- **The Dirichlet reappears** as the prior over mixture weights throughout later Bayesian
+  mixture and topic models.
