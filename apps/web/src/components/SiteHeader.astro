@@ -1,16 +1,17 @@
 ---
 import SearchButton from './SearchButton.astro';
 import ThemeToggle from './ThemeToggle.astro';
+import { withBase } from '../layouts/routes';
 ---
 
 <header class="site-header">
   <nav aria-label="Primary">
-    <a class="brand" href="/">PRML Interactive</a>
+    <a class="brand" href={withBase('/')}>PRML Interactive</a>
     <ul class="primary-links">
-      <li><a href="/map">Map</a></li>
-      <li><a href="/review">Review</a></li>
-      <li><a href="/equations">Equations</a></li>
-      <li><a href="/figures">Figures</a></li>
+      <li><a href={withBase('/map')}>Map</a></li>
+      <li><a href={withBase('/review')}>Review</a></li>
+      <li><a href={withBase('/equations')}>Equations</a></li>
+      <li><a href={withBase('/figures')}>Figures</a></li>
     </ul>
     <div class="header-actions">
       <SearchButton />

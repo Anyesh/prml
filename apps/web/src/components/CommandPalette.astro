@@ -25,6 +25,7 @@ import '../styles/palette.css';
 
 <script>
   import uFuzzy from '@leeoniya/ufuzzy';
+  import { withBase } from '../layouts/routes';
 
   interface Entry {
     readonly kind: 'section' | 'concept' | 'equation';
@@ -56,7 +57,7 @@ import '../styles/palette.css';
 
   async function load(): Promise<Entry[]> {
     if (entries) return entries;
-    const res = await fetch('/search-index.json');
+    const res = await fetch(withBase('/search-index.json'));
     const data = await res.json();
     entries = [
       ...data.sections.map((s: any) => ({

@@ -25,11 +25,26 @@ if (!fs.existsSync(ROOT)) {
   process.exit(1);
 }
 
+/**
+ * Must match `base` in `apps/web/astro.config.mjs`. The build output is rooted at `dist`
+ * while every URL inside it is written with this prefix, so serving `dist` at `/` would
+ * 404 on every link and make a local preview disagree with production.
+ */
+const BASE = process.env.SITE_BASE ?? '/prml';
+
 const server = http.createServer((req, res) => {
   const urlPath = decodeURIComponent((req.url ?? '/').split('?')[0]);
-  const candidates = urlPath.endsWith('/')
-    ? [path.join(ROOT, urlPath, 'index.html')]
-    : [path.join(ROOT, urlPath), path.join(ROOT, urlPath, 'index.html')];
+
+  if (urlPath !== BASE && !urlPath.startsWith(`${BASE}/`)) {
+    res.writeHead(404, { 'content-type': 'text/plain' });
+    res.end(`not found (the site is served under ${BASE}/)`);
+    return;
+  }
+
+  const relative = urlPath.slice(BASE.length) || '/';
+  const candidates = relative.endsWith('/')
+    ? [path.join(ROOT, relative, 'index.html')]
+    : [path.join(ROOT, relative), path.join(ROOT, relative, 'index.html')];
 
   const resolved = candidates.find((p) => fs.existsSync(p) && fs.statSync(p).isFile());
   if (!resolved) {

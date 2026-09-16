@@ -24,6 +24,11 @@ const processor = unified({
 // Worker and slots into the same wrangler config without re-platforming.
 export default defineConfig({
   site: 'https://prml.internal',
+  // The site is served under an existing origin rather than owning one. `base` makes Astro
+  // prefix its own asset and route URLs; URLs the site builds itself go through `withBase`
+  // in `layouts/routes.ts`, which reads the same value. The build output is still rooted at
+  // `dist`, so whatever serves it must mount that directory at this path.
+  base: '/prml',
   output: 'static',
   integrations: [mdx(), react()],
   markdown: { processor },
