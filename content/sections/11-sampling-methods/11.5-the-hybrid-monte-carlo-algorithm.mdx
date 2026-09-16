@@ -1,0 +1,153 @@
+---
+chapter: 11
+section: "11.5"
+title: The Hybrid Monte Carlo Algorithm
+bookPages: [548, 553]
+summary: Casting the target as potential energy and adding momentum turns sampling into simulating physics, letting a chain travel far using the target's own gradient instead of a random walk.
+concepts:
+  - hamiltonian-dynamics
+  - leapfrog-integration
+  - hybrid-monte-carlo
+prereqs: ["11.2"]
+equations:
+  - { id: "11.56", name: kinetic energy }
+  - { id: "11.57", name: the Hamiltonian }
+  - { id: "11.64", name: leapfrog momentum half-step }
+  - { id: "11.65", name: leapfrog position full-step }
+  - { id: "11.66", name: leapfrog momentum second half-step }
+  - { id: "11.67", name: hybrid Monte Carlo acceptance probability }
+widgets: [HmcVsRandomWalk]
+difficulty: 4
+---
+
+import HmcVsRandomWalk from '@widgets/ch11/HmcVsRandomWalk';
+import LeapfrogShearing from '@widgets/ch11/figures/LeapfrogShearing';
+import HamiltonianConservation from '@widgets/ch11/figures/HamiltonianConservation';
+import StepsToIndependenceHmc from '@widgets/ch11/figures/StepsToIndependenceHmc';
+
+## Intuition
+
+Every proposal so far has ignored the one piece of information a smooth target hands over
+for free: which direction is uphill. A random walk wanders blindly and pays for it with
+steps that grow only as the square root of how long it has run. Hybrid Monte Carlo instead
+treats the negative log target as a landscape and lets a simulated ball roll across it,
+using the gradient to keep moving in a consistent direction for many steps in a row before
+ever checking whether to accept the result.
+
+Rolling a ball needs a speed as well as a position, so the state gains a second half:
+momentum, invented purely to make the physics work and then never reported to the reader.
+The two decisions gradient descent glosses over, when to reject a bad move and when to
+inject fresh randomness, are exactly what turn this deterministic-feeling rollout back into
+a valid sampler.
+
+## The math
+
+The state gains momentum $r$, with kinetic energy
+
+<MathBlock id="11.56" name="kinetic energy">
+
+$$K(r) = \frac{1}{2}\lVert r \rVert^2$$
+
+</MathBlock>
+
+added to the potential $E(z) = -\ln \tilde{p}(z)$ to form the conserved Hamiltonian
+
+<MathBlock id="11.57" name="the Hamiltonian">
+
+$$H(z, r) = E(z) + K(r)$$
+
+</MathBlock>
+
+The leapfrog integrator advances this in discrete time by alternating half-step momentum
+updates with full-step position updates:
+
+<MathBlock id="11.64" name="leapfrog momentum half-step">
+
+$$r_i(\tau + \epsilon/2) = r_i(\tau) - \frac{\epsilon}{2}\frac{\partial E}{\partial z_i}(z(\tau))$$
+
+</MathBlock>
+
+<MathBlock id="11.65" name="leapfrog position full-step">
+
+$$z_i(\tau + \epsilon) = z_i(\tau) + \epsilon\, r_i(\tau + \epsilon/2)$$
+
+</MathBlock>
+
+<MathBlock id="11.66" name="leapfrog momentum second half-step">
+
+$$r_i(\tau + \epsilon) = r_i(\tau + \epsilon/2) - \frac{\epsilon}{2}\frac{\partial E}{\partial z_i}(z(\tau + \epsilon))$$
+
+</MathBlock>
+
+<Figure caption="A square patch of phase space becomes a parallelogram under one leapfrog step, with its area unchanged." width="wide">
+  <LeapfrogShearing client:visible />
+</Figure>
+
+This shearing is exactly why the scheme preserves phase-space volume even though it only
+approximates the true trajectory; the residual error is what the accept step then removes:
+
+<MathBlock id="11.67" name="hybrid Monte Carlo acceptance probability">
+
+$$\min\big(1, \exp\{H(z, r) - H(z^\star, r^\star)\}\big)$$
+
+</MathBlock>
+
+## Interactive
+
+<Widget
+  title="A gradient-driven trajectory against a random walk, matched for compute"
+  figure="11.14"
+  caption="Step through iterations and compare how far each panel has travelled from the origin for the same number of target evaluations."
+>
+  <HmcVsRandomWalk client:visible />
+</Widget>
+
+The left panel's coloured segment is one full leapfrog trajectory, red if it was ultimately
+rejected.
+
+## Worked example
+
+<Figure caption="H should be exactly constant; how far it drifts is the discretisation error the accept step exists to cancel." width="wide">
+  <HamiltonianConservation client:visible />
+</Figure>
+
+<Figure caption="Evaluations needed for an independent sample, hybrid Monte Carlo against a random walk, as the target's elongation grows." width="wide">
+  <StepsToIndependenceHmc client:visible />
+</Figure>
+
+On a 2-D Gaussian with $\sigma_{\max}/\sigma_{\min}$ set by `cov = [[2, 0], [0, 0.05]]`
+(ratio $\approx 6.3$), a leapfrog step of $\epsilon = 0.05$ keeps $H$ within about 0.02 of
+its starting value over 80 steps; $\epsilon = 0.35$ lets it swing by nearly a full unit, the
+error (11.67)'s Metropolis criterion exists to catch.
+
+## Recall
+
+<Recall question="Why does hybrid Monte Carlo introduce a momentum variable that plays no role in the final answer?" concepts={["hamiltonian-dynamics"]}>
+Momentum is what lets the Hamiltonian framework's conserved-energy and volume-preservation
+properties apply at all; only the position half of the resulting trajectory is kept.
+</Recall>
+
+<Recall question="Why does the leapfrog integrator preserve phase-space volume even though it does not exactly solve the dynamics?" concepts={["leapfrog-integration"]}>
+Each step changes one variable by an amount depending only on the other, which shears
+regions of phase space without changing their area or volume (Figure 11.14).
+</Recall>
+
+<Recall question="What does the accept/reject step in hybrid Monte Carlo actually correct for?" concepts={["hybrid-monte-carlo"]}>
+The residual numerical error the leapfrog integrator introduces for a nonzero step size,
+measured directly as however much H has drifted from its starting value (11.67).
+</Recall>
+
+<Recall question="Why does hybrid Monte Carlo need the step size or its sign randomised between trajectories?" concepts={["hybrid-monte-carlo"]}>
+A fixed step size and direction can make the leapfrog map periodic, returning to its start
+and leaving position updates stuck; randomising breaks that periodicity.
+</Recall>
+
+## Connections
+
+- **Follows [11.2](/sections/11-2) and [11.3](/sections/11-3)**: the accept step is
+  ordinary Metropolis on an augmented state, and momentum resampling is a Gibbs step.
+- **Needs gradients the way [5.3](/sections/5-3)'s backpropagation supplies them** for a
+  neural network's log posterior.
+- **[11.6](/sections/11-6)** reuses exactly this kind of chain to draw the samples an
+  evidence-ratio estimate is built from.
+

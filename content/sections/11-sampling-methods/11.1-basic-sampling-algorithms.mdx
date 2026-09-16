@@ -1,0 +1,182 @@
+---
+chapter: 11
+section: "11.1"
+title: Basic Sampling Algorithms
+bookPages: [526, 536]
+summary: Four ways to turn uniform randomness into samples from a hard distribution, and the two failure modes, exponential rejection and weight collapse, that only get worse with dimension.
+concepts:
+  - monte-carlo-estimator
+  - rejection-sampling
+  - importance-sampling
+  - effective-sample-size
+  - sampling-importance-resampling
+  - adaptive-rejection-sampling
+  - monte-carlo-em
+prereqs: ["1.2"]
+equations:
+  - { id: "11.6", name: inverse transform method }
+  - { id: "11.13", name: unnormalized target density }
+  - { id: "11.14", name: rejection sampling acceptance probability }
+  - { id: "11.17", name: piecewise-exponential envelope }
+  - { id: "11.23", name: normalized importance weights }
+  - { id: "11.28", name: Monte Carlo EM's expected complete-data log likelihood }
+widgets: [SamplingFailureExplorer]
+difficulty: 3
+---
+
+import SamplingFailureExplorer from '@widgets/ch11/SamplingFailureExplorer';
+import AcceptanceVsDimension from '@widgets/ch11/figures/AcceptanceVsDimension';
+import BoxMullerCircle from '@widgets/ch11/figures/BoxMullerCircle';
+import AdaptiveRejectionEnvelope from '@widgets/ch11/figures/AdaptiveRejectionEnvelope';
+import SirResampling from '@widgets/ch11/figures/SirResampling';
+
+## Intuition
+
+Every method here answers the same question: given a machine that spits out uniform random
+numbers, how do you get samples from a distribution nobody handed you a generator for. The
+honest answer is that none of the tricks in this section scale. Each one turns randomness
+into more randomness in a way that works cleanly on a blackboard and quietly falls apart as
+the number of variables grows.
+
+Rejection sampling wraps the target in an envelope and throws away everything that lands
+outside it. Importance sampling never throws anything away, but instead pays for that by
+letting a handful of lucky points carry the whole answer. Both failures are really the same
+failure: matching a simple proposal to a complicated target gets exponentially harder as
+dimension grows, and neither method notices when it has failed.
+
+<Figure caption="A proposal only 1% too wide already rejects all but one in twenty thousand draws by dimension 1000." width="wide">
+  <AcceptanceVsDimension client:visible />
+</Figure>
+
+## The math
+
+Sampling from a uniform source and wanting some other density $p(y)$ means inverting its
+own cumulative integral:
+
+<MathBlock id="11.6" name="inverse transform method">
+
+$$z = h(y) \equiv \int_{-\infty}^{y} p(y')\,\mathrm{d}y'$$
+
+</MathBlock>
+
+The exact algorithm behind `standardNormal` in this codebase is this method's most useful
+instance: pairs uniform on $(-1,1)$ are kept only inside the unit disk, then mapped through
+a closed-form inverse to a Gaussian pair.
+
+<Figure caption="One seed's attempts: crosses fall outside the disk and get redrawn; the surviving circle becomes a Gaussian pair." source="11.3">
+  <BoxMullerCircle client:visible />
+</Figure>
+
+Most targets have no such inverse. Rejection sampling instead only needs $p(z)$ up to a
+constant,
+
+<MathBlock id="11.13" name="unnormalized target density">
+
+$$p(z) = \frac{1}{Z_p}\tilde{p}(z)$$
+
+</MathBlock>
+
+and accepts a proposal draw with probability $\tilde{p}(z)/k q(z)$, so the overall accept
+rate is exactly
+
+<MathBlock id="11.14" name="rejection sampling acceptance probability">
+
+$$p(\text{accept}) = \frac{1}{k}\int \tilde{p}(z)\,\mathrm{d}z$$
+
+</MathBlock>
+
+Adaptive rejection sampling builds $k q(z)$ from tangent lines to $\ln p(z)$, giving a
+piecewise exponential envelope,
+
+<MathBlock id="11.17" name="piecewise-exponential envelope">
+
+$$q(z) = k_i \lambda_i \exp\{-\lambda_i (z - z_{i-1})\}, \quad z_{i-1} < z \leqslant z_i$$
+
+</MathBlock>
+
+that only tightens on every rejection. Importance sampling drops the accept/reject step
+entirely and instead reweights every draw by
+
+<MathBlock id="11.23" name="normalized importance weights">
+
+$$w_l = \frac{p(z^{(l)})/q(z^{(l)})}{\sum_m p(z^{(m)})/q(z^{(m)})}$$
+
+</MathBlock>
+
+Finally, when an E-step integral has no closed form, the same finite-sum idea approximates
+it directly:
+
+<MathBlock id="11.28" name="Monte Carlo EM's expected complete-data log likelihood">
+
+$$Q(\theta,\theta^{\text{old}}) \simeq \frac{1}{L}\sum_{l=1}^{L} \ln p(Z^{(l)}, X \mid \theta)$$
+
+</MathBlock>
+
+## Interactive
+
+<Widget
+  title="Two ways approximate sampling fails"
+  figure="11.4"
+  caption="Loosen the rejection envelope and watch acceptance collapse; switch modes and shrink the importance proposal until one weight swallows the rest."
+>
+  <SamplingFailureExplorer client:visible />
+</Widget>
+
+Both sliders control the same underlying disease: a proposal that no longer matches its
+target, seen first as wasted draws, then as a false sense of precision.
+
+## Worked example
+
+<Figure caption="Six accepted draws later, every rejection has added a tangent line and the envelope has visibly tightened." width="wide">
+  <AdaptiveRejectionEnvelope client:visible />
+</Figure>
+
+Starting from grid points $\{-2, -0.5, 0, 1, 3\}$ on a standard normal, the first envelope
+already bounds the target everywhere; each rejected candidate folds in as a sixth, seventh,
+eighth tangent line, so the accept rate only ever rises.
+
+<Figure caption="Twenty-four proposal draws (top) reweighted, then twenty-four fresh draws taken from those weights (bottom)." width="wide">
+  <SirResampling client:visible />
+</Figure>
+
+Sampling-importance-resampling turns those same importance weights into an actual sample
+set: draw from Exp(1), weight by $\text{Gam}(z\mid 3,1)/\text{Exp}(1)$, then resample. Points
+the proposal rarely favoured are almost never chosen twice.
+
+## Recall
+
+<Recall question="Why does a Monte Carlo estimator's accuracy not depend on the dimension of z?" concepts={["monte-carlo-estimator"]}>
+Its variance is $\mathrm{var}[f]/L$ (11.3), a property of $f$ under $p$ and the sample count,
+not of how many coordinates $z$ has.
+</Recall>
+
+<Recall question="What single number does rejection sampling's acceptance rate depend on?" concepts={["rejection-sampling"]}>
+$1/k$: the ratio of area under the target to area under the envelope (11.14). Everything
+about the method's cost is that one constant.
+</Recall>
+
+<Recall question="Why is importance sampling more dangerous than rejection sampling when it fails?" concepts={["importance-sampling", "effective-sample-size"]}>
+Rejection sampling fails visibly, as a low acceptance rate. Importance sampling can report
+a confident, badly wrong number with no warning; effective sample size is the diagnostic
+that catches it after the fact.
+</Recall>
+
+<Recall question="Why does adaptive rejection sampling's envelope only ever improve?" concepts={["adaptive-rejection-sampling"]}>
+Every rejected point becomes a new tangent line, so the log-concave envelope can only get
+tighter, never looser, as sampling proceeds.
+</Recall>
+
+<Recall question="In sampling-importance-resampling, when are the resampled points exactly distributed as p(z)?" concepts={["sampling-importance-resampling"]}>
+Only in the limit of infinitely many proposal draws (11.26); for finite L the result is an
+approximation that improves as q gets closer to p.
+</Recall>
+
+## Connections
+
+- **Follows** chapter 1's expectation and probability machinery, replacing exact
+  integration with a finite sample average.
+- **[8.1](/sections/8-1)**'s ancestral sampling is the graphical-model special case where
+  no rejection or reweighting is needed at all.
+- **[11.2](/sections/11-2)** replaces the proposal that ignores where you currently are
+  with one that remembers it, which is what fixes the dimensionality problem shown above.
+

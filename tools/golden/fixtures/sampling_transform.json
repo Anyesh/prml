@@ -1,0 +1,451 @@
+{
+  "cases": [
+    {
+      "fn": "exponentialQuantile",
+      "u": 0.001,
+      "lambda": 0.5,
+      "expected": 0.002001000667167067
+    },
+    {
+      "fn": "exponentialLogPdf",
+      "x": 0.002001000667167067,
+      "lambda": 0.5,
+      "expected": -0.6941476808935289
+    },
+    {
+      "fn": "exponentialQuantile",
+      "u": 0.25,
+      "lambda": 0.5,
+      "expected": 0.5753641449035618
+    },
+    {
+      "fn": "exponentialLogPdf",
+      "x": 0.5753641449035618,
+      "lambda": 0.5,
+      "expected": -0.9808292530117262
+    },
+    {
+      "fn": "exponentialQuantile",
+      "u": 0.5,
+      "lambda": 0.5,
+      "expected": 1.3862943611198906
+    },
+    {
+      "fn": "exponentialLogPdf",
+      "x": 1.3862943611198906,
+      "lambda": 0.5,
+      "expected": -1.3862943611198906
+    },
+    {
+      "fn": "exponentialQuantile",
+      "u": 0.75,
+      "lambda": 0.5,
+      "expected": 2.772588722239781
+    },
+    {
+      "fn": "exponentialLogPdf",
+      "x": 2.772588722239781,
+      "lambda": 0.5,
+      "expected": -2.0794415416798357
+    },
+    {
+      "fn": "exponentialQuantile",
+      "u": 0.999,
+      "lambda": 0.5,
+      "expected": 13.815510557964272
+    },
+    {
+      "fn": "exponentialLogPdf",
+      "x": 13.815510557964272,
+      "lambda": 0.5,
+      "expected": -7.600902459542081
+    },
+    {
+      "fn": "exponentialQuantile",
+      "u": 0.001,
+      "lambda": 1.0,
+      "expected": 0.0010005003335835335
+    },
+    {
+      "fn": "exponentialLogPdf",
+      "x": 0.0010005003335835335,
+      "lambda": 1.0,
+      "expected": -0.0010005003335835335
+    },
+    {
+      "fn": "exponentialQuantile",
+      "u": 0.25,
+      "lambda": 1.0,
+      "expected": 0.2876820724517809
+    },
+    {
+      "fn": "exponentialLogPdf",
+      "x": 0.2876820724517809,
+      "lambda": 1.0,
+      "expected": -0.2876820724517809
+    },
+    {
+      "fn": "exponentialQuantile",
+      "u": 0.5,
+      "lambda": 1.0,
+      "expected": 0.6931471805599453
+    },
+    {
+      "fn": "exponentialLogPdf",
+      "x": 0.6931471805599453,
+      "lambda": 1.0,
+      "expected": -0.6931471805599453
+    },
+    {
+      "fn": "exponentialQuantile",
+      "u": 0.75,
+      "lambda": 1.0,
+      "expected": 1.3862943611198906
+    },
+    {
+      "fn": "exponentialLogPdf",
+      "x": 1.3862943611198906,
+      "lambda": 1.0,
+      "expected": -1.3862943611198906
+    },
+    {
+      "fn": "exponentialQuantile",
+      "u": 0.999,
+      "lambda": 1.0,
+      "expected": 6.907755278982136
+    },
+    {
+      "fn": "exponentialLogPdf",
+      "x": 6.907755278982136,
+      "lambda": 1.0,
+      "expected": -6.907755278982136
+    },
+    {
+      "fn": "exponentialQuantile",
+      "u": 0.001,
+      "lambda": 3.0,
+      "expected": 0.00033350011119451115
+    },
+    {
+      "fn": "exponentialLogPdf",
+      "x": 0.00033350011119451115,
+      "lambda": 3.0,
+      "expected": 1.0976117883345262
+    },
+    {
+      "fn": "exponentialQuantile",
+      "u": 0.25,
+      "lambda": 3.0,
+      "expected": 0.09589402415059363
+    },
+    {
+      "fn": "exponentialLogPdf",
+      "x": 0.09589402415059363,
+      "lambda": 3.0,
+      "expected": 0.8109302162163289
+    },
+    {
+      "fn": "exponentialQuantile",
+      "u": 0.5,
+      "lambda": 3.0,
+      "expected": 0.23104906018664842
+    },
+    {
+      "fn": "exponentialLogPdf",
+      "x": 0.23104906018664842,
+      "lambda": 3.0,
+      "expected": 0.4054651081081645
+    },
+    {
+      "fn": "exponentialQuantile",
+      "u": 0.75,
+      "lambda": 3.0,
+      "expected": 0.46209812037329684
+    },
+    {
+      "fn": "exponentialLogPdf",
+      "x": 0.46209812037329684,
+      "lambda": 3.0,
+      "expected": -0.2876820724517808
+    },
+    {
+      "fn": "exponentialQuantile",
+      "u": 0.999,
+      "lambda": 3.0,
+      "expected": 2.302585092994045
+    },
+    {
+      "fn": "exponentialLogPdf",
+      "x": 2.302585092994045,
+      "lambda": 3.0,
+      "expected": -5.809142990314025
+    },
+    {
+      "fn": "cauchyQuantile",
+      "u": 0.001,
+      "b": 1.0,
+      "c": 0.0,
+      "expected": -318.30883898555044
+    },
+    {
+      "fn": "cauchyQuantile",
+      "u": 0.1,
+      "b": 1.0,
+      "c": 0.0,
+      "expected": -3.077683537175254
+    },
+    {
+      "fn": "cauchyQuantile",
+      "u": 0.5,
+      "b": 1.0,
+      "c": 0.0,
+      "expected": 0.0
+    },
+    {
+      "fn": "cauchyQuantile",
+      "u": 0.9,
+      "b": 1.0,
+      "c": 0.0,
+      "expected": 3.0776835371752544
+    },
+    {
+      "fn": "cauchyQuantile",
+      "u": 0.999,
+      "b": 1.0,
+      "c": 0.0,
+      "expected": 318.30883898555015
+    },
+    {
+      "fn": "cauchyPdf",
+      "x": -5.0,
+      "b": 1.0,
+      "c": 0.0,
+      "expected": 0.012242687930145796
+    },
+    {
+      "fn": "cauchyPdf",
+      "x": -1.0,
+      "b": 1.0,
+      "c": 0.0,
+      "expected": 0.15915494309189535
+    },
+    {
+      "fn": "cauchyPdf",
+      "x": 0.0,
+      "b": 1.0,
+      "c": 0.0,
+      "expected": 0.3183098861837907
+    },
+    {
+      "fn": "cauchyPdf",
+      "x": 1.0,
+      "b": 1.0,
+      "c": 0.0,
+      "expected": 0.15915494309189535
+    },
+    {
+      "fn": "cauchyPdf",
+      "x": 5.0,
+      "b": 1.0,
+      "c": 0.0,
+      "expected": 0.012242687930145796
+    },
+    {
+      "fn": "cauchyQuantile",
+      "u": 0.001,
+      "b": 2.5,
+      "c": -1.0,
+      "expected": -796.7720974638761
+    },
+    {
+      "fn": "cauchyQuantile",
+      "u": 0.1,
+      "b": 2.5,
+      "c": -1.0,
+      "expected": -8.694208842938135
+    },
+    {
+      "fn": "cauchyQuantile",
+      "u": 0.5,
+      "b": 2.5,
+      "c": -1.0,
+      "expected": -1.0
+    },
+    {
+      "fn": "cauchyQuantile",
+      "u": 0.9,
+      "b": 2.5,
+      "c": -1.0,
+      "expected": 6.694208842938136
+    },
+    {
+      "fn": "cauchyQuantile",
+      "u": 0.999,
+      "b": 2.5,
+      "c": -1.0,
+      "expected": 794.7720974638754
+    },
+    {
+      "fn": "cauchyPdf",
+      "x": -13.5,
+      "b": 2.5,
+      "c": -1.0,
+      "expected": 0.004897075172058318
+    },
+    {
+      "fn": "cauchyPdf",
+      "x": -3.5,
+      "b": 2.5,
+      "c": -1.0,
+      "expected": 0.06366197723675814
+    },
+    {
+      "fn": "cauchyPdf",
+      "x": -1.0,
+      "b": 2.5,
+      "c": -1.0,
+      "expected": 0.12732395447351627
+    },
+    {
+      "fn": "cauchyPdf",
+      "x": 1.5,
+      "b": 2.5,
+      "c": -1.0,
+      "expected": 0.06366197723675814
+    },
+    {
+      "fn": "cauchyPdf",
+      "x": 11.5,
+      "b": 2.5,
+      "c": -1.0,
+      "expected": 0.004897075172058318
+    },
+    {
+      "fn": "cauchyQuantile",
+      "u": 0.001,
+      "b": 0.7,
+      "c": 3.0,
+      "expected": -219.8161872898853
+    },
+    {
+      "fn": "cauchyQuantile",
+      "u": 0.1,
+      "b": 0.7,
+      "c": 3.0,
+      "expected": 0.8456215239773224
+    },
+    {
+      "fn": "cauchyQuantile",
+      "u": 0.5,
+      "b": 0.7,
+      "c": 3.0,
+      "expected": 3.0
+    },
+    {
+      "fn": "cauchyQuantile",
+      "u": 0.9,
+      "b": 0.7,
+      "c": 3.0,
+      "expected": 5.1543784760226785
+    },
+    {
+      "fn": "cauchyQuantile",
+      "u": 0.999,
+      "b": 0.7,
+      "c": 3.0,
+      "expected": 225.8161872898851
+    },
+    {
+      "fn": "cauchyPdf",
+      "x": -0.5,
+      "b": 0.7,
+      "c": 3.0,
+      "expected": 0.017489554185922566
+    },
+    {
+      "fn": "cauchyPdf",
+      "x": 2.3,
+      "b": 0.7,
+      "c": 3.0,
+      "expected": 0.22736420441699332
+    },
+    {
+      "fn": "cauchyPdf",
+      "x": 3.0,
+      "b": 0.7,
+      "c": 3.0,
+      "expected": 0.45472840883398674
+    },
+    {
+      "fn": "cauchyPdf",
+      "x": 3.7,
+      "b": 0.7,
+      "c": 3.0,
+      "expected": 0.22736420441699332
+    },
+    {
+      "fn": "cauchyPdf",
+      "x": 6.5,
+      "b": 0.7,
+      "c": 3.0,
+      "expected": 0.017489554185922566
+    },
+    {
+      "fn": "boxMullerTrace",
+      "seed": 1,
+      "stream": 1,
+      "expected": {
+        "attempts": [
+          {
+            "z1": 0.5742968996055424,
+            "z2": -0.8314549382776022,
+            "r2": 1.0211342432827497,
+            "accepted": false
+          },
+          {
+            "z1": 0.5011642384342849,
+            "z2": 0.29500470450147986,
+            "r2": 0.3381933695634223,
+            "accepted": true
+          }
+        ],
+        "y1": 1.2689797735224837,
+        "y2": 0.7469707022111124
+      }
+    },
+    {
+      "fn": "boxMullerTrace",
+      "seed": 12345,
+      "stream": 1,
+      "expected": {
+        "attempts": [
+          {
+            "z1": 0.06194760836660862,
+            "z2": -0.5921635515987873,
+            "r2": 0.35449517802443237,
+            "accepted": true
+          }
+        ],
+        "y1": 0.14984298974618962,
+        "y2": -1.4323645307687607
+      }
+    },
+    {
+      "fn": "boxMullerTrace",
+      "seed": 999,
+      "stream": 1,
+      "expected": {
+        "attempts": [
+          {
+            "z1": 0.5839333990588784,
+            "z2": -0.3230759995058179,
+            "r2": 0.44535631599313863,
+            "accepted": true
+          }
+        ],
+        "y1": 1.1129271001778953,
+        "y2": -0.6157552142874266
+      }
+    }
+  ]
+}

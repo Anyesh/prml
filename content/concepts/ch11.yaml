@@ -1,0 +1,135 @@
+- id: monte-carlo-estimator
+  name: "Monte Carlo estimator"
+  definition: "Approximating an expectation by the average of a function over independent samples from the distribution. Unbiased regardless of how many dimensions the variable has, so its accuracy is set by the function's variance and the sample count, not by dimensionality."
+  introducedIn: "11.1"
+  usedIn: ["11.2", "11.6"]
+  requires: []
+  aliases: ["Monte Carlo approximation"]
+
+- id: rejection-sampling
+  name: "Rejection sampling"
+  definition: "Drawing a candidate from an easy proposal distribution scaled up by a constant into an envelope that never dips below the target, then keeping the candidate only if a second uniform draw lands under the target's own height. The kept points have exactly the target distribution; everything about the method's cost lives in how often that second draw fails."
+  introducedIn: "11.1"
+  usedIn: ["11.3"]
+  requires: ["monte-carlo-estimator"]
+  aliases: []
+
+- id: importance-sampling
+  name: "Importance sampling"
+  definition: "Estimating an expectation under a target by reweighting samples drawn from a different, easier proposal distribution, with each sample's weight equal to the ratio of the two densities at that point. Every sample is kept, unlike rejection sampling, but the estimate can be badly wrong with no warning if the proposal misses where the target's mass actually is."
+  introducedIn: "11.1"
+  usedIn: ["11.6"]
+  requires: ["monte-carlo-estimator"]
+  aliases: []
+
+- id: effective-sample-size
+  name: "Effective sample size"
+  definition: "A diagnostic for importance sampling, equal to one divided by the sum of the squared normalised weights. It equals the true sample count when every weight is equal and collapses towards one as a single sample comes to dominate the weight, making silent degeneration visible as a number."
+  introducedIn: "11.1"
+  usedIn: []
+  requires: ["importance-sampling"]
+  aliases: ["ESS"]
+
+- id: sampling-importance-resampling
+  name: "Sampling-importance-resampling"
+  definition: "Drawing a set of samples from a proposal, weighting them by importance sampling, then drawing a second set from that first set with probability proportional to their weights. The result is only approximately the target distribution for a finite sample count, becoming exact as the count grows without bound."
+  introducedIn: "11.1"
+  usedIn: []
+  requires: ["importance-sampling"]
+  aliases: ["SIR"]
+
+- id: adaptive-rejection-sampling
+  name: "Adaptive rejection sampling"
+  definition: "Rejection sampling whose envelope is built on the fly from tangent lines to the log target at a grid of points, for any target whose log density has a non-increasing derivative. Every rejection adds a new tangent line, so the envelope only ever tightens and the rejection rate only ever falls."
+  introducedIn: "11.1"
+  usedIn: ["11.3"]
+  requires: ["rejection-sampling"]
+  aliases: ["ARS"]
+
+- id: monte-carlo-em
+  name: "Monte Carlo EM"
+  definition: "Replacing the expectation-maximisation algorithm's E-step integral with a finite average over samples drawn from the current posterior over the hidden variables, for models where that integral has no closed form. Drawing exactly one sample per E-step is the special case called stochastic EM."
+  introducedIn: "11.1"
+  usedIn: []
+  requires: ["expectation-maximisation", "monte-carlo-estimator"]
+  aliases: ["stochastic EM"]
+
+- id: markov-chain-monte-carlo
+  name: "Markov chain Monte Carlo"
+  definition: "Sampling by building a Markov chain whose equilibrium distribution is the target, so that a long enough run of correlated states substitutes for a set of independent ones. Unlike rejection or importance sampling, its cost does not explode with dimension, at the price of samples that are no longer independent of each other."
+  introducedIn: "11.2"
+  usedIn: ["11.3", "11.4", "11.5", "11.6"]
+  requires: ["monte-carlo-estimator"]
+  aliases: ["MCMC"]
+
+- id: detailed-balance
+  name: "Detailed balance"
+  definition: "A sufficient condition for a Markov chain's transition probabilities to leave a given distribution invariant: the flow of probability from any state to any other must exactly balance the flow back. Easier to check than invariance directly, and satisfied by every construction in this chapter."
+  introducedIn: "11.2"
+  usedIn: ["11.3", "11.5"]
+  requires: ["markov-chain-monte-carlo"]
+  aliases: ["reversibility"]
+
+- id: metropolis-hastings
+  name: "Metropolis-Hastings algorithm"
+  definition: "A Markov chain Monte Carlo method that proposes a candidate state from a (possibly asymmetric) proposal distribution and accepts it with a probability built from the ratio of target densities and, if the proposal is asymmetric, a correction for its own asymmetry. The step size of the proposal trades acceptance rate against how far the chain moves per accepted step."
+  introducedIn: "11.2"
+  usedIn: ["11.3", "11.5"]
+  requires: ["detailed-balance", "rejection-sampling"]
+  aliases: ["Metropolis algorithm"]
+
+- id: gibbs-sampling
+  name: "Gibbs sampling"
+  definition: "A Markov chain Monte Carlo method that updates one variable at a time by drawing it from its exact conditional distribution given every other variable's current value, cycling through all variables in turn. Every such step is always accepted, since it is a Metropolis-Hastings step whose acceptance probability is identically one."
+  introducedIn: "11.3"
+  usedIn: ["11.5"]
+  requires: ["metropolis-hastings", "multivariate-gaussian"]
+  aliases: []
+
+- id: over-relaxation
+  name: "Over-relaxation"
+  definition: "A modification to a Gibbs step for Gaussian conditionals that biases the new value towards the opposite side of the conditional mean from the current value, controlled by a parameter between minus one and one. It preserves the conditional's own mean and variance while encouraging directed movement instead of a random walk."
+  introducedIn: "11.3"
+  usedIn: []
+  requires: ["gibbs-sampling"]
+  aliases: []
+
+- id: slice-sampling
+  name: "Slice sampling"
+  definition: "A Markov chain Monte Carlo method that augments the target with a vertical auxiliary variable sampled under the target's height, then finds a new horizontal position by growing and shrinking an interval until it lands back inside the slice. Its step size adapts to the target's local scale, unlike a fixed-variance Metropolis proposal."
+  introducedIn: "11.4"
+  usedIn: []
+  requires: ["markov-chain-monte-carlo"]
+  aliases: []
+
+- id: hamiltonian-dynamics
+  name: "Hamiltonian dynamics"
+  definition: "A reformulation of a physical system's motion using position and momentum variables together, whose total energy is conserved exactly and whose flow preserves phase-space volume. Casting a target distribution as a potential energy turns sampling into simulating this dynamics, which is what lets a sampler move a long distance without a random walk."
+  introducedIn: "11.5"
+  usedIn: []
+  requires: []
+  aliases: []
+
+- id: leapfrog-integration
+  name: "Leapfrog integration"
+  definition: "A numerical scheme for Hamiltonian dynamics that alternates half-step momentum updates with full-step position updates. It preserves phase-space volume exactly even though it only approximates the true trajectory, which is the property hybrid Monte Carlo needs to keep its accept step from introducing bias."
+  introducedIn: "11.5"
+  usedIn: []
+  requires: ["hamiltonian-dynamics"]
+  aliases: []
+
+- id: hybrid-monte-carlo
+  name: "Hybrid Monte Carlo"
+  definition: "A Markov chain Monte Carlo method that alternates resampling momentum from its Gaussian marginal with a leapfrog-integrated Hamiltonian trajectory, accepting or rejecting the result with a Metropolis criterion on total energy. It uses gradient information to cover far more ground per accepted step than a random-walk proposal, at the cost of needing that gradient to exist."
+  introducedIn: "11.5"
+  usedIn: ["11.6"]
+  requires: ["leapfrog-integration", "metropolis-hastings"]
+  aliases: ["HMC"]
+
+- id: partition-function-estimation
+  name: "Partition function estimation"
+  definition: "Recovering the normalising constant of an unnormalised distribution, most often as a ratio to a second distribution's normaliser, by importance sampling from one distribution to weight the other's unnormalised density. The ratio of two models' partition functions is exactly the ratio their Bayesian evidence needs for model comparison, so this is that evidence computed a different way."
+  introducedIn: "11.6"
+  usedIn: []
+  requires: ["importance-sampling", "model-evidence"]
+  aliases: ["partition function", "chaining"]

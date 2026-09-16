@@ -1,0 +1,196 @@
+{
+  "cases": [
+    {
+      "fn": "arsBuildEnvelope",
+      "points": [
+        {
+          "z": -2.0,
+          "h": -2.9189385332046727,
+          "hPrime": 2.0
+        },
+        {
+          "z": -0.5,
+          "h": -1.0439385332046727,
+          "hPrime": 0.5
+        },
+        {
+          "z": 0.0,
+          "h": -0.9189385332046727,
+          "hPrime": -0.0
+        },
+        {
+          "z": 1.0,
+          "h": -1.4189385332046727,
+          "hPrime": -1.0
+        },
+        {
+          "z": 3.0,
+          "h": -5.418938533204672,
+          "hPrime": -3.0
+        }
+      ],
+      "domain": [
+        -6.0,
+        6.0
+      ],
+      "expected": {
+        "pieces": [
+          {
+            "lo": -6.0,
+            "hi": -1.25,
+            "z": -2.0,
+            "h": -2.9189385332046727,
+            "hPrime": 2.0
+          },
+          {
+            "lo": -1.25,
+            "hi": -0.25,
+            "z": -0.5,
+            "h": -1.0439385332046727,
+            "hPrime": 0.5
+          },
+          {
+            "lo": -0.25,
+            "hi": 0.5,
+            "z": 0.0,
+            "h": -0.9189385332046727,
+            "hPrime": -0.0
+          },
+          {
+            "lo": 0.5,
+            "hi": 2.0,
+            "z": 1.0,
+            "h": -1.4189385332046727,
+            "hPrime": -1.0
+          },
+          {
+            "lo": 2.0,
+            "hi": 6.0,
+            "z": 3.0,
+            "h": -5.418938533204672,
+            "hPrime": -3.0
+          }
+        ]
+      }
+    },
+    {
+      "fn": "arsPieceArea",
+      "pieceIndex": 0,
+      "shift": -0.9189385332046727,
+      "expected": 0.30324262989143547
+    },
+    {
+      "fn": "arsPieceQuantile",
+      "pieceIndex": 0,
+      "shift": -0.9189385332046727,
+      "t": 0.5,
+      "expected": -1.596536165765658
+    },
+    {
+      "fn": "arsPieceArea",
+      "pieceIndex": 1,
+      "shift": -0.9189385332046727,
+      "expected": 0.7869386805747332
+    },
+    {
+      "fn": "arsPieceQuantile",
+      "pieceIndex": 1,
+      "shift": -0.9189385332046727,
+      "t": 0.5,
+      "expected": -0.6881403927597592
+    },
+    {
+      "fn": "arsPieceArea",
+      "pieceIndex": 2,
+      "shift": -0.9189385332046727,
+      "expected": 0.75
+    },
+    {
+      "fn": "arsPieceQuantile",
+      "pieceIndex": 2,
+      "shift": -0.9189385332046727,
+      "t": 0.5,
+      "expected": 0.125
+    },
+    {
+      "fn": "arsPieceArea",
+      "pieceIndex": 3,
+      "shift": -0.9189385332046727,
+      "expected": 0.7768698398515701
+    },
+    {
+      "fn": "arsPieceQuantile",
+      "pieceIndex": 3,
+      "shift": -0.9189385332046727,
+      "t": 0.5,
+      "expected": 0.9917339025771928
+    },
+    {
+      "fn": "arsPieceArea",
+      "pieceIndex": 4,
+      "shift": -0.9189385332046727,
+      "expected": 0.07437626306311454
+    },
+    {
+      "fn": "arsPieceQuantile",
+      "pieceIndex": 4,
+      "shift": -0.9189385332046727,
+      "t": 0.5,
+      "expected": 2.23104701212257
+    },
+    {
+      "fn": "arsSample",
+      "seed": 2026,
+      "grid": [
+        -2.0,
+        -0.5,
+        0.0,
+        1.0,
+        3.0
+      ],
+      "domain": [
+        -6.0,
+        6.0
+      ],
+      "expected": {
+        "sample": -0.36114572685748225,
+        "trace": [
+          {
+            "z": -0.36114572685748225,
+            "accepted": true,
+            "envelopeLogHeight": -0.9745113966334138,
+            "trueLog": -0.9841516512183822
+          }
+        ],
+        "finalPieceCount": 5
+      }
+    },
+    {
+      "fn": "arsSample",
+      "seed": 4177,
+      "grid": [
+        -2.0,
+        -0.5,
+        0.0,
+        1.0,
+        3.0
+      ],
+      "domain": [
+        -6.0,
+        6.0
+      ],
+      "expected": {
+        "sample": -1.3252386937564493,
+        "trace": [
+          {
+            "z": -1.3252386937564493,
+            "accepted": true,
+            "envelopeLogHeight": -1.5694159207175713,
+            "trueLog": -1.7970673309193228
+          }
+        ],
+        "finalPieceCount": 5
+      }
+    }
+  ]
+}

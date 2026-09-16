@@ -1,0 +1,131 @@
+---
+chapter: 11
+section: "11.6"
+title: Estimating the Partition Function
+bookPages: [554, 558]
+summary: Every sampler in this chapter only ever needed p(z) up to a constant, but that missing constant is exactly what Bayesian model comparison needs back.
+concepts:
+  - partition-function-estimation
+prereqs: ["11.1", "11.5"]
+equations:
+  - { id: "11.71", name: energy-based unnormalized distribution }
+  - { id: "11.72", name: partition-function ratio by importance sampling }
+  - { id: "11.74", name: chaining a sequence of ratios }
+  - { id: "11.75", name: linearly interpolated energy }
+widgets: [PartitionFunctionChaining]
+difficulty: 3
+---
+
+import PartitionFunctionChaining from '@widgets/ch11/PartitionFunctionChaining';
+import ChainingIntermediateDistributions from '@widgets/ch11/figures/ChainingIntermediateDistributions';
+import SpreadVsMismatch from '@widgets/ch11/figures/SpreadVsMismatch';
+import ScaleInvarianceDemo from '@widgets/ch11/figures/ScaleInvarianceDemo';
+
+## Intuition
+
+Every method in this chapter has quietly leaned on the same convenience: none of them ever
+needed to know how a distribution's unnormalized shape scales to integrate to one. That
+missing constant, the partition function, was never in the way. Now it is the answer.
+
+Bayesian model comparison needs the ratio of two models' evidences, and that ratio is
+exactly a ratio of partition functions. Estimating it sounds like it should reuse
+importance sampling directly, and it does, but only when the two distributions being
+compared are already close. Stretch that comparison across two very different
+distributions and the estimate becomes exactly as unreliable as importance sampling always
+is under mismatch: technically unbiased, practically useless.
+
+<Figure caption="Scaling the target by a constant before sampling from it changes nothing about the resulting chain." width="wide">
+  <ScaleInvarianceDemo client:visible />
+</Figure>
+
+## The math
+
+Any distribution built from an energy function carries an unknown normalizer:
+
+<MathBlock id="11.71" name="energy-based unnormalized distribution">
+
+$$p_E(z) = \frac{1}{Z_E}\exp(-E(z))$$
+
+</MathBlock>
+
+Importance sampling from a tractable $p_G$ estimates the ratio of two such normalizers
+directly:
+
+<MathBlock id="11.72" name="partition-function ratio by importance sampling">
+
+$$\frac{Z_E}{Z_G} \simeq \sum_l \exp\{-E(z^{(l)}) + G(z^{(l)})\}$$
+
+</MathBlock>
+
+<Figure caption="A ladder of distributions between a tractable proposal and the target, one interpolated energy at a time." width="wide">
+  <ChainingIntermediateDistributions client:visible />
+</Figure>
+
+Chaining turns one large, unreliable ratio into a product of small, reliable ones:
+
+<MathBlock id="11.74" name="chaining a sequence of ratios">
+
+$$\frac{Z_M}{Z_1} = \frac{Z_2}{Z_1}\frac{Z_3}{Z_2}\cdots\frac{Z_M}{Z_{M-1}}$$
+
+</MathBlock>
+
+built from a family of energies interpolating linearly between the two endpoints:
+
+<MathBlock id="11.75" name="linearly interpolated energy">
+
+$$E_\alpha(z) = (1-\alpha)E_1(z) + \alpha E_M(z)$$
+
+</MathBlock>
+
+## Interactive
+
+<Widget
+  title="One large ratio against a chain of small ones"
+  figure="11.6"
+  caption="Push the proposal further from the target and compare how much the two columns of repeated estimates spread out around the true ratio."
+>
+  <PartitionFunctionChaining client:visible />
+</Widget>
+
+Neither method is biased in principle; the practical difference is entirely in the spread.
+
+## Worked example
+
+<Figure caption="Direct importance sampling's spread grows fastest as the proposal drifts; chaining through six links grows far more slowly." width="wide">
+  <SpreadVsMismatch client:visible />
+</Figure>
+
+With target scale 1 and proposal scale 2.5, 16 repeats of the direct ratio estimate span
+0.363 to 0.457 around a true value of 0.4, a width of 0.094. Chaining the same comparison
+through six intermediate distributions, with the same total number of samples, narrows that
+to a width of 0.061, because no individual link is ever asked to bridge the whole gap alone.
+
+## Recall
+
+<Recall question="Why did none of the earlier sections in this chapter need the partition function?" concepts={["partition-function-estimation"]}>
+Every sampler only compares p(z) at different points of z, and any overall scaling
+constant cancels out of that comparison; it never entered the acceptance rule or the
+weight formula.
+</Recall>
+
+<Recall question="What does the ratio of two partition functions give you in a Bayesian setting?" concepts={["partition-function-estimation"]}>
+Multiplied by the ratio of prior probabilities, it gives the ratio of posterior model
+probabilities: it is literally a ratio of model evidences, computed a different way.
+</Recall>
+
+<Recall question="Why does chaining help even though the direct estimate is already unbiased?" concepts={["partition-function-estimation"]}>
+Unbiasedness says nothing about spread. Each link in the chain compares two nearly
+identical distributions, so its own estimate is low-variance; multiplying several
+low-variance ratios together stays far tighter than one high-variance ratio spanning the
+same total gap.
+</Recall>
+
+## Connections
+
+- **Reuses [11.1](/sections/11-1)'s importance sampling** as the estimator for every
+  individual ratio in the chain.
+- **The intermediate distributions can themselves be sampled with [11.5](/sections/11-5)'s
+  chain**, run for a while at each stage before moving to the next.
+- **Chapter 3's model evidence** is the quantity this section's ratio ultimately serves:
+  a partition-function ratio computed by simulation instead of by Laplace approximation.
+

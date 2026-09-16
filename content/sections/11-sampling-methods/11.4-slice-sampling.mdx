@@ -1,0 +1,117 @@
+---
+chapter: 11
+section: "11.4"
+title: Slice Sampling
+bookPages: [546, 547]
+summary: Augmenting z with a vertical variable u turns step-size tuning into an automatic procedure that grows or shrinks to match the target's local scale.
+concepts:
+  - slice-sampling
+prereqs: ["11.2"]
+equations:
+  - { id: "11.51", name: augmented uniform distribution over (z, u) }
+  - { id: "11.52", name: marginal over z recovers p(z) }
+widgets: [SliceSamplingExplorer]
+difficulty: 3
+---
+
+import SliceSamplingExplorer from '@widgets/ch11/SliceSamplingExplorer';
+import SliceAugmentedArea from '@widgets/ch11/figures/SliceAugmentedArea';
+import SliceVsMetropolisStepSize from '@widgets/ch11/figures/SliceVsMetropolisStepSize';
+import TwoScalesOneTarget from '@widgets/ch11/figures/TwoScalesOneTarget';
+
+## Intuition
+
+Metropolis-Hastings hands the step-size problem to whoever tunes it: too small and the
+chain crawls, too large and almost nothing is accepted. Slice sampling instead lets the
+target itself set the scale at every single step, growing or shrinking a window until it
+roughly matches how wide the distribution is right where the chain currently sits.
+
+The trick is to stop thinking of sampling as choosing a step size at all, and instead
+imagine sampling a point uniformly from the two-dimensional area under the target's curve.
+Do that, throw away the vertical coordinate, and what remains is a sample from the target.
+Nobody can draw from that whole area directly, but a small local search around the current
+point can.
+
+<Figure caption="One fixed step size cannot suit both a narrow and a wide region of the same problem." width="wide">
+  <TwoScalesOneTarget client:visible />
+</Figure>
+
+## The math
+
+Augment $z$ with $u$ and sample uniformly under the curve:
+
+<MathBlock id="11.51" name="augmented uniform distribution over (z, u)">
+
+$$p(z, u) = \begin{cases} 1/Z_p & 0 \leqslant u \leqslant \tilde{p}(z) \\ 0 & \text{otherwise} \end{cases}$$
+
+</MathBlock>
+
+Integrating out $u$ recovers exactly the target, with no leftover normalizing constant to
+track:
+
+<MathBlock id="11.52" name="marginal over z recovers p(z)">
+
+$$\int p(z, u)\, \mathrm{d}u = \frac{\tilde{p}(z)}{Z_p} = p(z)$$
+
+</MathBlock>
+
+Sampling alternates: given $z$, draw $u$ uniform on $[0, \tilde{p}(z)]$; given $u$, draw $z$
+uniform from the slice $\{z : \tilde{p}(z) > u\}$. That second draw is the part with no
+closed form, which is why a window is grown outward until both ends fall outside the slice,
+then shrunk inward around every rejected candidate until one lands inside it.
+
+<Figure caption="The full picture slice sampling never draws at once: every point uniform under the curve, seen all together." width="wide">
+  <SliceAugmentedArea client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Growing then shrinking a window until it fits the slice"
+  figure="11.13"
+  caption="Step through stepping-out and shrinkage one attempt at a time, then widen or narrow the initial window and watch which phase absorbs the extra work."
+>
+  <SliceSamplingExplorer client:visible />
+</Widget>
+
+A narrow starting window mostly grows; a wide one mostly shrinks. Either way it ends up
+matched to the local scale, not to whatever a person guessed in advance.
+
+## Worked example
+
+<Figure caption="One fixed Metropolis step size handles a narrow target well and a wide one badly; slice sampling handles both from the same starting window." width="wide">
+  <SliceVsMetropolisStepSize client:visible />
+</Figure>
+
+Tuned to a target of standard deviation 0.30, a Metropolis step of 0.35 gives an
+autocorrelation time near 6.5. Point the same step size at a target five times wider and
+that time jumps past 55: nothing about the algorithm changed except the problem. Slice
+sampling, started with the same window on both problems, stays near 1.4 either way.
+
+## Recall
+
+<Recall question="What does slice sampling do with the vertical variable u after using it?" concepts={["slice-sampling"]}>
+Nothing; it is discarded. Its only job was defining the horizontal slice the next z is
+drawn from (11.51-11.52).
+</Recall>
+
+<Recall question="Why does slice sampling need both a growing step and a shrinking step?" concepts={["slice-sampling"]}>
+The initial window might not cover the whole slice, so it grows outward until both ends
+fall outside; a candidate drawn from it might still land outside the slice, so failed draws
+shrink the window inward instead of being discarded outright.
+</Recall>
+
+<Recall question="What problem does slice sampling solve that a fixed-variance Metropolis proposal cannot?" concepts={["slice-sampling"]}>
+It removes the need to hand-tune a single step size: the window's width adapts on its own
+to whatever scale the target happens to have at the current point.
+</Recall>
+
+## Connections
+
+- **Follows [11.2](/sections/11-2)**, replacing its fixed-variance proposal with a
+  self-adjusting one.
+- **Shares its per-coordinate structure with [11.3](/sections/11-3)**: a multivariate slice
+  sampler cycles through variables the same way a Gibbs sampler does.
+- **[11.5](/sections/11-5)** solves the same tuning problem with gradient information
+  instead of a search, when that gradient is available.
+

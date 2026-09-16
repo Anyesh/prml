@@ -1,0 +1,85 @@
+{
+  "cases": [
+    {
+      "fn": "partitionFunctionRatioEstimate",
+      "samples": [
+        -2.0,
+        -1.0,
+        -0.3,
+        0.1,
+        0.6,
+        1.4,
+        2.2,
+        3.0
+      ],
+      "sigmaE": 1.5,
+      "sigmaG": 2.0,
+      "expected": 0.8011378455589422
+    },
+    {
+      "fn": "partitionFunctionRatioEstimate_trueRatio",
+      "sigmaE": 1.5,
+      "sigmaG": 2.0,
+      "expected": 0.75
+    },
+    {
+      "fn": "chainedPartitionFunctionRatio",
+      "ratios": [
+        1.2,
+        0.8,
+        1.05
+      ],
+      "expected": 1.008
+    },
+    {
+      "fn": "chainedPartitionFunctionRatio",
+      "ratios": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "expected": 1.0
+    },
+    {
+      "fn": "chainedPartitionFunctionRatio",
+      "ratios": [
+        0.5,
+        2.0
+      ],
+      "expected": 1.0
+    },
+    {
+      "fn": "interpolatedEnergy",
+      "alpha": 0.0,
+      "z": 1.0,
+      "sigmaE": 1.5,
+      "sigmaG": 2.0,
+      "expected": 0.2222222222222222
+    },
+    {
+      "fn": "interpolatedEnergy",
+      "alpha": 1.0,
+      "z": 1.0,
+      "sigmaE": 1.5,
+      "sigmaG": 2.0,
+      "expected": 0.125
+    },
+    {
+      "fn": "interpolatedEnergy",
+      "alpha": 0.5,
+      "z": 2.0,
+      "sigmaE": 1.5,
+      "sigmaG": 2.0,
+      "expected": 0.6944444444444444
+    },
+    {
+      "fn": "interpolatedEnergy",
+      "alpha": 0.25,
+      "z": -1.5,
+      "sigmaE": 1.5,
+      "sigmaG": 2.0,
+      "expected": 0.4453125
+    }
+  ]
+}

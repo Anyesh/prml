@@ -1,0 +1,130 @@
+---
+chapter: 11
+section: "11.3"
+title: Gibbs Sampling
+bookPages: [542, 545]
+summary: Updating one variable at a time from its exact conditional is always accepted, but the resulting random walk along a correlated ridge can be exactly as slow as any other.
+concepts:
+  - gibbs-sampling
+  - over-relaxation
+prereqs: ["11.2"]
+equations:
+  - { id: "11.46", name: Gibbs conditional update }
+  - { id: "11.49", name: Gibbs acceptance probability is always one }
+  - { id: "11.50", name: over-relaxation update }
+widgets: [GibbsCorrelatedGaussian]
+difficulty: 2
+---
+
+import GibbsCorrelatedGaussian from '@widgets/ch11/GibbsCorrelatedGaussian';
+import ConditionalSlice from '@widgets/ch11/figures/ConditionalSlice';
+import StepsToIndependence from '@widgets/ch11/figures/StepsToIndependence';
+import OverRelaxationComparison from '@widgets/ch11/figures/OverRelaxationComparison';
+
+## Intuition
+
+Metropolis-Hastings needs a proposal distribution tuned by hand, and getting that tuning
+wrong is either slow mixing or high rejection. Gibbs sampling sidesteps the choice
+entirely: at each step, replace one variable with a fresh draw from its own exact
+conditional distribution given every other variable's current value.
+
+That conditional draw is never rejected, because it already is a draw from the right
+distribution for that one coordinate. The catch shows up when the variables are correlated:
+moving one coordinate at a time along a diagonal ridge makes almost no progress along the
+ridge itself, no matter how cheap each individual step is.
+
+<Figure caption="The exact 1-D distribution one coordinate is redrawn from, holding the other fixed." width="wide">
+  <ConditionalSlice client:visible />
+</Figure>
+
+## The math
+
+Cycling through three variables in turn, the first update draws
+
+<MathBlock id="11.46" name="Gibbs conditional update">
+
+$$p(z_1 \mid z_2^{(\tau)}, z_3^{(\tau)})$$
+
+</MathBlock>
+
+and so on for $z_2$, then $z_3$, each conditioned on whatever the others currently hold.
+Treated as a Metropolis-Hastings step that only touches $z_k$, the acceptance probability
+collapses to exactly one:
+
+<MathBlock id="11.49" name="Gibbs acceptance probability is always one">
+
+$$A(z^\star, z) = \frac{\tilde{p}(z^\star)}{\tilde{p}(z)} \cdot \frac{q_k(z \mid z^\star)}{q_k(z^\star \mid z)} = \frac{p(z_k^\star \mid z_{\backslash k})}{p(z_k \mid z_{\backslash k})} \cdot \frac{p(z_k \mid z_{\backslash k})}{p(z_k^\star \mid z_{\backslash k})} = 1$$
+
+</MathBlock>
+
+For a correlated Gaussian conditional of width $l$ inside a marginal of width $L$, the
+random walk needs on the order of $(L/l)^2$ sweeps to reach an independent state:
+
+<Figure caption="Steps to independence explode only near the extremes of correlation." width="wide">
+  <StepsToIndependence client:visible />
+</Figure>
+
+Over-relaxation counters this by biasing the draw away from the current value instead of
+centring it there:
+
+<MathBlock id="11.50" name="over-relaxation update">
+
+$$z_i' = \mu_i + \alpha(z_i - \mu_i) + \sigma_i(1 - \alpha^2)^{1/2}\nu$$
+
+</MathBlock>
+
+for $-1 < \alpha < 1$ and $\nu$ a standard normal draw; $\alpha = 0$ is plain Gibbs.
+
+## Interactive
+
+<Widget
+  title="Gibbs sampling on a correlated Gaussian"
+  figure="11.11"
+  caption="Push correlation towards 1 and watch the staircase shrink to steps too small to cross the ridge in any reasonable number of sweeps."
+>
+  <GibbsCorrelatedGaussian client:visible />
+</Widget>
+
+Every single-coordinate segment is exact and always accepted; the slowness is purely
+geometric.
+
+## Worked example
+
+<Figure caption="Same correlated target, same start: over-relaxation covers the distance to equilibrium in far fewer sweeps." width="wide">
+  <OverRelaxationComparison client:visible />
+</Figure>
+
+At correlation 0.95, plain Gibbs starting at $(4,-4)$ needs dozens of sweeps to reach the
+origin's neighbourhood because each conditional step has variance $1 - 0.95^2 = 0.0975$.
+Setting $\alpha = -0.8$ in (11.50) biases every draw to the far side of its conditional
+mean, which is why its distance curve above drops faster without changing what either
+conditional distribution actually is.
+
+## Recall
+
+<Recall question="Why is a Gibbs sampling step always accepted?" concepts={["gibbs-sampling"]}>
+Seen as a Metropolis-Hastings step touching one variable, the proposal is exactly the true
+conditional for that variable, which makes the acceptance ratio (11.49) equal to one by
+construction.
+</Recall>
+
+<Recall question="What determines how many sweeps Gibbs sampling needs for an independent sample from a correlated Gaussian?" concepts={["gibbs-sampling"]}>
+Roughly $(L/l)^2$, the squared ratio of the marginal width to the conditional width: the
+narrower the conditional relative to the marginal, the slower the ridge is crossed.
+</Recall>
+
+<Recall question="What does over-relaxation change, and what does it leave alone?" concepts={["over-relaxation"]}>
+It biases each draw towards the opposite side of the conditional mean when alpha is
+negative, encouraging directed motion; it leaves that conditional's own mean and variance
+unchanged; either is a distribution the coordinate could equally have been drawn from.
+</Recall>
+
+## Connections
+
+- **Follows [11.2](/sections/11-2)** as the special case of Metropolis-Hastings whose
+  acceptance probability never rejects.
+- **[8.1](/sections/8-1)**'s Markov blanket is exactly the set of variables a Gibbs
+  conditional in a graphical model needs to condition on.
+- **[11.4](/sections/11-4)** targets the same slow-mixing problem from a different angle:
+  an adaptive step size instead of an exact conditional.
+

@@ -1,0 +1,146 @@
+---
+chapter: 11
+section: "11.2"
+title: Markov Chain Monte Carlo
+bookPages: [537, 541]
+summary: A proposal that remembers the current state turns sampling into a Markov chain, trading independent samples for correlated ones that keep working as dimension grows.
+concepts:
+  - markov-chain-monte-carlo
+  - detailed-balance
+  - metropolis-hastings
+prereqs: ["11.1"]
+equations:
+  - { id: "11.33", name: basic Metropolis acceptance probability }
+  - { id: "11.37", name: first-order Markov property }
+  - { id: "11.39", name: invariant distribution }
+  - { id: "11.40", name: detailed balance }
+  - { id: "11.44", name: Metropolis-Hastings acceptance probability }
+widgets: [MetropolisHastingsExplorer]
+difficulty: 3
+---
+
+import MetropolisHastingsExplorer from '@widgets/ch11/MetropolisHastingsExplorer';
+import RandomWalkDistance from '@widgets/ch11/figures/RandomWalkDistance';
+import EquilibriumFromManyStarts from '@widgets/ch11/figures/EquilibriumFromManyStarts';
+import StepSizeTradeoff from '@widgets/ch11/figures/StepSizeTradeoff';
+
+## Intuition
+
+Rejection and importance sampling both draw every candidate from scratch, blind to
+everything drawn before it. That blindness is exactly what makes them collapse in high
+dimensions: a proposal with no memory has to cover the whole space at once.
+
+A Markov chain fixes this by remembering where it is. Each new candidate is proposed near
+the current state rather than out of nowhere, so it only has to look plausible locally, not
+globally. The price is that consecutive samples are now correlated, sometimes badly, and the
+chain has to be run long enough for that correlation to fade before it is trustworthy.
+
+<Figure caption="A one-dimensional random walk travels only as far as the square root of the number of steps, not linearly with them." width="wide">
+  <RandomWalkDistance client:visible />
+</Figure>
+
+That square-root crawl is the cost every method in this chapter is really fighting.
+
+## The math
+
+A first-order Markov chain only remembers one step back:
+
+<MathBlock id="11.37" name="first-order Markov property">
+
+$$p(z^{(m+1)} \mid z^{(1)}, \ldots, z^{(m)}) = p(z^{(m+1)} \mid z^{(m)})$$
+
+</MathBlock>
+
+A distribution is invariant under the chain's transitions $T$ if running one step leaves it
+unchanged:
+
+<MathBlock id="11.39" name="invariant distribution">
+
+$$p^\star(z) = \sum_{z'} T(z', z)\, p^\star(z')$$
+
+</MathBlock>
+
+Detailed balance is the easy sufficient condition for this: probability flowing $z \to z'$
+must exactly match probability flowing back.
+
+<MathBlock id="11.40" name="detailed balance">
+
+$$p^\star(z)\, T(z, z') = p^\star(z')\, T(z', z)$$
+
+</MathBlock>
+
+The basic Metropolis algorithm proposes from a symmetric $q$ and accepts with
+
+<MathBlock id="11.33" name="basic Metropolis acceptance probability">
+
+$$A(z^\star, z^{(\tau)}) = \min\left(1, \frac{\tilde{p}(z^\star)}{\tilde{p}(z^{(\tau)})}\right)$$
+
+</MathBlock>
+
+Metropolis-Hastings drops the symmetry requirement by correcting for it directly:
+
+<MathBlock id="11.44" name="Metropolis-Hastings acceptance probability">
+
+$$A_k(z^\star, z^{(\tau)}) = \min\left(1, \frac{\tilde{p}(z^\star)\, q_k(z^{(\tau)} \mid z^\star)}{\tilde{p}(z^{(\tau)})\, q_k(z^\star \mid z^{(\tau)})}\right)$$
+
+</MathBlock>
+
+<Figure caption="Six chains starting at opposite corners of the plot all forget their start and settle on the same ellipse." width="wide">
+  <EquilibriumFromManyStarts client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="One proposal, two failure modes"
+  figure="11.10"
+  caption="Drag the step-size slider until the trace barely moves, then again until the dashed circle dwarfs the ellipse and almost every step is rejected."
+>
+  <MetropolisHastingsExplorer client:visible />
+</Widget>
+
+Watch the autocorrelation panel, not just the acceptance number: it is what "good mixing"
+actually means.
+
+## Worked example
+
+<Figure caption="Acceptance rate falls monotonically with step size; autocorrelation time is bad at both ends and best in between." width="wide">
+  <StepSizeTradeoff client:visible />
+</Figure>
+
+On the correlated target above, step size 0.1 accepts 90.1% of proposals but its
+autocorrelation is still 46.3 at lag 30; step size 4 accepts only 3.9% of proposals, most of
+them repeating the same state. Neither extreme wastes fewer than about half its draws on
+correlation the reader could not have predicted from the acceptance rate alone.
+
+## Recall
+
+<Recall question="Why does a proposal that depends on the current state avoid the problem that sank rejection sampling?" concepts={["markov-chain-monte-carlo"]}>
+It only has to look plausible locally, near where the chain already is, instead of matching
+the whole target distribution's shape everywhere at once.
+</Recall>
+
+<Recall question="What does detailed balance guarantee, and what does it not guarantee?" concepts={["detailed-balance"]}>
+It guarantees the target distribution is invariant under the chain (11.40-11.41). It does
+not by itself guarantee ergodicity, so a chain can satisfy it and still fail to converge.
+</Recall>
+
+<Recall question="When does the Metropolis-Hastings acceptance rule reduce to the plain Metropolis rule?" concepts={["metropolis-hastings"]}>
+Exactly when the proposal is symmetric, $q(z_A\mid z_B) = q(z_B\mid z_A)$, which cancels the
+proposal ratio out of (11.44) and leaves (11.33).
+</Recall>
+
+<Recall question="Why is a tiny proposal step size bad even though it accepts almost everything?" concepts={["metropolis-hastings"]}>
+High acceptance with tiny steps still moves through state space as a slow random walk, so
+consecutive samples stay correlated for a long time.
+</Recall>
+
+## Connections
+
+- **Follows [11.1](/sections/11-1)**, replacing memoryless proposals with one that
+  remembers the chain's current state.
+- **[11.3](/sections/11-3)** is Gibbs sampling, the special case whose Metropolis-Hastings
+  acceptance probability is always exactly one.
+- **[11.5](/sections/11-5)** replaces the random walk itself with a proposal that uses the
+  target's gradient to move further per accepted step.
+
