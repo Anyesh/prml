@@ -19,6 +19,13 @@ Requests are absorbed into the primitives centrally between waves.
 
 ## Open
 
+### Ellipse
+- **Wanted by**: ch13/figures/KalmanWorkedStep, and independently by ch02, ch03, ch04, ch05, ch10, ch11 and ch12
+- **Shape**: a Gaussian covariance ellipse at a given mean, drawn at one or more confidence levels, from a 2x2 covariance rather than from semi-axes the caller has already diagonalised
+- **Props**: `{ mean: readonly [number, number]; cov: Mat; levels?: readonly number[]; color: string; fill?: boolean; z?: number }`
+- **Why no existing primitive fits**: nothing draws one, so eight chapters each sample the parametric form and hand the points to `Curve` as a closed polygon. Every one of them repeats the same eigendecomposition-to-angle step, and the chi-squared quantile that turns a confidence level into a radius is re-derived or hard-coded per figure. It is also the one shape in the book where `equalAspect` is load-bearing and easy to forget, since an ellipse drawn on unequal axes is a different ellipse.
+- **Note**: this is the widest-shared request so far. `Bars` was asked for by two chapters and `LogScale` by four; this is eight, and the count is evidence the workaround is not cheap.
+
 ### Simplex
 - **Wanted by**: ch02/DirichletSimplex, ch02/figures/DirichletCorners
 - **Shape**: the 2-simplex as an equilateral triangle in barycentric coordinates, so a Dirichlet density can be drawn over it the way the book's figures 2.4 and 2.5 do
