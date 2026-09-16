@@ -1,0 +1,133 @@
+---
+chapter: 4
+section: "4.4"
+title: The Laplace Approximation
+bookPages: [213, 216]
+summary: Fit a Gaussian to any density by matching its mode and the curvature there, cheaply and without needing the density's normalising constant.
+concepts:
+  - laplace-approximation
+prereqs: ["4.3", "3.5"]
+equations:
+  - { id: "4.126", name: mode condition }
+  - { id: "4.128", name: precision from curvature }
+  - { id: "4.134", name: multivariate Laplace approximation }
+widgets: [LaplaceSkewedPosterior1D]
+difficulty: 3
+---
+
+import LaplaceSkewedPosterior1D from '@widgets/ch04/LaplaceSkewedPosterior1D';
+import Laplace2DContours from '@widgets/ch04/figures/Laplace2DContours';
+import ModeVsMeanMismatch from '@widgets/ch04/figures/ModeVsMeanMismatch';
+import NormalizationConstantApprox from '@widgets/ch04/figures/NormalizationConstantApprox';
+
+## Intuition
+
+Chapter 3's Bayesian treatment stayed in closed form because a Gaussian prior times a
+Gaussian likelihood is Gaussian. Section 4.3's likelihood is a product of sigmoids, and
+no prior over the weights turns that into anything with a name, so integrating over the
+posterior exactly is no longer on the table.
+
+The Laplace approximation is the cheapest way past that: find the single point where
+the true density peaks, measure how sharply it falls off there, and report a Gaussian
+with that peak as its mean and that sharpness as its precision. No integral is needed to
+normalise it, because a Gaussian's own normaliser is already known.
+
+What this throws away is everything about the density except its behaviour at one
+point. A density that is skewed, or has a heavier tail on one side, or is not even
+unimodal, gets exactly the same treatment: one peak, one curvature, one Gaussian, and
+whatever asymmetry existed is gone from the result.
+
+## The math
+
+For $p(z) = f(z)/Z$, the mode $z_0$ is where the density's own slope is zero:
+
+<MathBlock id="4.126" name="mode condition">
+
+$$\left.\frac{df(z)}{dz}\right|_{z=z_0} = 0$$
+
+</MathBlock>
+
+A Taylor expansion of $\ln f$ around $z_0$ has no linear term there, only curvature, which
+defines a precision:
+
+<MathBlock id="4.128" name="precision from curvature">
+
+$$A = -\left.\frac{d^2}{dz^2}\ln f(z)\right|_{z=z_0}$$
+
+</MathBlock>
+
+<Figure caption="PRML's own example, p(z) ∝ exp(−z²/2) σ(20z + 4): the mode the fit reports against the mean it never looks at." source="4.14" width="wide">
+  <ModeVsMeanMismatch client:visible />
+</Figure>
+
+In $M$ dimensions the same argument replaces the second derivative with a Hessian and
+gives a full covariance:
+
+<MathBlock id="4.134" name="multivariate Laplace approximation">
+
+$$q(\mathbf{z}) = \mathcal{N}(\mathbf{z} \mid \mathbf{z}_0, \mathbf{A}^{-1})$$
+
+</MathBlock>
+
+<Figure caption="A two-dimensional density built from two skewed marginals, with its Laplace-fitted covariance ellipse." width="wide">
+  <Laplace2DContours client:visible />
+</Figure>
+
+Because $Z$ never enters the mode or curvature calculation, this also approximates $Z$
+itself: $Z \approx f(z_0)(2\pi/A)^{1/2}$, the seed of the BIC criterion in 4.4.1.
+
+<Figure caption="The Laplace estimate of a Gamma density's normalising constant, as a fraction of the true value. The gap shrinks as the density concentrates." width="wide">
+  <NormalizationConstantApprox client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="A skewed posterior meets its Laplace approximation"
+  figure="4.14"
+  caption="Drag the steepness slider and watch the fitted Gaussian's mode chase the true mode while its mean sits somewhere else entirely."
+>
+  <LaplaceSkewedPosterior1D client:visible />
+</Widget>
+
+At steepness 1 the sigmoid barely bends the Gaussian and the fit is nearly exact; by 20,
+the book's own setting, the two summary statistics have pulled well apart.
+
+## Worked example
+
+For $p(z) \propto \exp(-z^2/2)\,\sigma(20z+4)$, solving 4.126 numerically gives mode
+$z_0 \approx 0.077$. The curvature there gives precision $A \approx 2.544$, so the Laplace
+fit is $\mathcal{N}(z \mid 0.077,\, 0.393)$.
+
+Integrating $z$ against the true, correctly normalised density gives a mean of about
+$0.673$: a gap of roughly $0.595$ from the mode the Laplace approximation reports. The
+true density has real mass on the side the Gaussian's mean never reaches, because the
+sigmoid factor keeps that side alive far longer than a symmetric fall-off would.
+
+## Recall
+
+<Recall question="What two numbers does the Laplace approximation need, and what does it never need?" concepts={["laplace-approximation"]}>
+The mode and the curvature (negative second derivative, or Hessian) at the mode. It
+never needs the normalising constant $Z$, since a Gaussian's own normaliser already
+exists in closed form.
+</Recall>
+
+<Recall question="Why can the fitted Gaussian's mean sit far from the true density's mean?" concepts={["laplace-approximation"]}>
+Because the approximation is built entirely from behaviour at the mode, and the mode of
+a skewed density is not its mean. Nothing in the method looks at the rest of the curve.
+</Recall>
+
+<Recall question="What must be true of the mode for the Laplace approximation to be well defined?" concepts={["laplace-approximation"]}>
+The precision $A$ must be positive, which requires the stationary point to be a genuine
+local maximum rather than a minimum or a saddle.
+</Recall>
+
+## Connections
+
+- **Builds on** [4.3](/sections/4-3)'s cross-entropy error, whose Newton-Raphson step is
+  reused here to find the mode.
+- **Rhymes with** [3.5](/sections/3-5)'s evidence approximation: both trade an intractable
+  integral for a cheap stand-in built from one fitted point.
+- **Leads to** [4.5](/sections/4-5), which applies exactly this machinery to a real posterior
+  over logistic regression's weights.
+

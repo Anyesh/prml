@@ -1,0 +1,163 @@
+---
+chapter: 4
+section: "4.1"
+title: Discriminant Functions
+bookPages: [181, 195]
+summary: Three ways to fit a straight decision boundary without pretending a class label is a real number with Gaussian noise on it.
+concepts:
+  - linear-discriminant
+  - linearly-separable
+  - least-squares-classification
+  - fishers-linear-discriminant
+  - perceptron-algorithm
+  - multiclass-decomposition-ambiguity
+prereqs: ["3.1", "1.5"]
+equations:
+  - { id: "4.16", name: least-squares weights }
+  - { id: "4.28", name: within-class covariance }
+  - { id: "4.30", name: Fisher's linear discriminant }
+  - { id: "4.55", name: perceptron update }
+widgets: [LeastSquaresVsLogisticBoundary]
+difficulty: 2
+---
+
+import LeastSquaresVsLogisticBoundary from '@widgets/ch04/LeastSquaresVsLogisticBoundary';
+import LeastSquaresRegressionOnIndicator from '@widgets/ch04/figures/LeastSquaresRegressionOnIndicator';
+import PerceptronConvergence from '@widgets/ch04/figures/PerceptronConvergence';
+import FisherProjectionHistograms from '@widgets/ch04/figures/FisherProjectionHistograms';
+import OneVsRestAmbiguity from '@widgets/ch04/figures/OneVsRestAmbiguity';
+
+## Intuition
+
+A classifier needs a rule that sends an input to one of K labels, and the simplest such
+rule cuts the input space with a straight line: whichever side of a hyperplane a point
+lands on decides its class. Restricting to lines and planes is the same trade chapter 3
+made restricting regression to weighted sums of fixed features.
+
+The trouble is the target. Regression predicts a real number, so squared error is a fair
+stand-in for "how wrong was I". A class label is not a real number, and treating one as
+if it were, by regressing onto a 0/1 indicator, quietly imports a Gaussian noise
+assumption a label never had.
+
+This section fits a straight boundary three ways without that fiction: least squares
+anyway, despite the mismatch; Fisher's projection, which asks only for separation, not
+a fitted number; and the perceptron, reacting to mistakes one at a time and never
+touching squared error at all. One breaks in a visible way; the other two do not.
+
+## The math
+
+Regress a target matrix `T` of one-of-K rows against the design matrix `X` and least
+squares gives the same closed form as chapter 3:
+
+<MathBlock id="4.16" name="least-squares weights">
+
+$$\widetilde{\mathbf{W}} = \left(\mathbf{X}^{\mathrm{T}}\mathbf{X}\right)^{-1}\mathbf{X}^{\mathrm{T}}\mathbf{T} = \mathbf{X}^{\dagger}\mathbf{T}$$
+
+</MathBlock>
+
+<Figure caption="A single feature regressed onto a 0/1 label. The fitted line answers a question no probability ever asks: what happens past 1?" width="wide">
+  <LeastSquaresRegressionOnIndicator client:visible />
+</Figure>
+
+Nothing here keeps a class score inside $(0, 1)$, and a point deep inside its own class
+still contributes a large residual against the indicator, one the fit tries to shrink even
+though the point was never at risk. Fisher's approach never regresses onto anything: it
+projects each point to a scalar $y = \mathbf{w}^{\mathrm{T}}\mathbf{x}$ and picks $\mathbf{w}$ to
+maximise separation against within-class spread, summed directly from the data:
+
+<MathBlock id="4.28" name="within-class covariance">
+
+$$\mathbf{S}_W = \sum_{n \in C_1}(\mathbf{x}_n - \mathbf{m}_1)(\mathbf{x}_n - \mathbf{m}_1)^{\mathrm{T}} + \sum_{n \in C_2}(\mathbf{x}_n - \mathbf{m}_2)(\mathbf{x}_n - \mathbf{m}_2)^{\mathrm{T}}$$
+
+</MathBlock>
+
+<MathBlock id="4.30" name="Fisher's linear discriminant">
+
+$$\mathbf{w} \propto \mathbf{S}_W^{-1}(\mathbf{m}_2 - \mathbf{m}_1)$$
+
+</MathBlock>
+
+The perceptron takes a third route: no fitted score at all, just a rule that moves the
+boundary toward whichever point it just got wrong.
+
+<MathBlock id="4.55" name="perceptron update">
+
+$$\mathbf{w}^{(\tau+1)} = \mathbf{w}^{(\tau)} + \eta\,\boldsymbol{\phi}_n t_n$$
+
+</MathBlock>
+
+<Figure caption="Step through the perceptron visiting each point once per pass. The boundary only moves on the point ringed in red, and only when that point is wrong." source="4.7" width="wide">
+  <PerceptronConvergence client:visible />
+</Figure>
+
+None of the three needs more than two classes to define, but building a K-class rule out
+of two-class pieces is its own trap: a one-versus-rest or one-versus-one decomposition
+can leave a region claimed by none of its binary classifiers, or by more than one.
+
+<Figure caption="Both decompositions on the same three classes. Red marks the region no consistent rule can settle." source="4.2-4.3" width="wide">
+  <OneVsRestAmbiguity client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Least squares against logistic regression"
+  figure="4.5"
+  caption="Drag the cross to slide the extra class-B cluster away from the boundary. Every one of those points is already classified correctly, yet watch what happens to the red line anyway."
+>
+  <LeastSquaresVsLogisticBoundary client:visible />
+</Widget>
+
+The dashed logistic boundary, from section 4.3, is here only as a stable reference. Push
+the cluster far enough and least squares starts misclassifying points it had right at
+offset zero.
+
+## Worked example
+
+Three points each: class 1 at $(1,2), (2,1), (2,3)$, class 2 at $(5,6), (6,5), (6,7)$.
+Means are $\mathbf{m}_1 = (1.667, 2)$ and $\mathbf{m}_2 = (5.667, 6)$. Each class has one
+coordinate with no internal spread and one with spread 2 either way, so equation 4.28
+gives a diagonal $\mathbf{S}_W = \mathrm{diag}(1.333,\, 4)$.
+
+Equation 4.30 needs no inversion beyond a diagonal one: $\mathbf{w} \propto (3, 1)$, after
+clearing the common factor. Projecting every point onto that direction gives class 1 at
+$5, 7, 9$ and class 2 at $21, 23, 25$: a clean gap of 12, against a gap of under 3 if the
+raw mean-difference direction $(4, 4)$ is used instead, because that direction spends
+equally on the coordinate with 4 units of spread and the coordinate with almost none.
+
+<Figure caption="The same data, projected two ways. Fisher's axis rotates away from the noisy coordinate; the mean-difference axis does not." width="wide">
+  <FisherProjectionHistograms client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="Why does least-squares regression onto class indicators break, when the same closed form works fine in chapter 3?" concepts={["least-squares-classification"]}>
+Because it fits a number, not a label. A point deep inside its own class still produces a
+residual against the indicator, and squared error keeps trying to shrink that residual
+even when the point was never in danger of being misclassified.
+</Recall>
+
+<Recall question="What does Fisher's direction reduce to when the within-class covariance is isotropic?" concepts={["fishers-linear-discriminant"]}>
+The plain mean-difference direction, $\mathbf{m}_2 - \mathbf{m}_1$. Equation 4.30 only
+rotates away from that when the classes have unequal spread along different axes.
+</Recall>
+
+<Recall question="When does the perceptron update in 4.55 fire?" concepts={["perceptron-algorithm"]}>
+Only on a misclassified pattern, where $\mathbf{w}^{\mathrm{T}}\boldsymbol{\phi}_n t_n \le 0$. A
+correctly classified point leaves the weights untouched.
+</Recall>
+
+<Recall question="Why can one-versus-rest leave part of the input space undecided?" concepts={["multiclass-decomposition-ambiguity"]}>
+Each of its K binary classifiers is trained independently, so a point can be claimed by
+none of them or by more than one. A single K-output linear model has no such gap.
+</Recall>
+
+## Connections
+
+- **Builds on** [3.1](/sections/3-1)'s design matrix and pseudo-inverse, and [1.5](/sections/1-5)'s
+  discriminant as inference and decision folded into one step.
+- **Motivates** [4.3](/sections/4-3)'s probabilistic alternative, since the perceptron simply
+  does not converge off separable data.
+- **Leads to** [4.2](/sections/4-2), where a linear boundary falls out of assumptions about
+  the data instead of an error function.
+

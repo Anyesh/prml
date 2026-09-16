@@ -1,0 +1,157 @@
+---
+chapter: 4
+section: "4.3"
+title: Probabilistic Discriminative Models
+bookPages: [203, 212]
+summary: Fit the posterior's sigmoid-of-a-linear-function form directly by maximum likelihood, using a Newton step reshaped into a weighted least-squares solve.
+concepts:
+  - logistic-regression
+  - cross-entropy-error
+  - iterative-reweighted-least-squares
+  - probit-regression
+prereqs: ["4.2", "3.1"]
+equations:
+  - { id: "4.90", name: cross-entropy error }
+  - { id: "4.91", name: cross-entropy gradient }
+  - { id: "4.99", name: IRLS update }
+  - { id: "4.114", name: probit function }
+widgets: [IrlsConvergence]
+difficulty: 3
+---
+
+import IrlsConvergence from '@widgets/ch04/IrlsConvergence';
+import ConvexVsNonconvexErrorSurface from '@widgets/ch04/figures/ConvexVsNonconvexErrorSurface';
+import ResidualInterpretation from '@widgets/ch04/figures/ResidualInterpretation';
+import WeightNormDivergence from '@widgets/ch04/figures/WeightNormDivergence';
+import ProbitVsLogisticSigmoid from '@widgets/ch04/figures/ProbitVsLogisticSigmoid';
+
+## Intuition
+
+Section 4.2 arrived at a sigmoid of a linear function by fitting densities and letting
+Bayes' theorem produce it. This section fits that same functional form directly, with
+none of the density-fitting in between: far fewer parameters, and no assumption about
+what the class-conditional densities look like, because the model never claims to know.
+
+The cost is the closed form. Chapter 3's regression had one because a Gaussian
+likelihood is quadratic in the weights; a sigmoid's likelihood is not, so there is no
+formula to jump to, only a direction to climb the likelihood in. That direction turns out
+to have a clean interpretation: it moves each weight by the error between prediction and
+target, weighted by the input, so a large confident mistake pulls harder than a small
+uncertain one. Repeating that climb a few times over is the whole method.
+
+## The math
+
+The likelihood of $\mathbf{w}$ under $N$ independent Bernoulli labels gives, after taking a
+negative log, the cross-entropy error:
+
+<MathBlock id="4.90" name="cross-entropy error">
+
+$$E(\mathbf{w}) = -\sum_{n=1}^N \{t_n \ln y_n + (1-t_n)\ln(1-y_n)\}$$
+
+</MathBlock>
+
+Its gradient is unexpectedly simple: the sigmoid's own derivative cancels, leaving the
+same "error times feature" form as sum-of-squares regression had in chapter 3.
+
+<MathBlock id="4.91" name="cross-entropy gradient">
+
+$$\nabla E(\mathbf{w}) = \sum_{n=1}^N (y_n - t_n)\boldsymbol{\phi}_n = \boldsymbol{\Phi}^{\mathrm{T}}(\mathbf{y}-\mathbf{t})$$
+
+</MathBlock>
+
+<Figure caption="The gradient's per-point term after fitting: it stays small near the boundary and grows for confident mistakes." width="wide">
+  <ResidualInterpretation client:visible />
+</Figure>
+
+$E(\mathbf{w})$ is concave, so a Newton step toward its root converges fast, and that step
+happens to be a weighted least-squares solve, re-weighted every iteration as the fit
+changes:
+
+<MathBlock id="4.99" name="IRLS update">
+
+$$\mathbf{w}^{(\mathrm{new})} = (\boldsymbol{\Phi}^{\mathrm{T}}\mathbf{R}\boldsymbol{\Phi})^{-1}\boldsymbol{\Phi}^{\mathrm{T}}\mathbf{R}\mathbf{z}$$
+
+</MathBlock>
+
+Squared error on the same sigmoid output has no such guarantee: it can flatten to a
+near-zero gradient without reaching the best fit, wherever the sigmoid has already
+saturated on the wrong side of a point.
+
+<Figure caption="Cross-entropy against squared error on σ(wx), for the same six points plus one outlier. One keeps a restoring gradient everywhere; the other goes flat." width="wide">
+  <ConvexVsNonconvexErrorSurface client:visible />
+</Figure>
+
+A different activation function gives a different discriminative model entirely: the
+standard normal CDF in place of the sigmoid is the probit function.
+
+<MathBlock id="4.114" name="probit function">
+
+$$\Phi(a) = \int_{-\infty}^a \mathcal{N}(\theta \mid 0, 1)\, d\theta$$
+
+</MathBlock>
+
+<Figure caption="Rescaled to match slopes at the origin, the two are close everywhere except the far tails." source="4.9" width="wide">
+  <ProbitVsLogisticSigmoid client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="IRLS converging"
+  caption="Step through the Newton iterations and watch the boundary settle and the error fall. Push class separation up and watch ‖w‖ stop settling at all."
+>
+  <IrlsConvergence client:visible />
+</Widget>
+
+Perfectly separable data has no finite maximiser: the boundary stops moving long before
+$\|\mathbf{w}\|$ does, because pushing the sigmoid ever steeper keeps lowering the error.
+
+<Figure caption="‖w‖ against IRLS iteration at three class separations. Below a critical separation it levels off; above it, ‖w‖ keeps climbing at every separation tried, faster for the narrower margin." width="wide">
+  <WeightNormDivergence client:visible />
+</Figure>
+
+## Worked example
+
+One feature, two points: $x_1=-1,\,t_1=0$ and $x_2=1,\,t_2=1$, starting from
+$\mathbf{w}=(0,0)$. Both predictions start at $y=0.5$, so $\mathbf{R}=0.5\,\mathbf{I}$ scaled by
+$0.25$ and 4.91 gives $\nabla E = (0,-1)$. The Hessian $\boldsymbol{\Phi}^{\mathrm{T}}\mathbf{R}\boldsymbol{\Phi}$
+is $0.5\,\mathbf{I}$, so one Newton step lands at $\mathbf{w}=(0,2)$.
+
+Predictions move to $y_1 \approx 0.119$, $y_2 \approx 0.881$: both now on the correct side
+with room to spare. Cross-entropy drops from $2\ln 2 \approx 1.386$ to about $0.254$ in
+that single step, which is what a concave error function pointed at a root buys you.
+
+## Recall
+
+<Recall question="Why does the cross-entropy gradient take the same 'error times feature' form as linear regression's?" concepts={["cross-entropy-error"]}>
+The sigmoid's own derivative, $y(1-y)$, cancels against a matching term from the
+log-likelihood. It is a property of pairing a sigmoid activation with cross-entropy, not
+a coincidence.
+</Recall>
+
+<Recall question="What does IRLS re-weight, and why every iteration rather than once?" concepts={["iterative-reweighted-least-squares"]}>
+The diagonal matrix $\mathbf{R}$ with entries $y_n(1-y_n)$, which depends on the current
+$\mathbf{w}$. Each Newton step changes $\mathbf{w}$, so $\mathbf{R}$ is stale the moment the step
+lands.
+</Recall>
+
+<Recall question="Why does maximum likelihood fail on linearly separable data?" concepts={["logistic-regression"]}>
+The error keeps falling as $\|\mathbf{w}\|\to\infty$ and the sigmoid sharpens into a step
+function, so no finite weight vector is optimal even though the classes are perfectly
+separated.
+</Recall>
+
+<Recall question="What does logistic regression have that a Gaussian generative classifier does not need to get right?" concepts={["probit-regression"]}>
+Nothing about the class-conditional densities: it fits the posterior's shape directly,
+at the cost of a form with no closed-form maximiser.
+</Recall>
+
+## Connections
+
+- **Builds on** [4.2](/sections/4-2)'s sigmoid-of-a-linear-function form, and [3.1](/sections/3-1)'s
+  design matrix, now re-weighted every iteration instead of fixed.
+- **Answers** the perceptron's all-or-nothing update from [4.1](/sections/4-1) with a graded
+  error that keeps a gradient everywhere.
+- **Leads to** [4.4](/sections/4-4), needed once a Bayesian treatment of these same weights is
+  wanted and no conjugate prior is available.
+

@@ -1,0 +1,156 @@
+---
+chapter: 4
+section: "4.5"
+title: Bayesian Logistic Regression
+bookPages: [217, 224]
+summary: Approximate the intractable posterior over logistic regression's weights with a Laplace fit, then marginalise it into a predictive probability that is pulled toward uncertainty away from the data.
+concepts:
+  - bayesian-logistic-regression
+  - predictive-distribution
+prereqs: ["4.4", "3.3"]
+equations:
+  - { id: "4.143", name: posterior precision }
+  - { id: "4.144", name: Gaussian posterior approximation }
+  - { id: "4.153", name: logistic-Gaussian convolution }
+  - { id: "4.155", name: predictive probability }
+widgets: [PredictiveVsPointEstimate]
+difficulty: 4
+---
+
+import PredictiveVsPointEstimate from '@widgets/ch04/PredictiveVsPointEstimate';
+import ProbitVsLogisticSigmoid from '@widgets/ch04/figures/ProbitVsLogisticSigmoid';
+import KappaShrinkage from '@widgets/ch04/figures/KappaShrinkage';
+import PosteriorContourVsMAP from '@widgets/ch04/figures/PosteriorContourVsMAP';
+import PredictiveShrinkage1D from '@widgets/ch04/figures/PredictiveShrinkage1D';
+
+## Intuition
+
+Section 3.3 kept a full posterior over the weights because a Gaussian prior and a
+Gaussian likelihood multiply into another Gaussian, no approximation needed. A sigmoid
+likelihood has no such partner, so a genuinely Bayesian logistic regression has nowhere
+clean to land, and section 4.4's Laplace approximation gets reached for out of
+necessity rather than convenience.
+
+Fitting the mode is the easy part: the same Newton-Raphson iteration from section 4.3
+finds it, with a prior's curvature simply added to the Hessian. What is new is after.
+With a distribution over the weights instead of one best value, a prediction has to
+marginalise that distribution out, and the result differs from plugging in the
+single best-fit weight vector.
+
+That difference is smallest on the boundary and largest for confident-looking points
+far from any training data: exactly the reading a point estimate can never give, of how
+much a confident answer is support and how much is a model never asked about that part
+of the input space.
+
+## The math
+
+With a Gaussian prior, the Newton-Raphson step from 4.3 gains a prior-precision term,
+and its Hessian at the mode becomes the posterior's own precision:
+
+<MathBlock id="4.143" name="posterior precision">
+
+$$\mathbf{S}_N^{-1} = \mathbf{S}_0^{-1} + \sum_{n=1}^N y_n(1-y_n)\boldsymbol{\phi}_n\boldsymbol{\phi}_n^{\mathrm{T}}$$
+
+</MathBlock>
+
+<MathBlock id="4.144" name="Gaussian posterior approximation">
+
+$$q(\mathbf{w}) = \mathcal{N}(\mathbf{w} \mid \mathbf{w}_{\mathrm{MAP}}, \mathbf{S}_N)$$
+
+</MathBlock>
+
+<Figure caption="The Laplace posterior in weight space: contours of q(w), with wMAP marked." width="wide">
+  <PosteriorContourVsMAP client:visible />
+</Figure>
+
+Predicting requires marginalising $\sigma(\mathbf{w}^{\mathrm{T}}\boldsymbol{\phi})$ over $q(\mathbf{w})$,
+which reduces to convolving a sigmoid with a 1-D Gaussian over the activation
+$a=\mathbf{w}^{\mathrm{T}}\boldsymbol{\phi}$. That convolution has no closed form, but the same
+probit similarity from section 4.3 does:
+
+<MathBlock id="4.153" name="logistic-Gaussian convolution">
+
+$$\int \sigma(a)\,\mathcal{N}(a \mid \mu, \sigma^2)\, da \approx \sigma\big(\kappa(\sigma^2)\,\mu\big)$$
+
+</MathBlock>
+
+<Figure caption="The same sigmoid-probit closeness from 4.3, which is exactly what makes 4.153 available in closed form." width="wide">
+  <ProbitVsLogisticSigmoid client:visible />
+</Figure>
+
+with $\kappa(\sigma^2) = (1+\pi\sigma^2/8)^{-1/2}$ shrinking toward zero as the activation's
+variance grows, pulling the prediction toward $0.5$:
+
+<Figure caption="κ(σ²) against σ². Wide activation variance flattens the sigmoid's argument almost to nothing." width="wide">
+  <KappaShrinkage client:visible />
+</Figure>
+
+Applied to the activation's own mean and variance under $q(\mathbf{w})$, this gives the
+predictive probability:
+
+<MathBlock id="4.155" name="predictive probability">
+
+$$p(C_1\mid\boldsymbol{\phi},\mathbf{t}) = \sigma\big(\kappa(\sigma_a^2)\,\mu_a\big)$$
+
+</MathBlock>
+
+<Figure caption="A one-feature slice through the same idea: the marginalised curve sits closer to 0.5 than the point estimate everywhere it has not seen data." width="wide">
+  <PredictiveShrinkage1D client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Predictive distribution against the point estimate"
+  caption="Raise the prior variance and watch the 0.1 and 0.9 contours pull back toward the data while the 0.5 contour, the decision boundary itself, does not move at all."
+>
+  <PredictiveVsPointEstimate client:visible />
+</Widget>
+
+That last fact is 4.155's quiet consequence: $\kappa$ rescales $\mu_a$ but never flips its
+sign, so the marginalised decision boundary is identical to the point estimate's. Only
+how confident the model is away from that boundary changes.
+
+## Worked example
+
+Take a posterior with $\mathbf{w}_{\mathrm{MAP}} = (0, 2)$ and $\mathbf{S}_N = 0.5\,\mathbf{I}$, and a
+query $\boldsymbol{\phi} = (1, 1)$. The activation moments are $\mu_a = 2$ and
+$\sigma_a^2 = \boldsymbol{\phi}^{\mathrm{T}}\mathbf{S}_N\boldsymbol{\phi} = 1$.
+
+Equation 4.154 gives $\kappa(1) \approx 0.847$, so 4.155 gives a predictive probability of
+$\sigma(0.847 \times 2) \approx 0.845$. The point estimate $\sigma(\mu_a) = \sigma(2) \approx 0.881$
+is noticeably more confident: marginalising the posterior pulled the answer toward $0.5$
+by about $0.036$, purely from carrying the uncertainty in $\mathbf{w}$ forward.
+
+## Recall
+
+<Recall question="Why is a genuinely Bayesian treatment of logistic regression harder than for linear regression?" concepts={["bayesian-logistic-regression"]}>
+The sigmoid likelihood has no conjugate prior, so the posterior is not Gaussian and
+cannot be written down exactly. A linear-Gaussian model never hits this problem.
+</Recall>
+
+<Recall question="What plays the role of the posterior's precision in 4.143, and where does it come from?" concepts={["bayesian-logistic-regression"]}>
+The Hessian of the negative log posterior at wMAP: the prior's own precision plus the
+same weighted sum of outer products that section 4.3's IRLS Hessian used, evaluated at
+the mode instead of at an arbitrary iterate.
+</Recall>
+
+<Recall question="Does marginalising the posterior ever move the decision boundary itself?" concepts={["predictive-distribution"]}>
+No. $\kappa(\sigma_a^2)$ only rescales $\mu_a$, and $\sigma(0) = 0.5$ regardless of scaling, so
+the boundary where $\mu_a = 0$ is exactly where the point estimate puts it.
+</Recall>
+
+<Recall question="Where does the marginalised predictive probability disagree most with the point estimate?" concepts={["predictive-distribution"]}>
+Far from the training data, where $\sigma_a^2$ is largest because the posterior is least
+constrained there, and $\kappa$ shrinks hardest.
+</Recall>
+
+## Connections
+
+- **Builds on** [4.4](/sections/4-4)'s mode-plus-Hessian machinery and [4.3](/sections/4-3)'s
+  probit similarity, reused here for the convolution trick.
+- **Rhymes with** [3.3](/sections/3-3): both marginalise a weight posterior into a predictive
+  distribution, one in closed form, one approximated.
+- **Closes** the chapter's arc from a boundary fit by an error function, to one derived
+  from densities, to one carrying its own uncertainty forward into every prediction.
+

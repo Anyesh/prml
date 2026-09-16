@@ -1,0 +1,145 @@
+---
+chapter: 4
+section: "4.2"
+title: Probabilistic Generative Models
+bookPages: [196, 202]
+summary: Fit a density per class instead of a boundary directly, and a linear boundary falls out as a side effect when the classes share a covariance.
+concepts:
+  - class-conditional-density
+  - softmax-function
+  - generative-model
+prereqs: ["4.1", "2.3"]
+equations:
+  - { id: "4.62", name: softmax posterior }
+  - { id: "4.65", name: posterior as a sigmoid of a linear function }
+  - { id: "4.66", name: shared-covariance weight vector }
+  - { id: "4.67", name: shared-covariance bias }
+widgets: [GaussianGenerativeExplorer]
+difficulty: 2
+---
+
+import GaussianGenerativeExplorer from '@widgets/ch04/GaussianGenerativeExplorer';
+import SoftmaxActivations from '@widgets/ch04/figures/SoftmaxActivations';
+import SharedVsSeparateCovarianceBoundaries from '@widgets/ch04/figures/SharedVsSeparateCovarianceBoundaries';
+import MaximumLikelihoodFit from '@widgets/ch04/figures/MaximumLikelihoodFit';
+
+## Intuition
+
+Section 4.1 fit a boundary directly and never asked what the data looked like on either
+side of it. A generative model asks exactly that: fit a density to each class, fit how
+common each class is, and let Bayes' theorem turn those into a boundary rather than
+searching for one.
+
+This costs more to fit, since a density over the whole feature space is a bigger object
+than a single hyperplane, and it throws away nothing: the same fitted densities also say
+how typical a new point is, which a boundary alone never can.
+
+The surprise is what comes back out. Two Gaussians with a shared covariance produce
+a posterior that is a sigmoid of a linear function of the input, the exact function form
+section 4.3 assumes from the outset. Generative and discriminative modelling land on
+the same equation from opposite directions here, which is exactly why it is worth doing
+both before picking one.
+
+## The math
+
+For classes with priors $p(C_k)$ and densities $p(\mathbf{x}\mid C_k)$, Bayes' theorem gives a
+posterior that is always a normalised exponential of "activations" $a_k = \ln p(\mathbf{x}\mid
+C_k)p(C_k)$:
+
+<MathBlock id="4.62" name="softmax posterior">
+
+$$p(C_k \mid \mathbf{x}) = \frac{\exp(a_k)}{\sum_j \exp(a_j)}$$
+
+</MathBlock>
+
+<Figure caption="Three linear activations and the softmax posterior they produce. The winner sharpens toward 1 wherever it clears the others by a wide margin." width="wide">
+  <SoftmaxActivations client:visible />
+</Figure>
+
+Nothing there is linear yet. Linearity is a consequence of choosing Gaussian densities
+with one covariance $\boldsymbol{\Sigma}$ shared across every class: the quadratic terms in
+$\mathbf{x}$ cancel between numerator and denominator, and for two classes the posterior
+collapses to a plain sigmoid:
+
+<MathBlock id="4.65" name="posterior as a sigmoid of a linear function">
+
+$$p(C_1 \mid \mathbf{x}) = \sigma(\mathbf{w}^{\mathrm{T}}\mathbf{x} + w_0)$$
+
+</MathBlock>
+
+<MathBlock id="4.66" name="shared-covariance weight vector">
+
+$$\mathbf{w} = \boldsymbol{\Sigma}^{-1}(\boldsymbol{\mu}_1 - \boldsymbol{\mu}_2)$$
+
+</MathBlock>
+
+<MathBlock id="4.67" name="shared-covariance bias">
+
+$$w_0 = -\tfrac{1}{2}\boldsymbol{\mu}_1^{\mathrm{T}}\boldsymbol{\Sigma}^{-1}\boldsymbol{\mu}_1 + \tfrac{1}{2}\boldsymbol{\mu}_2^{\mathrm{T}}\boldsymbol{\Sigma}^{-1}\boldsymbol{\mu}_2 + \ln\frac{p(C_1)}{p(C_2)}$$
+
+</MathBlock>
+
+Let each class keep its own covariance instead, and that cancellation never happens: the
+boundary is quadratic in $\mathbf{x}$.
+
+<Figure caption="Same two classes, one shared covariance fit and one separate. The linear and quadratic boundaries agree near the middle and diverge everywhere else." width="wide">
+  <SharedVsSeparateCovarianceBoundaries client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Generative classifier: densities and their posterior"
+  figure="4.10"
+  caption="Drag either cross to move a class mean, and toggle shared against separate covariance. Watch the posterior slice track the densities that produced it."
+>
+  <GaussianGenerativeExplorer client:visible />
+</Widget>
+
+The bottom panel is a straight read of 4.65 along the line joining the means: shared
+covariance keeps it a clean sigmoid; separate covariance can make it double back.
+
+## Worked example
+
+Eight points, four per class: class 1 at $(0,0),(1,0),(0,1),(1,1)$, class 2 shifted by $(3,3)$.
+Both classes have mean $(0.5,0.5)$ and $(3.5,3.5)$ and, by symmetry, identical scatter
+$\mathrm{diag}(1,1)$, so the pooled maximum-likelihood covariance from fitting both at once
+is $\boldsymbol{\Sigma} = 0.25\,\mathbf{I}$, with equal priors of $0.5$.
+
+Equation 4.66 gives $\mathbf{w} = 4(\boldsymbol{\mu}_1 - \boldsymbol{\mu}_2) = (-12,-12)$, and 4.67
+gives $w_0 = 48$, so the boundary $\mathbf{w}^{\mathrm{T}}\mathbf{x} + w_0 = 0$ reduces to
+$x_1 + x_2 = 4$: exactly the perpendicular bisector of the two means, as isotropic,
+equal-prior covariance should give.
+
+<Figure caption="The eight points, their fitted covariance ellipses, and the boundary computed from 4.66-4.67." width="wide">
+  <MaximumLikelihoodFit client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="Why does a shared covariance produce a linear boundary but separate covariances do not?" concepts={["class-conditional-density"]}>
+The quadratic term in each Gaussian's exponent is $\mathbf{x}^{\mathrm{T}}\boldsymbol{\Sigma}^{-1}\mathbf{x}$.
+With one shared $\boldsymbol{\Sigma}$ it is identical for every class and cancels when the
+posterior is formed; with separate covariances it does not, and survives into the
+boundary.
+</Recall>
+
+<Recall question="What does the softmax reduce to when one activation is far larger than the rest?" concepts={["softmax-function"]}>
+A near-one-hot vector: the largest class's posterior approaches 1 and every other
+approaches 0, which is why it is called a smoothed maximum rather than an average.
+</Recall>
+
+<Recall question="What does a generative fit give you that a boundary alone cannot?" concepts={["generative-model"]}>
+A density over the input itself, so the model can also say how typical a new point is,
+not only which side of the boundary it falls on.
+</Recall>
+
+## Connections
+
+- **Builds on** [4.1](/sections/4-1)'s notion of a linear boundary, now derived rather than
+  fit directly, and [2.3](/sections/2-3)'s multivariate Gaussian.
+- **Rhymes with** [4.3](/sections/4-3): the same sigmoid-of-a-linear-function form, reached
+  from opposite ends.
+- **Leads to** [4.3](/sections/4-3), which fits that form's parameters directly instead of
+  fitting densities that happen to produce it.
+
