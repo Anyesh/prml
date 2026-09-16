@@ -6,7 +6,7 @@ export const ROOT = path.resolve(GATES_DIR, '..', '..');
 
 export const CONTENT_DIR = path.join(ROOT, 'content');
 export const SECTIONS_DIR = path.join(CONTENT_DIR, 'sections');
-export const CONCEPTS_YAML = path.join(CONTENT_DIR, 'concepts.yaml');
+export const CONCEPTS_DIR = path.join(CONTENT_DIR, 'concepts');
 export const CHAPTERS_YAML = path.join(CONTENT_DIR, 'chapters.yaml');
 
 export const EQUATIONS_MANIFEST = path.join(ROOT, 'tools', 'extract', 'equations.json');

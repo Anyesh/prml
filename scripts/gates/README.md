@@ -82,7 +82,8 @@ time.
 - `prereqs` over sections must be a DAG. On a cycle it prints the actual
   cycle (`3.1 -> 3.2 -> 3.1`), not just "a cycle exists".
 - Every prereq must name a section that exists.
-- Every `concepts[]` entry in a section must exist in `content/concepts.yaml`.
+- Every `concepts[]` entry in a section must exist in one of the `content/concepts/*.yaml`
+  shards, and no two shards may define the same id.
 - Every concept's `requires` must name an existing concept, and that
   relation must also be acyclic (same cycle-printing).
 - Every concept's `introducedIn` / `usedIn` must name existing sections.

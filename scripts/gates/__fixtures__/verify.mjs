@@ -76,7 +76,7 @@ async function main() {
 
   const gate5 = await runGraphGate({
     sectionsDir: path.join(HERE, 'gate5-bad', 'sections'),
-    conceptsPath: path.join(HERE, 'gate5-bad', 'concepts.yaml'),
+    conceptsDir: path.join(HERE, 'gate5-bad', 'concepts'),
     rootsPath: path.join(HERE, 'gate5-bad', 'roots.json'),
   });
   results.push(
@@ -87,6 +87,7 @@ async function main() {
       'requires-cycle',
       'introducedIn "7.7" does not exist',
       'orphaned',
+      'is already defined in concepts/ch03.yaml',
     ]),
   );
 

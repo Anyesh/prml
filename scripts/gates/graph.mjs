@@ -3,7 +3,7 @@
  * Gate 5: validates the two graphs that hold the curriculum together.
  *
  *  - sections.prereqs must form a DAG; every prereq must name a real section
- *  - every section.concepts entry must exist in content/concepts.yaml
+ *  - every section.concepts entry must exist in content/concepts/
  *  - every concept.requires entry must exist and that relation must be acyclic
  *  - every concept.introducedIn / usedIn must name a real section
  *  - every non-root section must be reachable by following prereqs forward
@@ -15,11 +15,11 @@ import { parse as parseYaml } from 'yaml';
 import { parseGateArgs, reportGate } from './lib/cli.mjs';
 import { findFiles } from './lib/walk.mjs';
 import { readMdxFile } from './lib/mdx.mjs';
-import { SECTIONS_DIR, CONCEPTS_YAML, ROOTS_JSON } from './lib/paths.mjs';
+import { SECTIONS_DIR, CONCEPTS_DIR, ROOTS_JSON } from './lib/paths.mjs';
 
 export async function runGraphGate({
   sectionsDir = SECTIONS_DIR,
-  conceptsPath = CONCEPTS_YAML,
+  conceptsDir = CONCEPTS_DIR,
   rootsPath = ROOTS_JSON,
 } = {}) {
   const failures = [];
@@ -43,7 +43,7 @@ export async function runGraphGate({
     });
   }
 
-  const concepts = loadConcepts(conceptsPath, info);
+  const concepts = loadConcepts(conceptsDir, info, failures);
   const roots = loadRoots(rootsPath);
 
   checkPrereqsExist(sectionsById, failures, warnings);
@@ -62,19 +62,41 @@ export async function runGraphGate({
   return { gate: 'graph', ok: failures.length === 0, checked, failures, warnings, info };
 }
 
-function loadConcepts(conceptsPath, info) {
+/**
+ * The graph is sharded one YAML file per chapter so parallel chapter authors never write
+ * the same file. Sharding introduces a failure the single file could not have: two shards
+ * defining the same id, where the last one read would silently win.
+ */
+function loadConcepts(conceptsDir, info, failures) {
   const map = new Map();
-  if (!fs.existsSync(conceptsPath)) {
-    info.push(`${path.basename(conceptsPath)} not found; treating the concept graph as empty.`);
+  if (!fs.existsSync(conceptsDir)) {
+    info.push(`${path.basename(conceptsDir)}/ not found; treating the concept graph as empty.`);
     return map;
   }
-  const parsed = parseYaml(fs.readFileSync(conceptsPath, 'utf8'));
-  for (const entry of parsed ?? []) {
-    map.set(entry.id, {
-      requires: entry.requires ?? [],
-      introducedIn: entry.introducedIn,
-      usedIn: entry.usedIn ?? [],
-    });
+
+  const shards = fs
+    .readdirSync(conceptsDir)
+    .filter((name) => name.endsWith('.yaml'))
+    .sort();
+
+  for (const shard of shards) {
+    const parsed = parseYaml(fs.readFileSync(path.join(conceptsDir, shard), 'utf8'));
+    for (const entry of parsed ?? []) {
+      const existing = map.get(entry.id);
+      if (existing) {
+        failures.push({
+          file: `concepts/${shard}`,
+          message: `concept "${entry.id}" is already defined in concepts/${existing.shard}`,
+        });
+        continue;
+      }
+      map.set(entry.id, {
+        shard,
+        requires: entry.requires ?? [],
+        introducedIn: entry.introducedIn,
+        usedIn: entry.usedIn ?? [],
+      });
+    }
   }
   return map;
 }

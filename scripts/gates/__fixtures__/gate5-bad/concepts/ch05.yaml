@@ -1,0 +1,7 @@
+- id: posterior
+  name: "Duplicate claim"
+  definition: "A second shard claiming an id another shard already defines, which sharding makes possible and a single file could not."
+  introducedIn: "3.1"
+  usedIn: []
+  requires: []
+  aliases: []

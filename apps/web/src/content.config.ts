@@ -1,4 +1,7 @@
-import { defineCollection } from 'astro:content';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { defineCollection, type Loader } from 'astro:content';
 import { file, glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 import { parse as parseYaml } from 'yaml';
@@ -55,7 +58,7 @@ const sections = defineCollection({
 });
 
 const concepts = defineCollection({
-  loader: file('../../content/concepts.yaml', { parser: yamlList }),
+  loader: shardedYamlList('../../content/concepts'),
   schema: z
     .object({
       id: z.string().regex(SLUG),
@@ -86,6 +89,34 @@ const chapters = defineCollection({
 });
 
 export const collections = { sections, concepts, chapters };
+
+/**
+ * One YAML list per chapter, merged into a single collection. Sharded so that parallel
+ * chapter authors never write the same file; the graph gate rejects an id claimed twice,
+ * which is the one failure mode a single file could not produce.
+ */
+function shardedYamlList(relativeDir: string): Loader {
+  return {
+    name: 'sharded-yaml-list',
+    load: async ({ store, parseData, config, watcher }) => {
+      const dir = path.join(fileURLToPath(config.root), relativeDir);
+      watcher?.add(dir);
+      store.clear();
+
+      const shards = fs.existsSync(dir)
+        ? fs.readdirSync(dir).filter((name) => name.endsWith('.yaml')).sort()
+        : [];
+
+      for (const shard of shards) {
+        const entries = yamlList(fs.readFileSync(path.join(dir, shard), 'utf8'));
+        for (const entry of entries) {
+          const id = String(entry['id']);
+          store.set({ id, data: await parseData({ id, data: entry }) });
+        }
+      }
+    },
+  };
+}
 
 function yamlList(text: string): Record<string, unknown>[] {
   const value: unknown = parseYaml(text);
