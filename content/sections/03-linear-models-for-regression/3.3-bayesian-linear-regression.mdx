@@ -1,0 +1,229 @@
+---
+chapter: 3
+section: "3.3"
+title: Bayesian Linear Regression
+bookPages: [152, 160]
+summary: Putting a prior over the weights turns curve fitting into belief updating, so the model reports how sure it is and stops over-fitting without a validation set.
+concepts:
+  - conjugate-prior
+  - posterior-distribution
+  - predictive-distribution
+  - equivalent-kernel
+  - sequential-learning
+prereqs: ["3.1", "2.3"]
+equations:
+  - { id: "3.49", name: weight posterior }
+  - { id: "3.52", name: isotropic Gaussian prior }
+  - { id: "3.53", name: posterior mean }
+  - { id: "3.54", name: posterior covariance }
+  - { id: "3.58", name: predictive distribution }
+  - { id: "3.59", name: predictive variance }
+  - { id: "3.62", name: equivalent kernel }
+widgets: [SequentialBayesianLearning]
+difficulty: 3
+---
+
+import SequentialBayesianLearning from '@widgets/ch03/SequentialBayesianLearning';
+
+## Intuition
+
+Least squares hands back a single set of weights and no opinion about them. Fit a
+ninth-order polynomial to ten noisy points and it will return coefficients in the
+thousands, draw a curve through every point, and offer no signal at all that anything has
+gone wrong. The usual patch is to hold out a validation set and tune a regularisation
+coefficient against it, which works, but it spends data on model selection and it still
+produces one curve with no error bars.
+
+The Bayesian treatment changes what the answer is. Instead of asking which weights are
+best, we start from a distribution over weights representing what we believe before seeing
+anything, and we ask how each observation reshapes it. The answer is another distribution:
+narrower where the data is informative, still broad where it is not.
+
+Two things follow that the point estimate cannot give you. Predictions come with a variance
+that widens away from the data, so the model says where it is guessing. And over-fitting
+stops being a thing you have to police, because a model with too many parameters spreads
+its prior thin and is penalised automatically, without a validation set and without a knob
+to tune.
+
+The catch is that this only stays tractable because of a coincidence: the likelihood is
+Gaussian in the weights, so if the prior is Gaussian too, the posterior is Gaussian, and
+everything stays in closed form forever. That is conjugacy, and it is why this section is
+arithmetic rather than integration.
+
+## The math
+
+Take the noise precision $\beta$ as known for now. The likelihood is the exponential of a
+quadratic in $\mathbf{w}$, so the conjugate prior is Gaussian, and the posterior is
+Gaussian as well:
+
+<MathBlock id="3.49" name="weight posterior">
+
+$$p(\mathbf{w} \mid \mathbf{t}) = \mathcal{N}(\mathbf{w} \mid \mathbf{m}_N, \mathbf{S}_N)$$
+
+</MathBlock>
+
+For the rest of the chapter we use a zero-mean isotropic prior with a single precision
+$\alpha$, which is the simplest thing that still shows the behaviour:
+
+<MathBlock id="3.52" name="isotropic Gaussian prior">
+
+$$p(\mathbf{w} \mid \alpha) = \mathcal{N}(\mathbf{w} \mid \mathbf{0}, \alpha^{-1}\mathbf{I})$$
+
+</MathBlock>
+
+With that prior the posterior parameters are
+
+<MathBlock id="3.53" name="posterior mean">
+
+$$\mathbf{m}_N = \beta\mathbf{S}_N\boldsymbol{\Phi}^{\mathrm{T}}\mathbf{t}$$
+
+</MathBlock>
+
+<MathBlock id="3.54" name="posterior covariance">
+
+$$\mathbf{S}_N^{-1} = \alpha\mathbf{I} + \beta\boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\Phi}$$
+
+</MathBlock>
+
+Read 3.54 from right to left and the whole section is in it. Every observation adds
+$\beta\,\boldsymbol{\phi}(x_n)\boldsymbol{\phi}(x_n)^{\mathrm{T}}$ to the precision, and
+precision only ever increases. Belief never widens as data arrives. It also says the
+posterior does not care in what order the points came, and that the posterior after $n$
+points is exactly the prior for point $n+1$, which is what makes the update below
+sequential rather than a refit.
+
+Two limits are worth holding onto. As $\alpha \to 0$ the prior becomes infinitely broad and
+$\mathbf{m}_N$ collapses onto the maximum likelihood solution: least squares is the special
+case where you claim to have known nothing. And with $N = 0$ the posterior is the prior,
+unchanged.
+
+What we actually want is not the weights but predictions. Marginalising the weights out
+gives
+
+<MathBlock id="3.58" name="predictive distribution">
+
+$$p(t \mid \mathbf{x}, \mathbf{t}, \alpha, \beta) = \mathcal{N}\big(t \mid \mathbf{m}_N^{\mathrm{T}}\boldsymbol{\phi}(\mathbf{x}),\ \sigma_N^2(\mathbf{x})\big)$$
+
+</MathBlock>
+
+<MathBlock id="3.59" name="predictive variance">
+
+$$\sigma_N^2(\mathbf{x}) = \frac{1}{\beta} + \boldsymbol{\phi}(\mathbf{x})^{\mathrm{T}}\mathbf{S}_N\boldsymbol{\phi}(\mathbf{x})$$
+
+</MathBlock>
+
+The variance has two parts and they behave differently. The first is the noise in the data
+itself and it never goes away, however many points arrive. The second is uncertainty about
+$\mathbf{w}$, and it shrinks towards zero as $\mathbf{S}_N$ contracts. So the error bars
+narrow to a floor of $1/\beta$ and stop, which is the honest answer: more data tells you
+more about the function, never about the noise on the next measurement.
+
+Substituting 3.53 into the predictive mean rearranges it into a weighted sum of the
+training targets, with weights
+
+<MathBlock id="3.62" name="equivalent kernel">
+
+$$k(\mathbf{x}, \mathbf{x}') = \beta\boldsymbol{\phi}(\mathbf{x})^{\mathrm{T}}\mathbf{S}_N\boldsymbol{\phi}(\mathbf{x}')$$
+
+</MathBlock>
+
+This is worth pausing on, because it says a parametric model was secretly doing something
+local all along: the prediction at $\mathbf{x}$ is a smoothing of nearby targets. The
+weights sum to one over the training inputs but are not constrained to be positive, so
+$k$ is a smoother rather than a probability, and it is the doorway to chapter 6, where we
+drop the basis functions and work with the kernel directly.
+
+## Interactive
+
+<Widget
+  title="Sequential Bayesian learning"
+  figure="3.7"
+  caption="Click in the data panel to add one observation at a time. Watch the left panel contract around the cross, and note that the very first point collapses the posterior to a ridge rather than a blob, because one point fixes a line's value there without fixing its slope."
+>
+  <SequentialBayesianLearning client:visible />
+</Widget>
+
+Two things are worth doing deliberately. Add points all clustered near $x = 0$ and watch
+what the sampled lines do far from the cluster: they fan out, which is 3.59 with its second
+term still large. Then drag $\beta$ down and add the same points again: each observation is
+trusted less, so the posterior contracts more slowly, and the prior keeps its grip for
+longer.
+
+## Worked example
+
+Take a straight line, $y(x, \mathbf{w}) = w_0 + w_1x$, with $\alpha = 2$ and $\beta = 25$,
+which is the setting of the book's figure 3.7. Before any data, the posterior is the prior:
+mean $\mathbf{0}$, covariance $0.5\,\mathbf{I}$.
+
+Now observe one point, $x_1 = 0.9$, $t_1 = 0.1$. The design row is
+$\boldsymbol{\phi}(0.9) = (1, 0.9)^{\mathrm{T}}$, and 3.54 gives
+
+$$
+\mathbf{S}_1^{-1}
+= \begin{pmatrix} 2 & 0 \\ 0 & 2 \end{pmatrix}
++ 25\begin{pmatrix} 1 \\ 0.9 \end{pmatrix}\begin{pmatrix} 1 & 0.9 \end{pmatrix}
+= \begin{pmatrix} 27 & 22.5 \\ 22.5 & 22.25 \end{pmatrix}
+$$
+
+That matrix has eigenvalues of about $48.3$ and $0.95$. The large one belongs to the
+direction the observation constrained; the small one is barely above the prior's $2$,
+because a single point pins down where the line passes but says almost nothing about its
+slope. In the widget this is the moment the circular blob becomes a diagonal ridge.
+
+Inverting and applying 3.53 gives $\mathbf{m}_1 \approx (0.045,\ 0.041)^{\mathrm{T}}$,
+which is still close to the origin: one observation against a prior of precision 2 does not
+move the mean far. Predicting at $x = 0.9$, the predictive variance from 3.59 is
+$1/25 + \boldsymbol{\phi}^{\mathrm{T}}\mathbf{S}_1\boldsymbol{\phi} \approx 0.04 + 0.022$,
+so about $0.062$. Predicting out at $x = 3$, where nothing was observed, the same
+expression gives roughly $0.30$: five times the variance, from the same posterior, purely
+because the second term grows away from the data.
+
+## Recall
+
+<Recall question="Why does the posterior covariance only ever shrink as data arrives?" concepts={["posterior-distribution"]}>
+Because 3.54 builds the *precision*, not the covariance, and each observation adds a
+positive semi-definite outer product $\beta\boldsymbol{\phi}\boldsymbol{\phi}^{\mathrm{T}}$
+to it. Adding to a precision can never decrease it, so the covariance never grows.
+</Recall>
+
+<Recall question="What does the predictive variance converge to as N grows, and why not zero?" concepts={["predictive-distribution"]}>
+It converges to $1/\beta$, the noise precision's reciprocal. The second term of 3.59 is
+uncertainty about $\mathbf{w}$ and vanishes with enough data, but the first term is the
+noise on the observation itself, which no amount of data removes.
+</Recall>
+
+<Recall question="What happens to the Bayesian solution as the prior precision α goes to zero?" concepts={["conjugate-prior"]}>
+The prior becomes infinitely broad and $\mathbf{m}_N$ reduces to the maximum likelihood
+weights of 3.15. Least squares is the limiting case of claiming to know nothing beforehand.
+</Recall>
+
+<Recall question="Why is the equivalent kernel surprising for a parametric model?" concepts={["equivalent-kernel"]}>
+Because it shows the predictive mean is a weighted sum of training targets, with weights
+concentrated near the query point. A model defined by global basis functions and a weight
+vector turns out to be doing local smoothing, which is what makes the jump to kernel
+methods in chapter 6 possible.
+</Recall>
+
+<Recall question="Why can the posterior be updated one observation at a time without refitting?" concepts={["sequential-learning"]}>
+Because conjugacy makes the posterior the same family as the prior. The posterior after
+$n$ points is a valid prior for point $n + 1$, so 3.49 applies again with the old posterior
+in the prior's place, and the result equals a batch fit over all $n + 1$ points.
+</Recall>
+
+## Connections
+
+Builds directly on the basis-function models and the design matrix from
+[3.1 Linear Basis Function Models](/sections/3-1), and on the Gaussian conditional and
+marginal results from chapter 2, which are what make the posterior available in closed form.
+
+It answers the question [3.2 The Bias-Variance Decomposition](/sections/3-2) leaves open.
+That decomposition explains the over-fitting trade-off but needs an ensemble of datasets to
+evaluate, so it cannot guide model choice from one dataset. The Bayesian treatment can.
+
+Leads into [3.4 Bayesian Model Comparison](/sections/3-4), which compares whole models by
+the same marginalisation used here on weights, and
+[3.5 The Evidence Approximation](/sections/3-5), which stops treating $\alpha$ and $\beta$
+as known and infers them from the data too.
+
+The equivalent kernel is the thread to pull for chapter 6: once predictions are a kernel
+smoothing of targets, the basis functions can be dropped entirely.

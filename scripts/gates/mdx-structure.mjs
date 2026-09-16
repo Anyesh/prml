@@ -33,7 +33,9 @@ const MATHBLOCK_TAG_RE = /<MathBlock\b/;
 const MATHBLOCK_ID_RE = /<MathBlock\b[^>]*\bid=["']([^"']+)["']/g;
 const RECALL_TAG_RE = /<Recall\b/g;
 const JSX_COMPONENT_RE = /<([A-Z][A-Za-z0-9]*)\b/g;
-const CAPTION_RE = /<Caption\b|<figcaption\b/i;
+// A widget's caption is authored in the section as a `caption=` prop rather than a
+// separate element, because the frame renders exactly one caption and two would drift.
+const CAPTION_RE = /<Caption\b|<figcaption\b|\bcaption=/i;
 
 export async function runMdxStructureGate({ sectionsDir = SECTIONS_DIR } = {}) {
   const files = findFiles(sectionsDir, '.mdx');

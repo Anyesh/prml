@@ -1,66 +1,31 @@
 ---
-// Widget components live under src/widgets/ch<nn>/ and are owned by chapter agents, not
-// this component. import.meta.glob resolves whatever exists at build time; it returns an
-// empty map (not an error) while that directory is absent, so this stays safe to render
-// against the current empty content collections.
-//
-// Contract assumed for a widget module (unverified: no real widget exists yet to check
-// this against): `default` is the interactive component; `title`, `caption`, and `figure`
-// are optional named exports consumed by WidgetFrame for its header and figure caption.
+// Presentational frame around an interactive figure. The widget itself is imported
+// statically by the section and passed in as a slot, because Astro can only generate a
+// hydration script for a component it can trace to a real import: one resolved at runtime
+// through import.meta.glob renders but never hydrates, however the glob is configured.
+// That constraint is why title, caption and figure are authored in the section rather than
+// exported by the widget module.
 import { WidgetFrame } from '@prml/ui';
 
-type WidgetComponent = (props: Record<string, unknown>) => unknown;
-
-interface WidgetModule {
-  default?: WidgetComponent;
-  title?: string;
-  caption?: string;
+export interface Props {
+  title: string;
+  /** One sentence telling the reader what to *do* with this figure, not what it shows. */
+  caption: string;
+  /** Book figure this rebuilds, e.g. "3.7". */
   figure?: string;
 }
 
-export interface Props {
-  chapter: number;
-  name: string;
-}
-
-const { chapter, name } = Astro.props;
-const chapterDir = `ch${String(chapter).padStart(2, '0')}`;
-const modules = import.meta.glob('/src/widgets/ch*/*.tsx');
-const matchKey = Object.keys(modules).find((key) => key.endsWith(`/${chapterDir}/${name}.tsx`));
-const loader = matchKey ? modules[matchKey] : undefined;
-const mod = loader ? ((await loader()) as WidgetModule) : undefined;
-const Widget = mod?.default;
+const { title, caption, figure } = Astro.props;
 ---
 
-{
-  Widget ? (
-    <div class="widget-slot" data-pagefind-ignore>
-      <WidgetFrame client:visible title={mod?.title ?? name} caption={mod?.caption ?? ''} figure={mod?.figure}>
-        <Widget />
-      </WidgetFrame>
-    </div>
-  ) : (
-    <div class="widget-slot widget-slot--missing" data-pagefind-ignore>
-      <p>
-        The "{name}" widget for chapter {chapter} has not been built yet.
-      </p>
-    </div>
-  )
-}
+<div class="widget-slot" data-pagefind-ignore>
+  <WidgetFrame title={title} caption={caption} figure={figure}>
+    <slot />
+  </WidgetFrame>
+</div>
 
 <style>
   .widget-slot {
     margin-block: var(--prml-space-6);
-    border: 1px solid var(--prml-color-border);
-    border-radius: var(--prml-radius-lg);
-    background: var(--prml-color-surface);
-    padding: var(--prml-space-5);
-  }
-
-  .widget-slot--missing {
-    color: var(--prml-color-ink-muted);
-    font-family: var(--prml-font-sans);
-    font-size: var(--prml-text-sm);
-    text-align: center;
   }
 </style>

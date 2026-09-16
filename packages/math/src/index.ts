@@ -6,3 +6,4 @@ export * from './numeric.js';
 export * from './special.js';
 export * from './linalg/index.js';
 export * from './distributions/index.js';
+export * from './regression/index.js';

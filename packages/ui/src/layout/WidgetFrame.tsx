@@ -3,14 +3,21 @@ import './WidgetFrame.css';
 
 export interface WidgetFrameProps {
   title: string;
+  /** One sentence telling the reader what to *do* with this widget, not what it shows. */
   caption: string;
+  /** Book figure this rebuilds, e.g. "3.7". */
   figure?: string;
   controls?: ReactNode;
   children: ReactNode;
-  onReset?: () => void;
 }
 
-export function WidgetFrame({ title, caption, figure, controls, children, onReset }: WidgetFrameProps) {
+/**
+ * Presentational chrome only, rendered statically by the page. The interactive island is
+ * the widget nested inside it, which is why there is no reset control here: hydrating the
+ * frame would leave the widget itself static, and a reset button belongs with the state it
+ * clears in any case.
+ */
+export function WidgetFrame({ title, caption, figure, controls, children }: WidgetFrameProps) {
   const titleId = useId();
 
   return (
@@ -22,11 +29,6 @@ export function WidgetFrame({ title, caption, figure, controls, children, onRese
           </h3>
           {figure ? <p className="prml-widget-frame-provenance">Rebuilds Figure {figure}</p> : null}
         </div>
-        {onReset ? (
-          <button type="button" className="prml-widget-frame-reset" onClick={onReset}>
-            Reset
-          </button>
-        ) : null}
       </header>
       <figcaption className="prml-widget-frame-caption">{caption}</figcaption>
       <noscript>

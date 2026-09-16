@@ -46,7 +46,7 @@ export async function runGraphGate({
   const concepts = loadConcepts(conceptsPath, info);
   const roots = loadRoots(rootsPath);
 
-  checkPrereqsExist(sectionsById, failures);
+  checkPrereqsExist(sectionsById, failures, warnings);
   checkPrereqCycles(sectionsById, failures);
   checkSectionConceptsExist(sectionsById, concepts, failures);
   checkConceptRequiresExist(concepts, failures);
@@ -85,13 +85,24 @@ function loadRoots(rootsPath) {
   return new Set(parsed.roots ?? []);
 }
 
-function checkPrereqsExist(sectionsById, failures) {
+function checkPrereqsExist(sectionsById, failures, warnings) {
+  // A chapter counts as covered once any of its sections is written. A prereq pointing
+  // into a covered chapter must resolve, because a typo there is a real broken link; one
+  // pointing into a chapter nobody has written yet is a forward reference and only warns.
+  // Failing on those would push authors to drop genuine prerequisites and never restore
+  // them, which costs far more than a warning that resolves itself when the chapter lands.
+  const coveredChapters = new Set([...sectionsById.keys()].map((id) => id.split('.')[0]));
+
   for (const [id, section] of sectionsById) {
     for (const prereq of section.prereqs) {
-      if (!sectionsById.has(prereq)) {
-        failures.push({
+      if (sectionsById.has(prereq)) continue;
+      const target = { file: section.file, message: `prereq "${prereq}" of section "${id}" does not exist` };
+      if (coveredChapters.has(prereq.split('.')[0])) {
+        failures.push(target);
+      } else {
+        warnings.push({
           file: section.file,
-          message: `prereq "${prereq}" of section "${id}" does not exist`,
+          message: `prereq "${prereq}" of section "${id}" points at chapter ${prereq.split('.')[0]}, which has no sections yet`,
         });
       }
     }

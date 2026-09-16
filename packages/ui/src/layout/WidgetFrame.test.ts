@@ -35,21 +35,17 @@ describe('WidgetFrame markup', () => {
     expect(withoutFigure).not.toContain('Rebuilds Figure');
   });
 
-  it('renders a reset button only when onReset is given', () => {
-    const withReset = renderToStaticMarkup(
+  it('carries no interactive control of its own, so the frame can render statically', () => {
+    const html = renderToStaticMarkup(
       createElement(WidgetFrame, {
         title: 'T',
         caption: 'C',
-        onReset: vi.fn(),
         children: createElement('div', null, 'plot'),
       }),
     );
-    expect(withReset).toContain('Reset');
-
-    const withoutReset = renderToStaticMarkup(
-      createElement(WidgetFrame, { title: 'T', caption: 'C', children: createElement('div', null, 'plot') }),
-    );
-    expect(withoutReset).not.toContain('Reset');
+    // The widget nested inside is the hydrated island; a control here would be inert,
+    // and reset belongs with the state it clears in any case.
+    expect(html).not.toContain('<button');
   });
 
   it('places the controls panel inside the frame when given', () => {

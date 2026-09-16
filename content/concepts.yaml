@@ -1,1 +1,39 @@
-[]
+- id: conjugate-prior
+  name: "Conjugate prior"
+  definition: "A prior whose family is closed under the likelihood, so the posterior has the same form as the prior. This is what keeps Bayesian linear regression in closed form rather than requiring integration."
+  introducedIn: "3.3"
+  usedIn: []
+  requires: []
+  aliases: ["conjugacy"]
+
+- id: posterior-distribution
+  name: "Posterior distribution"
+  definition: "The distribution over parameters after observing data, proportional to the likelihood times the prior. Replaces the single best-fit estimate with a statement of how much the data pins each direction down."
+  introducedIn: "3.3"
+  usedIn: []
+  requires: ["conjugate-prior"]
+  aliases: []
+
+- id: predictive-distribution
+  name: "Predictive distribution"
+  definition: "The distribution over a new target with the parameters marginalised out. Its variance separates noise on the measurement from uncertainty about the function, so error bars widen away from the data but never fall below the noise floor."
+  introducedIn: "3.3"
+  usedIn: []
+  requires: ["posterior-distribution"]
+  aliases: ["predictive variance"]
+
+- id: equivalent-kernel
+  name: "Equivalent kernel"
+  definition: "The weights a linear model implicitly places on training targets when predicting at a new input. Shows that a parametric model is doing local smoothing, which is the doorway to kernel methods."
+  introducedIn: "3.3"
+  usedIn: []
+  requires: ["posterior-distribution"]
+  aliases: ["smoother matrix"]
+
+- id: sequential-learning
+  name: "Sequential learning"
+  definition: "Updating beliefs one observation at a time, with the posterior after each point serving as the prior for the next. Conjugacy makes this exact rather than approximate, so it lands where a batch fit lands."
+  introducedIn: "3.3"
+  usedIn: []
+  requires: ["conjugate-prior"]
+  aliases: ["online learning"]

@@ -33,20 +33,22 @@ function readTokens(): ResolvedTokens {
 }
 
 /**
- * Resolves the design tokens to literal colour strings for canvas drawing, and re-resolves
- * when the theme changes. Canvas has no access to CSS custom properties, so without this a
- * figure would keep its light-mode palette after a switch to dark, which is the single
- * most visible way a hand-rolled canvas betrays itself.
+ * Resolves the design tokens to literal colour strings, and re-resolves when the theme
+ * changes. Canvas has no access to CSS custom properties, so without this a figure would
+ * keep its light-mode palette after a switch to dark, which is the single most visible way
+ * a hand-rolled canvas betrays itself.
+ *
+ * Deliberately independent of `<Plot>`: widgets call it at their top level to pass colours
+ * down as props, so requiring a surrounding frame would make it unusable exactly where it
+ * is most needed. Repainting is not this hook's job either. A theme change re-renders the
+ * widget, which hands new colour props to the primitives, which re-register their draw
+ * callbacks, which asks the plot for a repaint.
  */
 export function useResolvedTokens(): ResolvedTokens {
   const [tokens, setTokens] = useState<ResolvedTokens>(FALLBACK);
-  const frame = useFrame();
 
   useEffect(() => {
-    const refresh = () => {
-      setTokens(readTokens());
-      frame.requestRedraw();
-    };
+    const refresh = () => setTokens(readTokens());
     refresh();
 
     const observer = new MutationObserver(refresh);
@@ -57,7 +59,7 @@ export function useResolvedTokens(): ResolvedTokens {
       observer.disconnect();
       media.removeEventListener('change', refresh);
     };
-  }, [frame]);
+  }, []);
 
   return tokens;
 }
