@@ -20,6 +20,10 @@ difficulty: 3
 ---
 
 import BiasVarianceTradeoff from '@widgets/ch03/BiasVarianceTradeoff';
+import FitCloud from '@widgets/ch03/figures/FitCloud';
+import NoiseFloor from '@widgets/ch03/figures/NoiseFloor';
+import BiasVarianceAtAPoint from '@widgets/ch03/figures/BiasVarianceAtAPoint';
+import ConstantVersusInterpolant from '@widgets/ch03/figures/ConstantVersusInterpolant';
 
 ## Intuition
 
@@ -37,14 +41,17 @@ That is bias.
 Or it can spread out. A flexible model gives a different curve per sample, because it is
 fitting noise. Individual curves are wild even when their average is right. That is variance.
 
+<Figure caption="Two clouds, same data source. Left: tight and uniformly wrong. Right: scattered, but their average tracks the truth. Neither is good; they fail differently." source="3.5" width="wide">
+  <FitCloud client:visible />
+</Figure>
+
 Both are set by how much freedom the model has, which is why this is a trade-off. The catch
 is severe: computing either needs the ensemble, and you have one dataset.
 
 ## The math
 
-The optimal prediction under squared loss is the conditional mean, call it $h(\mathbf{x})$.
-Expected loss decomposes into a term that depends on the chosen function and a term that
-does not:
+The optimal prediction under squared loss is the conditional mean $h(\mathbf{x})$. Expected
+loss splits into a part that depends on your choice of function and a part that does not:
 
 <MathBlock id="3.37" name="expected squared loss">
 
@@ -52,11 +59,14 @@ $$\mathbb{E}[L] = \int\{y(\mathbf{x}) - h(\mathbf{x})\}^2p(\mathbf{x})\,\mathrm{
 
 </MathBlock>
 
-The second integral has no $y$ in it, so no amount of modelling touches it. It is the noise
-floor.
+The second integral has no $y$ in it. It is the noise floor.
 
-Now take the first term and average it over datasets $\mathcal{D}$. Add and subtract the
-average prediction, expand the square, and the cross term integrates to zero, leaving
+<Figure caption="The scatter around the conditional mean is what no model removes. Every error bar in this chapter bottoms out here.">
+  <NoiseFloor client:visible />
+</Figure>
+
+Average the first term over datasets, expand the square about the ensemble mean, and the
+cross term integrates to zero:
 
 <MathBlock id="3.41" name="bias-variance-noise decomposition">
 
@@ -64,15 +74,11 @@ $$\text{expected loss} = (\text{bias})^2 + \text{variance} + \text{noise}$$
 
 </MathBlock>
 
-With $L$ datasets and the ensemble average
-
 <MathBlock id="3.45" name="ensemble average prediction">
 
 $$\bar{y}(\mathbf{x}) = \frac{1}{L}\sum_{l=1}^{L}y^{(l)}(\mathbf{x})$$
 
 </MathBlock>
-
-the two model-dependent terms are
 
 <MathBlock id="3.46" name="squared bias">
 
@@ -86,14 +92,14 @@ $$\text{variance} = \frac{1}{N}\sum_{n=1}^{N}\frac{1}{L}\sum_{l=1}^{L}\big\{y^{(
 
 </MathBlock>
 
-Read the two together and the asymmetry is clear. Bias compares the *average* fit to the
-truth, so it is blind to how much individual fits scatter. Variance compares individual
-fits to their own average, so it never looks at the truth at all. A model can therefore have
-zero bias and be useless, which is what the low-regularisation end of the widget shows.
+<Figure caption="Both quantities at a single input. Bias is the gap from the ensemble mean to the truth; variance is the spread of the dots about their own mean. Move the input and watch them trade." width="wide">
+  <BiasVarianceAtAPoint client:visible />
+</Figure>
 
-The cross term vanishing is what makes this exact rather than an approximation, and it is
-also why the decomposition is specific to squared loss. Under a different loss the terms do
-not separate this cleanly.
+The asymmetry matters. Bias compares the *average* fit to the truth and is blind to scatter.
+Variance compares fits to their own average and never looks at the truth. So a model can
+have zero bias and be useless. The cancelling cross term is also why this is specific to
+squared loss.
 
 ## Interactive
 
@@ -111,50 +117,44 @@ average is not, and that is the observation chapter 14 turns into a method.
 
 ## Worked example
 
-The crudest model: ignore the input, always predict a constant. Variance is zero, because
-every dataset gives the same curve, so everything above the noise floor is bias.
+<Figure caption="Three datasets, two models each. The constants land on top of one another and all miss; the interpolants each chase their own noise." width="wide">
+  <ConstantVersusInterpolant client:visible />
+</Figure>
 
-Against $h(x) = \sin(2\pi x)$ on $[0, 1]$, the best constant is $0$, and the squared bias is
-the mean of $\sin^2(2\pi x)$, which is $1/2$. So: bias $0.5$, variance $0$.
+The crudest model ignores the input and predicts a constant. Variance is zero, so everything
+above the noise floor is bias. Against $h(x) = \sin(2\pi x)$ on $[0, 1]$ the best constant is
+$0$, and the squared bias is the mean of $\sin^2(2\pi x)$, namely $1/2$.
 
-The opposite extreme, an interpolant through every point, has bias near zero, because the
-noise cancels when averaged across datasets. But each fit reproduces its own noise, so with
-noise standard deviation $0.2$ the variance is about $0.04$ at the data points and far worse
-between them, where an interpolant oscillates.
+The opposite extreme interpolates every point. Bias is near zero, because the noise cancels
+when averaged across datasets, but each fit reproduces its own noise: variance is about
+$0.04$ at the data points and far worse between them.
 
-Neither is close to optimal, and they need the knob turned in opposite directions. That is
-the trade-off: 3.41 says it can be balanced, not avoided.
+Neither is close to optimal, and they need the knob turned in opposite directions.
 
 ## Recall
 
-<Recall question="Which of the three terms in the decomposition can a modelling choice not affect?" concepts={["bias-variance-tradeoff"]}>
-The noise term. It is the second integral in 3.37, which contains no $y$ at all: it is the
-variance of the target around its own conditional mean, a property of the data source rather
-than of the model.
+<Recall question="Which term of the decomposition can a modelling choice not affect?" concepts={["bias-variance-tradeoff"]}>
+The noise. It is the second integral in 3.37, which contains no $y$: a property of the data
+source, not the model.
 </Recall>
 
-<Recall question="Why can a model have essentially zero bias and still be a bad model?" concepts={["bias-variance-tradeoff", "overfitting"]}>
-Because bias measures only where the *average* fit sits. An interpolant averages out to
-roughly the right curve across many datasets while every individual fit oscillates through
-the noise, so bias is near zero and variance is enormous.
+<Recall question="Why can a model have essentially zero bias and still be bad?" concepts={["bias-variance-tradeoff", "overfitting"]}>
+Bias measures only where the *average* fit sits. An interpolant averages out near the truth
+while every individual fit oscillates through the noise.
 </Recall>
 
-<Recall question="Why is this decomposition of limited practical use for model selection?" concepts={["bias-variance-tradeoff"]}>
-Both 3.46 and 3.47 are averages over an ensemble of datasets, and in practice there is only
-one. If many independent datasets were available, pooling them into a single larger fit
-would be the better move anyway.
+<Recall question="Why is this decomposition of limited practical use?" concepts={["bias-variance-tradeoff"]}>
+Both 3.46 and 3.47 average over an ensemble of datasets, and you have one. With many, you
+would pool them and fit a better model instead.
 </Recall>
 
-<Recall question="What happens to bias and to variance as a regularisation coefficient increases?" concepts={["regularisation"]}>
-Bias increases and variance decreases. Larger $\lambda$ constrains the weights, so fits vary
-less between datasets, but the constrained family is further from the truth. Their sum has a
-minimum at an intermediate value.
+<Recall question="What happens to bias and variance as regularisation increases?" concepts={["regularisation"]}>
+Bias rises, variance falls. Their sum has a minimum somewhere in between.
 </Recall>
 
 <Recall question="Why is the decomposition specific to squared loss?" concepts={["bias-variance-tradeoff"]}>
-The separation depends on a cross term integrating to zero when the square is expanded
-around the ensemble average. That cancellation is a property of the quadratic, and under
-other loss functions the terms do not split apart so cleanly.
+The split depends on a cross term cancelling when the square is expanded about the ensemble
+mean. That is a property of the quadratic.
 </Recall>
 
 ## Connections

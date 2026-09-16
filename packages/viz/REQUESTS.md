@@ -19,8 +19,15 @@ Requests are absorbed into the primitives centrally between waves.
 
 ## Open
 
-_(none yet)_
+_(none)_
 
 ## Absorbed
 
-_(none yet)_
+### Annotation
+- **Wanted by**: ch03/figures/ThreePointFit, ch03/figures/BiasVarianceAtAPoint
+- **Shape**: a short text string drawn at one (x, y) in data coordinates, for a numeric callout next to a residual segment, a bias distance, or a variance spread
+- **Props**: `{ x: number; y: number; text: string; color: string; anchor?: 'start' | 'middle' | 'end'; dy?: number }`
+- **Why no existing primitive fits**: `Legend` only places a fixed-corner list of (colour, label) pairs, not a label anchored to an arbitrary drawn point, and `Axes` only labels its own ticks. Both figures worked around this by pushing the numbers into the widget's caption paragraph instead of drawing them on the plot itself.
+- **Resolved**: added as `Annotation` in `primitives/Annotation.tsx`, with `plate` for
+  legibility over a field, plus a `Rule` for reference lines at a fixed data value, which
+  the same two figures needed and `Axes`'s zero-line could not provide.

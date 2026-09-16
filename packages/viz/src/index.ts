@@ -13,3 +13,4 @@ export * from './primitives/Heatmap.js';
 export * from './primitives/ScatterField.js';
 export * from './primitives/VectorField.js';
 export * from './primitives/ClickSurface.js';
+export * from './primitives/Annotation.js';

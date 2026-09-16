@@ -18,6 +18,9 @@ difficulty: 4
 ---
 
 import EvidenceApproximation from '@widgets/ch03/EvidenceApproximation';
+import DatasetBudget from '@widgets/ch03/figures2/DatasetBudget';
+import OccamFactor from '@widgets/ch03/figures2/OccamFactor';
+import BayesFactorAcrossOutcomes from '@widgets/ch03/figures2/BayesFactorAcrossOutcomes';
 
 ## Intuition
 
@@ -25,16 +28,17 @@ Section 3.3 marginalised over weights to get predictions. Do it one level up and
 compare whole models.
 
 The quantity is the probability a model gave to the data you actually saw, before fitting,
-averaged over every parameter setting it allowed. Why that punishes complexity is worth
-being concrete about.
+averaged over every parameter setting it allowed.
 
-A distribution over datasets must sum to one. A simple model concentrates that fixed budget
-on the narrow range of datasets it can produce. A complex model spreads the same budget far
-wider, so even when the observed data sits comfortably inside its range, its share is diluted
-across everything else the model could equally have produced.
+A distribution over datasets must sum to one. A simple model spends that fixed budget on the
+narrow range it can produce. A complex model spreads the same budget far wider, so even when
+the observed data sits comfortably inside its range, its share is diluted.
 
-The complex model is not punished for being wrong. It is punished for being uncommitted. A
-model that can fit anything predicted nothing in particular.
+<Figure caption="Both curves enclose the same total probability. Drag the observed dataset: where the narrow model covers it at all, it covers it better, because it spent nothing elsewhere." width="wide">
+  <DatasetBudget client:visible />
+</Figure>
+
+The complex model is not punished for being wrong. It is punished for being uncommitted.
 
 One caveat, and not a footnote: this assumes one of your models is true. If all are wrong it
 says which is least bad, not whether to trust any.
@@ -57,6 +61,10 @@ $\Delta w_{\mathrm{posterior}}$, inside a flat prior of width $\Delta w_{\mathrm
 $$p(\mathcal{D}) \simeq p(\mathcal{D} \mid w_{\mathrm{MAP}})\frac{\Delta w_{\mathrm{posterior}}}{\Delta w_{\mathrm{prior}}}$$
 
 </MathBlock>
+
+<Figure caption="Widen the prior and the ratio shrinks. An uncommitted prior is charged for its vagueness whether or not the fit is any good.">
+  <OccamFactor client:visible />
+</Figure>
 
 Best fit, times a ratio of widths: how far the data narrowed your belief relative to how
 wide you were prepared to be. It is at most one, and with $M$ parameters its log is
@@ -89,57 +97,48 @@ same data, turns over.
 
 ## Worked example
 
-Two models for a coin, one dataset: eight heads in ten.
-
-$\mathcal{M}_1$ says fair. No parameters, so its evidence is just
-$\binom{10}{8}(0.5)^{10} \approx 0.0439$.
-
-$\mathcal{M}_2$ says the bias is unknown, uniform on $[0, 1]$, so it marginalises:
+Two models for a coin, eight heads in ten. $\mathcal{M}_1$ says fair, so its evidence is
+$\binom{10}{8}(0.5)^{10} \approx 0.0439$. $\mathcal{M}_2$ says the bias is unknown, uniform
+on $[0, 1]$, so it marginalises:
 
 $$
-p(\mathcal{D} \mid \mathcal{M}_2) = \int_0^1 \binom{10}{8}\mu^8(1-\mu)^2\,\mathrm{d}\mu = \frac{1}{11} \approx 0.0909
+p(\mathcal{D} \mid \mathcal{M}_2) = \int_0^1 \binom{10}{8}\mu^8(1-\mu)^2\,\mathrm{d}\mu = \frac{1}{11}
 $$
 
-The flexible model wins by a factor of $2.07$. Eight in ten is uncomfortable enough for a
-fair coin that the extra parameter pays.
+<Figure caption="The flat model scores 1/11 whatever happens. Where the curves cross is exactly where the extra parameter starts paying for itself." width="wide">
+  <BayesFactorAcrossOutcomes client:visible />
+</Figure>
 
-Now change one number. At six heads, $\mathcal{M}_1$ gives $0.205$ while $\mathcal{M}_2$
-still gives $1/11$, and the simple model wins by $2.26$. The flexible model was not punished
-for fitting badly, since $\mu = 0.6$ was available to it. Its evidence is $1/11$ whatever
-happens, which is a flat prior's honest confession: it predicted every result equally.
+At six heads the fair coin wins instead. The flexible model was not punished for fitting
+badly, since $\mu = 0.6$ was available to it. Its evidence is $1/11$ whatever happens, which
+is a flat prior's honest confession: it predicted every result equally.
 
 ## Recall
 
-<Recall question="Why does the evidence penalise complex models without any explicit penalty term?" concepts={["model-evidence", "occam-factor"]}>
-Because it is a normalised probability over datasets. A model that can generate a wider
-range of datasets must spread the same total probability more thinly, so it assigns less to
-any particular one, including the observed one.
+<Recall question="Why does the evidence penalise complexity with no explicit penalty term?" concepts={["model-evidence", "occam-factor"]}>
+It is a normalised probability over datasets. A model covering a wider range must spread the
+same total more thinly, so it assigns less to whatever actually happened.
 </Recall>
 
-<Recall question="What exactly is the Occam factor a ratio of?" concepts={["occam-factor"]}>
-The width of the posterior over a parameter to the width of the prior: how far the data
-narrowed your belief, relative to how uncommitted you started. It is at most one, and its
-log contributes once per parameter.
+<Recall question="What is the Occam factor a ratio of?" concepts={["occam-factor"]}>
+Posterior width to prior width: how far the data narrowed a belief, against how uncommitted
+you started. At most one, and its log contributes once per parameter.
 </Recall>
 
-<Recall question="When does Bayesian model comparison give a misleading answer?" concepts={["model-evidence"]}>
-When none of the candidate models is true, or when the priors do not represent real beliefs.
-The framework compares candidates against each other and assumes the truth is among them;
-it cannot report that the whole set is wrong. Held-out data is still the outside check.
+<Recall question="When does this give a misleading answer?" concepts={["model-evidence"]}>
+When no candidate is true, or the priors are not real beliefs. It ranks candidates against
+each other; it cannot report that the whole set is wrong.
 </Recall>
 
 <Recall question="What does 3.73 guarantee, and what does it not?" concepts={["model-evidence"]}>
-It guarantees that the log Bayes factor favours the true model *on average over datasets*,
-because it is a KL divergence and therefore non-negative. It says nothing about any single
-dataset, which can favour the wrong model.
+That the log Bayes factor favours the true model *on average over datasets*, being a KL
+divergence. It says nothing about your single dataset.
 </Recall>
 
 ## Connections
 
-- **Uses** [3.3](/sections/3-3)'s machinery one level up: there the integral gave
-  predictions, here it scores a model.
+- **Uses** [3.3](/sections/3-3)'s machinery one level up.
 - **Answers** what [3.2](/sections/3-2) could pose but not resolve, from one dataset.
-- **[3.5](/sections/3-5)** makes it practical, applying it to continuous hyperparameters
-  rather than a discrete list of models.
-- **Chapter 10** bounds this same evidence when the integral has no closed form.
+- **[3.5](/sections/3-5)** applies it to continuous hyperparameters instead of a list.
+- **Chapter 10** bounds this evidence when the integral has no closed form.
 

@@ -25,6 +25,11 @@ difficulty: 2
 ---
 
 import BasisFunctionExplorer from '@widgets/ch03/BasisFunctionExplorer';
+import BasisFamilies from '@widgets/ch03/figures/BasisFamilies';
+import GlobalVersusLocal from '@widgets/ch03/figures/GlobalVersusLocal';
+import ConditionNumberGrowth from '@widgets/ch03/figures/ConditionNumberGrowth';
+import RegularisationPath from '@widgets/ch03/figures/RegularisationPath';
+import ThreePointFit from '@widgets/ch03/figures/ThreePointFit';
 
 ## Intuition
 
@@ -78,8 +83,16 @@ $$\phi_j(x) = \sigma\left(\frac{x - \mu_j}{s}\right), \qquad \sigma(a) = \frac{1
 
 </MathBlock>
 
+<Figure caption="The three families, drawn past the fit range so the polynomial's unbounded growth is visible. Gaussians are compact; sigmoids saturate." source="3.1">
+  <BasisFamilies client:visible />
+</Figure>
+
 Polynomials, $\phi_j(x) = x^j$, misbehave most instructively: every function is nonzero
 everywhere, so moving one point changes the fit across the whole domain.
+
+<Figure caption="Drag any point. The polynomial fit shifts across the entire domain; the Gaussian fit moves only near the point you touched. The faint dashed curve is where the fit was before." width="wide">
+  <GlobalVersusLocal client:visible />
+</Figure>
 
 Assume Gaussian noise of precision $\beta$:
 
@@ -104,11 +117,14 @@ $$\boldsymbol{\Phi}_{nj} = \phi_j(\mathbf{x}_n)$$
 
 </MathBlock>
 
-Write 3.15 as code and it will fail you. For a degree-9 polynomial on 25 points,
-$\boldsymbol{\Phi}$ has condition number $7\times10^{7}$; forming
-$\boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\Phi}$ squares it to $5\times10^{15}$. Two
-correct solvers then disagree about the coefficients by thousands while agreeing about the
-residual. Solve on $\boldsymbol{\Phi}$ directly, through an SVD.
+Write 3.15 as code and it will fail you. Two correct solvers can disagree about the
+coefficients by thousands while agreeing about the residual, because forming
+$\boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\Phi}$ squares an already-large condition
+number. Solve on $\boldsymbol{\Phi}$ directly, through an SVD.
+
+<Figure caption="Computed, not asserted. Squaring the matrix squares the condition number, and clustered inputs cost several more orders of magnitude than evenly spaced ones at the same model order." width="wide">
+  <ConditionNumberGrowth client:visible />
+</Figure>
 
 Penalising large weights stays closed-form:
 
@@ -123,6 +139,10 @@ $$\frac{1}{2}\sum_{n=1}^{N}\{t_n - \mathbf{w}^{\mathrm{T}}\boldsymbol{\phi}(\mat
 $$\mathbf{w} = \big(\lambda\mathbf{I} + \boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\Phi}\big)^{-1}\boldsymbol{\Phi}^{\mathrm{T}}\mathbf{t}$$
 
 </MathBlock>
+
+<Figure caption="Every coefficient pulled towards zero together as the penalty grows. The wild values at the left edge are the over-fitted solution." source="3.5">
+  <RegularisationPath client:visible />
+</Figure>
 
 That $\lambda\mathbf{I}$ shrinks the weights and lifts the eigenvalues off zero, killing the
 conditioning problem. But it swaps "how many basis functions" for "what $\lambda$", and
@@ -152,6 +172,10 @@ $$
 \boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\Phi} = \begin{pmatrix} 3 & 3 \\ 3 & 5 \end{pmatrix}, \qquad
 \boldsymbol{\Phi}^{\mathrm{T}}\mathbf{t} = \begin{pmatrix} 6 \\ 7 \end{pmatrix}
 $$
+
+<Figure caption="Residuals sum to zero, as the first normal equation requires. Add the quadratic term and watch them vanish entirely, which is the failure the next section quantifies.">
+  <ThreePointFit client:visible />
+</Figure>
 
 Solving gives $w_0 = 1.5$, $w_1 = 0.5$, so the fit is $y = 1.5 + 0.5x$. Residuals are
 $-0.5$, $1.0$, $-0.5$, and they sum to zero, which they must whenever the basis contains a

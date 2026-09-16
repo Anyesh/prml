@@ -26,6 +26,9 @@ difficulty: 3
 import SequentialBayesianLearning from '@widgets/ch03/SequentialBayesianLearning';
 import PredictiveDistribution from '@widgets/ch03/PredictiveDistribution';
 import EquivalentKernel from '@widgets/ch03/EquivalentKernel';
+import PriorToPosterior from '@widgets/ch03/figures2/PriorToPosterior';
+import PrecisionAccumulates from '@widgets/ch03/figures2/PrecisionAccumulates';
+import PosteriorRidge from '@widgets/ch03/figures2/PosteriorRidge';
 
 ## Intuition
 
@@ -57,6 +60,10 @@ $$p(\mathbf{w} \mid \mathbf{t}) = \mathcal{N}(\mathbf{w} \mid \mathbf{m}_N, \mat
 
 </MathBlock>
 
+<Figure caption="Same axes, same colour scale. A handful of observations is all it takes to pull a flat prior into a tight blob around the true weights." source="3.7" width="wide">
+  <PriorToPosterior client:visible />
+</Figure>
+
 With the zero-mean isotropic prior of precision $\alpha$,
 
 <MathBlock id="3.52" name="isotropic Gaussian prior">
@@ -78,6 +85,10 @@ $$\mathbf{m}_N = \beta\mathbf{S}_N\boldsymbol{\Phi}^{\mathrm{T}}\mathbf{t}$$
 $$\mathbf{S}_N^{-1} = \alpha\mathbf{I} + \beta\boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\Phi}$$
 
 </MathBlock>
+
+<Figure caption="Every ellipse is the 95% contour after one more observation, all overlaid. They only ever nest inward, because 3.54 builds a precision and precision only adds." width="wide">
+  <PrecisionAccumulates client:visible />
+</Figure>
 
 The whole section is in 3.54. It builds the *precision*, and every observation adds a
 positive term to it, so belief never widens. Order does not matter, and the posterior after
@@ -160,6 +171,10 @@ $$
 + 25\begin{pmatrix} 1 \\ 0.9 \end{pmatrix}\begin{pmatrix} 1 & 0.9 \end{pmatrix}
 = \begin{pmatrix} 27 & 22.5 \\ 22.5 & 22.25 \end{pmatrix}
 $$
+
+<Figure caption="One point turns the circular prior into a ridge. The long axis is the direction the observation left undetermined.">
+  <PosteriorRidge client:visible />
+</Figure>
 
 Its eigenvalues are about $48.3$ and $0.95$. The large one is the direction the point
 constrained; the small one is barely above the prior's $2$, because one point fixes where
