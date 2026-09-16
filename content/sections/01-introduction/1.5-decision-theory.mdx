@@ -1,0 +1,182 @@
+---
+chapter: 1
+section: "1.5"
+title: Decision Theory
+bookPages: [38, 47]
+summary: Once probabilities are in hand, deciding what to do with them turns out to be close to trivial, and the interesting content is in what a plain error rate leaves out.
+concepts:
+  - decision-boundary
+  - loss-matrix
+  - expected-loss
+  - reject-option
+  - generative-model
+  - discriminative-model
+  - discriminant-function
+  - regression-function
+prereqs: ["1.2"]
+equations:
+  - { id: "1.78", name: probability of a mistake }
+  - { id: "1.81", name: expected-loss decision rule }
+  - { id: "1.86", name: expected loss, general }
+  - { id: "1.89", name: regression function }
+  - { id: "1.91", name: Minkowski loss }
+widgets: [DecisionBoundaryExplorer]
+difficulty: 2
+---
+
+import DecisionBoundaryExplorer from '@widgets/ch01/DecisionBoundaryExplorer';
+import LossMatrixShift from '@widgets/ch01/figures/LossMatrixShift';
+import RejectRegion from '@widgets/ch01/figures/RejectRegion';
+import ClassDensityVsPosterior from '@widgets/ch01/figures/ClassDensityVsPosterior';
+import ExpectedLossMinimizer from '@widgets/ch01/figures/ExpectedLossMinimizer';
+import MinkowskiLossShapes from '@widgets/ch01/figures/MinkowskiLossShapes';
+
+## Intuition
+
+Probability theory says how uncertain you should be. It never says what to do about it.
+Told a patient has a 70% chance of a condition, the model has done its job; whether to
+treat is a separate question, and probability theory has nothing more to add to it.
+
+That second question turns out to have a close-to-mechanical answer once the first is
+settled: pick whichever action has the lowest expected cost, given everything currently
+believed. The subtlety is not in the mechanism, it is in what "cost" means. Treating a
+healthy patient and missing a sick one are both mistakes, but rarely equally bad ones, and
+a decision rule that cannot tell them apart cannot be tuned to care more about the worse
+one.
+
+This section separates the two questions cleanly: work out the uncertainty, then decide.
+Collapsing them into a single learned function is possible and sometimes cheaper, but it
+throws away everything the extra structure was for.
+
+## The math
+
+For two classes, the probability of a mistake splits by which region a point falls in:
+
+<MathBlock id="1.78" name="probability of a mistake">
+
+$$p(\text{mistake}) = \int_{\mathcal{R}_1}p(x,C_2)\,\mathrm{d}x + \int_{\mathcal{R}_2}p(x,C_1)\,\mathrm{d}x$$
+
+</MathBlock>
+
+<Figure caption="Drag the boundary. The shaded area is exactly 1.78, and it is smallest where the two curves cross." source="1.24">
+  <DecisionBoundaryExplorer client:visible />
+</Figure>
+
+Minimised by assigning each $x$ to the largest $p(C_k\mid x)$. A loss matrix $L_{kj}$
+generalises this to unequal costs by choosing, for each $x$, whichever class minimises:
+
+<MathBlock id="1.81" name="expected-loss decision rule">
+
+$$\sum_k L_{kj}\,p(C_k \mid x)$$
+
+</MathBlock>
+
+<Figure caption="Sliding the loss ratio moves the boundary away from equal, toward whichever class is expensive to miss." source="1.25">
+  <LossMatrixShift client:visible />
+</Figure>
+
+A reject option refuses to decide wherever the largest posterior falls under a threshold
+$\theta$:
+
+<Figure caption="Raise theta and the shaded reject band widens from nothing to everything.">
+  <RejectRegion client:visible />
+</Figure>
+
+Generative models fit $p(x\mid C_k)$ for each class and combine with Bayes' theorem;
+discriminative models fit $p(C_k\mid x)$ directly. The posterior can be far simpler than
+the densities that produced it:
+
+<Figure caption="A two-humped class density collapses to a single smooth posterior step; the second hump barely moves it." source="1.27">
+  <ClassDensityVsPosterior client:visible />
+</Figure>
+
+For regression, expected loss under a general loss function is:
+
+<MathBlock id="1.86" name="expected loss, general">
+
+$$\mathbb{E}[L] = \iint L(t, y(x))\,p(x, t)\,\mathrm{d}x\,\mathrm{d}t$$
+
+</MathBlock>
+
+Under squared loss this is minimised by the conditional mean:
+
+<MathBlock id="1.89" name="regression function">
+
+$$y(x) = \int t\,p(t\mid x)\,\mathrm{d}t = \mathbb{E}_t[t \mid x]$$
+
+</MathBlock>
+
+<Figure caption="Left: a two-humped p(t|x). Right: expected squared loss against a candidate y, minimised exactly at the conditional mean even though that value itself is unlikely.">
+  <ExpectedLossMinimizer client:visible />
+</Figure>
+
+Squared loss is one choice among a family:
+
+<MathBlock id="1.91" name="Minkowski loss">
+
+$$\mathbb{E}[L_q] = \iint |y(x) - t|^q\,p(x,t)\,\mathrm{d}x\,\mathrm{d}t$$
+
+</MathBlock>
+
+## Interactive
+
+<Widget
+  title="Where to draw the line"
+  figure="1.24"
+  caption="Drag the boundary away from the crossing point and watch the shaded mistake area grow. Move the prior slider and the crossing point itself moves."
+>
+  <DecisionBoundaryExplorer client:visible />
+</Widget>
+
+The optimal boundary is not fixed; it tracks wherever the two joint curves happen to cross.
+
+## Worked example
+
+$q=2$ minimises at the mean, $q=1$ at the median. On targets $\{1,2,2,3,3,10\}$ the mean is
+$3.50$ but the median is $2.50$: one outlier at $10$ drags the mean well above every other
+point while the median, which only cares about order, ignores it completely.
+
+<Figure caption="The four loss shapes behind that difference; q=2 punishes the outlier quadratically, q=1 linearly." width="wide">
+  <MinkowskiLossShapes client:visible />
+</Figure>
+
+Whichever loss is appropriate depends on whether a single bad measurement should dominate
+the fit or be shrugged off, a modelling choice the squared-loss default hides.
+
+## Recall
+
+<Recall question="Why does minimising p(mistake) mean choosing the largest posterior p(Ck|x)?" concepts={["decision-boundary"]}>
+p(mistake) integrates the losing class's joint density over each region; making that
+integrand as small as possible everywhere means picking whichever class has the larger
+p(x,Ck), which is the same as the larger posterior once p(x) cancels.
+</Recall>
+
+<Recall question="What can a loss matrix express that plain misclassification rate cannot?" concepts={["loss-matrix", "expected-loss"]}>
+That different kinds of mistakes cost different amounts. Minimising expected loss instead
+of error rate shifts the boundary toward the cheaper kind of mistake, away from equal.
+</Recall>
+
+<Recall question="Why would you want posterior probabilities rather than only a discriminant function?" concepts={["discriminant-function", "generative-model"]}>
+Posteriors let a loss matrix change after training, support a reject option, and combine
+with other models, all without retraining. A discriminant function collapses straight to a
+label and keeps none of that.
+</Recall>
+
+<Recall question="What does the second mode of a class-conditional density in the worked figure teach about generative modelling?" concepts={["generative-model", "discriminative-model"]}>
+That fitting p(x|Ck) precisely can spend effort on structure with almost no effect on the
+posterior, and hence none on the decision. A discriminative model never pays that cost.
+</Recall>
+
+<Recall question="Why is the conditional mean the optimal prediction under squared loss even when it is an unlikely value of t?" concepts={["regression-function"]}>
+Squared loss punishes distance quadratically regardless of density, so the minimiser
+balances distances rather than tracking where probability mass sits; a bimodal p(t|x) can
+have its mean sit in a valley between the modes.
+</Recall>
+
+## Connections
+
+- **Depends on** [1.2](/sections/1-2): every posterior and loss calculation here starts
+  from Bayes' theorem.
+- **Chapters 4 and 5** build discriminative classifiers directly on the posterior framework
+  introduced here.
+

@@ -1,0 +1,198 @@
+---
+chapter: 1
+section: "1.6"
+title: Information Theory
+bookPages: [48, 66]
+summary: A single requirement, that information from independent events adds, forces information content to be a logarithm and its average, entropy, to measure how hard a distribution is to code, compare, or predict from another variable.
+concepts:
+  - information-content
+  - entropy
+  - differential-entropy
+  - kl-divergence
+  - mutual-information
+  - conditional-entropy
+prereqs: ["1.2"]
+equations:
+  - { id: "1.92", name: information content }
+  - { id: "1.94", name: multiplicity }
+  - { id: "1.98", name: entropy }
+  - { id: "1.104", name: differential entropy }
+  - { id: "1.110", name: differential entropy of a Gaussian }
+  - { id: "1.112", name: conditional entropy identity }
+  - { id: "1.113", name: Kullback-Leibler divergence }
+  - { id: "1.120", name: mutual information }
+widgets: [EntropyVsBernoulli]
+difficulty: 3
+---
+
+import EntropyVsBernoulli from '@widgets/ch01/EntropyVsBernoulli';
+import EntropyAcrossDistributions from '@widgets/ch01/figures/EntropyAcrossDistributions';
+import MultiplicityAndEntropy from '@widgets/ch01/figures/MultiplicityAndEntropy';
+import DifferentialEntropyNegative from '@widgets/ch01/figures/DifferentialEntropyNegative';
+import KLCostOfWrongCode from '@widgets/ch01/figures/KLCostOfWrongCode';
+import MutualInformationDiagram from '@widgets/ch01/figures/MutualInformationDiagram';
+
+## Intuition
+
+Learning that a certain event happened is worth more the less you expected it. That single
+idea, degree of surprise, turns out to force an exact mathematical form once one more
+condition is added: the surprise from two unrelated events should just add up.
+
+Averaging surprise over a distribution gives a number for how hard that distribution is,
+in a very concrete sense, to describe: it is the shortest average code length a sender
+could get away with. A distribution concentrated on a few outcomes needs a short average
+code, because a good code spends few bits on what actually happens most. A distribution
+spread evenly is the hardest case, and there the fair coin, needing its full bit every
+time, sets the ceiling.
+
+The rest of this section is that one number reused three ways: for one variable, for the
+cost of guessing its distribution wrong, and for how much one variable reveals about
+another.
+
+## The math
+
+Requiring $h(x,y)=h(x)+h(y)$ whenever $x,y$ are independent forces a logarithm:
+
+<MathBlock id="1.92" name="information content">
+
+$$h(x) = -\log_2 p(x)$$
+
+</MathBlock>
+
+Its average is entropy, reached equivalently by counting arrangements of $N$ objects into
+bins and taking a scaled log of the count:
+
+<MathBlock id="1.94" name="multiplicity">
+
+$$W = \frac{N!}{\prod_i n_i!}$$
+
+</MathBlock>
+
+<Figure caption="log(multiplicity) per object converges to the entropy of the bin fractions as N grows, exactly as Stirling's approximation predicts." width="wide">
+  <MultiplicityAndEntropy client:visible />
+</Figure>
+
+<MathBlock id="1.98" name="entropy">
+
+$$H[p] = -\sum_i p(x_i)\ln p(x_i)$$
+
+</MathBlock>
+
+<Figure caption="Uniform beats every non-uniform distribution over the same number of states." width="wide">
+  <EntropyAcrossDistributions client:visible />
+</Figure>
+
+Continuous variables get an analogous but distinct quantity, differential entropy:
+
+<MathBlock id="1.104" name="differential entropy">
+
+$$H[x] = -\int p(x)\ln p(x)\,\mathrm{d}x$$
+
+</MathBlock>
+
+Maximised, for a fixed mean and variance, by the Gaussian:
+
+<MathBlock id="1.110" name="differential entropy of a Gaussian">
+
+$$H[x] = \frac{1}{2}\big(1 + \ln(2\pi\sigma^2)\big)$$
+
+</MathBlock>
+
+<Figure caption="Unlike discrete entropy, this can go negative: concentrating a density enough costs it below the zero a discrete count could never cross." source="1.110">
+  <DifferentialEntropyNegative client:visible />
+</Figure>
+
+Coding for an approximation $q$ of a true $p$ costs extra, on average:
+
+<MathBlock id="1.113" name="Kullback-Leibler divergence">
+
+$$\mathrm{KL}(p\|q) = -\int p(x)\ln\frac{q(x)}{p(x)}\,\mathrm{d}x$$
+
+</MathBlock>
+
+Applied to a joint distribution against the product of its own marginals, this becomes
+mutual information, zero exactly at independence:
+
+<MathBlock id="1.120" name="mutual information">
+
+$$I[x,y] = \mathrm{KL}\big(p(x,y)\,\|\,p(x)p(y)\big)$$
+
+</MathBlock>
+
+which splits a joint entropy additively:
+
+<MathBlock id="1.112" name="conditional entropy identity">
+
+$$H[x,y] = H[x] + H[y \mid x]$$
+
+</MathBlock>
+
+## Interactive
+
+<Widget
+  title="Entropy of a coin, as it stops being fair"
+  figure="1.30"
+  caption="Drag mu away from a half. The curve peaks at exactly 1 bit and falls toward zero as one outcome becomes near-certain."
+>
+  <EntropyVsBernoulli client:visible />
+</Widget>
+
+Zero entropy at $\mu=0$ or $1$ means no message is needed: the outcome was never in doubt.
+
+## Worked example
+
+$\mathrm{KL}$ is not symmetric. Fixing $p=\mathcal{N}(0,1)$ and $q=\mathcal{N}(2,2.25)$:
+$\mathrm{KL}(p\|q)$ and $\mathrm{KL}(q\|p)$ come out to two different numbers from the same
+pair of curves, because the cost of the wrong code depends on which distribution is doing
+the actual generating.
+
+<Figure caption="Drag either distribution and watch both KL values update independently." width="wide">
+  <KLCostOfWrongCode client:visible />
+</Figure>
+
+PRML's own Exercise 1.39: $p(x{=}0,y{=}0){=}p(x{=}0,y{=}1){=}p(x{=}1,y{=}1){=}1/3$,
+$p(x{=}1,y{=}0){=}0$. Computing all six quantities from that one table: $H[x]=H[y]=0.6365$,
+$H[x,y]=1.0986$, $H[y|x]=H[x|y]=0.4621$, $I[x,y]=0.1744$ nats, small but nonzero, since
+$x=1$ rules out $y=0$ outright.
+
+<Figure caption="Every quantity read off the same 2x2 table, none of them asserted." width="wide">
+  <MutualInformationDiagram client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="Why must information content be a logarithm of probability?" concepts={["information-content"]}>
+Requiring the information from two independent events to add, h(x,y)=h(x)+h(y), while
+their probabilities multiply, p(x,y)=p(x)p(y), pins the functional form to a logarithm.
+</Recall>
+
+<Recall question="In what precise sense does entropy measure coding difficulty?" concepts={["entropy"]}>
+It is the shortest average code length achievable for outcomes drawn from that
+distribution: PRML's own 8-state example reaches exactly its entropy, 2 bits, with a
+length-matched prefix code, and no code can do better on average.
+</Recall>
+
+<Recall question="Why can differential entropy be negative when discrete entropy cannot?" concepts={["differential-entropy"]}>
+Differential entropy measures relative to a continuous coordinate scale rather than
+counting discrete states, so concentrating a density tightly enough drives it below zero,
+a case with no discrete analogue.
+</Recall>
+
+<Recall question="Why is KL divergence not symmetric, and what does that mean practically?" concepts={["kl-divergence"]}>
+It weights the log-ratio by p, the true distribution, so which distribution is "true" in
+the pair changes the answer: approximating a broad p with a narrow q costs differently
+than the reverse.
+</Recall>
+
+<Recall question="What does it mean for mutual information to equal zero?" concepts={["mutual-information"]}>
+That the two variables are independent: their joint distribution already equals the
+product of its marginals, so there is no divergence left for KL to measure.
+</Recall>
+
+## Connections
+
+- **Depends on** [1.2](/sections/1-2) for the Gaussian and the probability rules entropy
+  and KL divergence are built from.
+- **[9.4](/sections/9-4)** and later variational chapters build directly on KL divergence
+  as an optimisation target rather than only a comparison.
+

@@ -1,0 +1,217 @@
+---
+chapter: 1
+section: "1.2"
+title: Probability Theory
+bookPages: [12, 31]
+summary: Two rules, sum and product, generate everything probability does for pattern recognition, up to and including a full distribution over the curve-fitting weights themselves.
+concepts:
+  - sum-rule
+  - product-rule
+  - bayes-theorem
+  - hyperparameter
+  - maximum-a-posteriori
+  - estimator-bias
+  - maximum-likelihood
+  - posterior-distribution
+  - predictive-distribution
+prereqs: ["1.1"]
+equations:
+  - { id: "1.10", name: sum rule }
+  - { id: "1.11", name: product rule }
+  - { id: "1.12", name: Bayes' theorem }
+  - { id: "1.46", name: Gaussian distribution }
+  - { id: "1.55", name: maximum likelihood mean }
+  - { id: "1.56", name: maximum likelihood variance }
+  - { id: "1.58", name: expected maximum likelihood variance }
+  - { id: "1.65", name: Gaussian prior over weights }
+  - { id: "1.67", name: MAP objective }
+  - { id: "1.68", name: predictive distribution }
+widgets: [BayesianCurveFittingExplorer]
+difficulty: 2
+---
+
+import BayesianCurveFittingExplorer from '@widgets/ch01/BayesianCurveFittingExplorer';
+import GaussianDraggable from '@widgets/ch01/figures/GaussianDraggable';
+import JointMarginalConditional from '@widgets/ch01/figures/JointMarginalConditional';
+import TwoBoxMarbles from '@widgets/ch01/figures/TwoBoxMarbles';
+import MLVarianceBias from '@widgets/ch01/figures/MLVarianceBias';
+import PredictiveVarianceProfile from '@widgets/ch01/figures/PredictiveVarianceProfile';
+
+## Intuition
+
+Uncertainty shows up twice in the curve-fitting example: noise on the targets, and not
+knowing which weights are right. Both need the same calculus, and it turns out to rest on
+exactly two rules, one for combining probabilities and one for reversing which variable
+is conditioned on which.
+
+That second rule lets you flip a probability you can state, how likely this data is under
+a guess, into the one you actually want, how likely the guess is given the data. Frequentist
+statistics stops at the first kind. The Bayesian view treats the guess itself, not just the
+data, as uncertain, and updates that uncertainty rather than committing to one value.
+
+Applied to curve fitting, this replaces a single best-fit polynomial with a whole weighted
+family of them, and it is what finally explains, rather than merely penalises, over-fitting.
+
+## The math
+
+Two rules generate everything else:
+
+<MathBlock id="1.10" name="sum rule">
+
+$$p(X) = \sum_Y p(X, Y)$$
+
+</MathBlock>
+
+<MathBlock id="1.11" name="product rule">
+
+$$p(X, Y) = p(Y \mid X)\,p(X)$$
+
+</MathBlock>
+
+<Figure caption="A joint table over 9 x-states and 2 y-states. Summing a column gives the marginal; restricting to one row and renormalising gives a conditional." source="1.11">
+  <JointMarginalConditional client:visible />
+</Figure>
+
+Symmetry of the joint, $p(X,Y)=p(Y,X)$, turns the product rule into Bayes' theorem:
+
+<MathBlock id="1.12" name="Bayes' theorem">
+
+$$p(Y \mid X) = \frac{p(X \mid Y)\,p(Y)}{p(X)}$$
+
+</MathBlock>
+
+The Gaussian, used for noise throughout the chapter:
+
+<MathBlock id="1.46" name="Gaussian distribution">
+
+$$\mathcal{N}(x \mid \mu, \sigma^2) = \frac{1}{(2\pi\sigma^2)^{1/2}}\exp\left\{-\frac{(x-\mu)^2}{2\sigma^2}\right\}$$
+
+</MathBlock>
+
+<Figure caption="Drag both parameters. The peak height and the ±1σ marks move together; the area under the curve never changes." source="1.13">
+  <GaussianDraggable client:visible />
+</Figure>
+
+Its maximum-likelihood fit to $N$ points is the sample mean and sample variance:
+
+<MathBlock id="1.55" name="maximum likelihood mean">
+
+$$\mu_{\mathrm{ML}} = \frac{1}{N}\sum_{n=1}^{N} x_n$$
+
+</MathBlock>
+
+<MathBlock id="1.56" name="maximum likelihood variance">
+
+$$\sigma^2_{\mathrm{ML}} = \frac{1}{N}\sum_{n=1}^{N}(x_n - \mu_{\mathrm{ML}})^2$$
+
+</MathBlock>
+
+but the variance estimate is biased low:
+
+<MathBlock id="1.58" name="expected maximum likelihood variance">
+
+$$\mathbb{E}[\sigma^2_{\mathrm{ML}}] = \frac{N-1}{N}\sigma^2$$
+
+</MathBlock>
+
+Put a Gaussian prior on the curve-fitting weights and maximising the posterior is
+minimising a familiar, penalised error:
+
+<MathBlock id="1.65" name="Gaussian prior over weights">
+
+$$p(\mathbf{w} \mid \alpha) = \mathcal{N}(\mathbf{w} \mid \mathbf{0}, \alpha^{-1}\mathbf{I})$$
+
+</MathBlock>
+
+<MathBlock id="1.67" name="MAP objective">
+
+$$\frac{\beta}{2}\sum_{n=1}^{N}\{y(x_n,\mathbf{w}) - t_n\}^2 + \frac{\alpha}{2}\mathbf{w}^{\mathrm{T}}\mathbf{w}$$
+
+</MathBlock>
+
+which is 1.4 with $\lambda = \alpha/\beta$: regularisation is a prior in disguise. Going
+fully Bayesian means never collapsing $\mathbf{w}$ to one value, but integrating over all
+of it:
+
+<MathBlock id="1.68" name="predictive distribution">
+
+$$p(t \mid x, \mathbf{x}, \mathbf{t}) = \int p(t \mid x, \mathbf{w})\,p(\mathbf{w} \mid \mathbf{x}, \mathbf{t})\,\mathrm{d}\mathbf{w}$$
+
+</MathBlock>
+
+## Interactive
+
+<Widget
+  title="From prior to posterior, one observation at a time"
+  figure="1.17"
+  caption="Start at zero observations and step forward. Watch the sampled curves narrow around the truth and the band shrink toward, but never past, the noise floor."
+>
+  <BayesianCurveFittingExplorer client:visible />
+</Widget>
+
+Toggle the maximum-likelihood overlay once several points are in: it is one draw from the
+same family the band already contains.
+
+## Worked example
+
+Box A (2 apples, 6 oranges, prior 0.4), Box B (3 apples, 1 orange, prior 0.6). Overall
+$p(\text{apple}) = 0.55$. Told the fruit was an orange, the posterior on Box A rises to
+$2/3$: an orange is rarer from Box B, so observing one favours Box A even though Box B was
+the likelier box beforehand.
+
+<Figure caption="Switch the observed fruit and watch both posteriors move. Only the likelihoods differ; the prior is fixed." source="1.9">
+  <TwoBoxMarbles client:visible />
+</Figure>
+
+Fitting $\mu_{\mathrm{ML}}$ and $\sigma^2_{\mathrm{ML}}$ to $20{,}000$ simulated samples of
+size $N=2$ from a unit-variance Gaussian gives a mean estimate of $0.497$, matching 1.58's
+prediction of $0.5$ almost exactly; by $N=50$ the gap has shrunk to under $0.02$.
+
+<Figure caption="Simulated, not asserted: 20000 fits per N, plotted against 1.58's prediction." width="wide">
+  <MLVarianceBias client:visible />
+</Figure>
+
+The same asymmetry shows up in curve fitting: the fitted posterior's predictive std stays
+near $0.23$ inside the training range but reaches $23$ at $x=1.3$, just past its edge.
+
+<Figure caption="The predictive band from the widget above, read out as a function of x instead of stepped through by hand.">
+  <PredictiveVarianceProfile client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="What does the product rule let you do that the sum rule alone cannot?" concepts={["product-rule", "bayes-theorem"]}>
+Reverse a conditional. Combined with the symmetry of a joint distribution it gives Bayes'
+theorem, which turns p(data | guess) into p(guess | data).
+</Recall>
+
+<Recall question="Why is the maximum likelihood variance estimate biased?" concepts={["estimator-bias"]}>
+It measures spread around the sample mean, which itself was fit to minimise that spread,
+rather than around the true mean. That double duty is what 1.58's factor (N-1)/N corrects.
+</Recall>
+
+<Recall question="What turns regularised least squares into a Bayesian statement?" concepts={["maximum-a-posteriori", "hyperparameter"]}>
+Putting a Gaussian prior of precision alpha on the weights. Maximising the resulting
+posterior is exactly 1.4 with lambda = alpha/beta: a penalty term is a prior in disguise.
+</Recall>
+
+<Recall question="How does the Bayesian predictive distribution differ from the maximum likelihood one?" concepts={["predictive-distribution"]}>
+It integrates over every weight setting instead of plugging in one. The result still has a
+Gaussian form, but its variance grows with distance from the data, not only from the fixed
+noise term.
+</Recall>
+
+<Recall question="In the boxes example, why does observing an orange favour Box A despite Box B being chosen more often?" concepts={["bayes-theorem"]}>
+The likelihood ratio dominates the prior ratio: oranges are three times commoner in Box A
+than Box B, more than enough to outweigh Box A being picked less often to begin with.
+</Recall>
+
+## Connections
+
+- **Depends on** [1.1](/sections/1-1): the Bayesian treatment here targets the same
+  weights that section fit by least squares.
+- **[1.5](/sections/1-5)** builds decision-making on top of the posteriors introduced here.
+- **[1.6](/sections/1-6)** reuses the Gaussian and its entropy.
+- **[3.3](/sections/3-3)** develops this chapter's Bayesian curve fitting into the general
+  case.
+

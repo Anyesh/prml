@@ -1,0 +1,136 @@
+---
+chapter: 1
+section: "1.4"
+title: The Curse of Dimensionality
+bookPages: [33, 37]
+summary: Intuitions built in two or three dimensions actively mislead in high ones, because volume, and with it data density, concentrates in places low-dimensional habit does not expect.
+concepts:
+  - curse-of-dimensionality
+  - data-manifold
+prereqs: ["1.1"]
+equations:
+  - { id: "1.74", name: higher-order polynomial in D dimensions }
+  - { id: "1.75", name: sphere volume scaling }
+  - { id: "1.76", name: volume fraction in an outer shell }
+widgets: [VolumeConcentrationExplorer]
+difficulty: 2
+---
+
+import VolumeConcentrationExplorer from '@widgets/ch01/VolumeConcentrationExplorer';
+import GaussianShellDensity from '@widgets/ch01/figures/GaussianShellDensity';
+import PolynomialParameterGrowth from '@widgets/ch01/figures/PolynomialParameterGrowth';
+import SphereInCubeCorners from '@widgets/ch01/figures/SphereInCubeCorners';
+
+## Intuition
+
+Everyday geometric sense comes from living in three dimensions, and it stops applying
+almost immediately past that. Divide a line into ten bins and you need ten cells. Do the
+same to a hundred-dimensional cube and the cell count is ten to the hundredth: more cells
+than could ever hold one data point each, however much data exists.
+
+The strangeness runs deeper than counting cells. A ball's volume, and a Gaussian's
+probability mass, both stop clustering near the centre as dimension grows and instead
+crowd into a thin shell near the surface, or into corners past any inscribed sphere. A
+neighbourhood that felt local and reliable at low dimension is neither, once the space
+around it has enough directions to hide in.
+
+None of this rules out working in high dimensions. It rules out doing it the way low
+dimensions taught, covering the whole space with a fixed grid or a fixed set of functions
+and hoping density holds up.
+
+## The math
+
+A general polynomial to order 3 in $D$ inputs already carries a triple sum:
+
+<MathBlock id="1.74" name="higher-order polynomial in D dimensions">
+
+$$y(\mathbf{x},\mathbf{w}) = w_0 + \sum_{i=1}^{D}w_ix_i + \sum_{i=1}^{D}\sum_{j=1}^{D}w_{ij}x_ix_j + \sum_{i=1}^{D}\sum_{j=1}^{D}\sum_{k=1}^{D}w_{ijk}x_ix_jx_k$$
+
+</MathBlock>
+
+<Figure caption="Independent coefficients needed for a degree-M polynomial, by input dimension D. Log scale; a straight line here is already exponential-feeling growth." width="wide">
+  <PolynomialParameterGrowth client:visible />
+</Figure>
+
+A sphere's volume scales as $r^D$:
+
+<MathBlock id="1.75" name="sphere volume scaling">
+
+$$V_D(r) = K_D r^D$$
+
+</MathBlock>
+
+so the fraction sitting within $\epsilon$ of the surface is dimension-dependent:
+
+<MathBlock id="1.76" name="volume fraction in an outer shell">
+
+$$\frac{V_D(1) - V_D(1-\epsilon)}{V_D(1)} = 1 - (1-\epsilon)^D$$
+
+</MathBlock>
+
+The same concentration happens to probability mass: a Gaussian's radial density moves its
+peak outward from the origin as $D$ grows.
+
+<Figure caption="Density against radius, several dimensions, same variance. The peak leaves the origin behind." source="1.23">
+  <GaussianShellDensity client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Where a sphere's volume actually sits"
+  figure="1.22"
+  caption="Raise D and watch the highlighted curve pull toward the top-left: past a few dozen dimensions, essentially all the volume sits in the outer tenth of the radius."
+>
+  <VolumeConcentrationExplorer client:visible />
+</Widget>
+
+Compare the D=1 curve, a straight line, to anything past D=20: the same shell width holds
+almost none of the volume in one case and almost all of it in the other.
+
+## Worked example
+
+A cubic polynomial ($M=3$) needs $286$ independent coefficients at $D=10$ and $176{,}851$
+at $D=100$, from the exact count $(D+M)!/(D!\,M!)$: no exponential term anywhere, and
+already impractical.
+
+<Figure caption="Ratio of an inscribed sphere's volume to its enclosing cube's, by dimension: computed via the surface-area formula, not estimated." width="wide">
+  <SphereInCubeCorners client:visible />
+</Figure>
+
+The sphere-in-cube ratio falls from $0.16$ at $D=5$ to about $2.5\times10^{-8}$ at $D=20$.
+A sphere touching every face of a cube contains almost none of that cube's volume once $D$
+passes a couple of dozen: the volume is in the corners, which stretch into long spikes a
+low-dimensional eye never learns to expect.
+
+## Recall
+
+<Recall question="Why does a fixed grid over the input space fail in high dimensions?" concepts={["curse-of-dimensionality"]}>
+The number of cells grows exponentially with dimension, so the data needed to keep even
+most cells non-empty grows exponentially too, far outpacing any realistic dataset.
+</Recall>
+
+<Recall question="Where does most of a high-dimensional sphere's volume actually sit?" concepts={["curse-of-dimensionality"]}>
+In a thin shell near the surface, not near the centre. The fraction within epsilon of the
+surface, 1-(1-epsilon)^D, approaches 1 for any fixed epsilon as D grows.
+</Recall>
+
+<Recall question="Does the curse of dimensionality make high-dimensional problems hopeless?" concepts={["data-manifold"]}>
+No. Real data rarely fills its ambient space; it clusters near a lower-dimensional
+manifold, and exploiting that structure, rather than covering the whole space, is what
+makes high-dimensional problems tractable.
+</Recall>
+
+<Recall question="Why does a sphere inscribed in a cube hold almost none of the cube's volume at high D?" concepts={["curse-of-dimensionality"]}>
+The ratio falls exponentially in D. Nearly all the cube's volume sits past the sphere, in
+its corners, which is the same concentration-away-from-the-centre phenomenon as the shell
+result, viewed from outside the sphere instead of inside it.
+</Recall>
+
+## Connections
+
+- **Depends on** [1.1](/sections/1-1): the polynomial parameter count that explodes here is
+  the same $y(x,\mathbf{w})$ fit there, generalised past one input.
+- **[3.6](/sections/3-6)** returns to this exact counting argument to conclude why fixed
+  basis functions are abandoned; this section only motivates it.
+

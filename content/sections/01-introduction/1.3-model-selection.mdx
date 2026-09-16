@@ -1,0 +1,117 @@
+---
+chapter: 1
+section: "1.3"
+title: Model Selection
+bookPages: [32, 32]
+summary: Training error cannot pick a model's complexity because it is the number being minimised; held-out data or a penalised in-sample score has to do it instead.
+concepts:
+  - validation-set
+  - cross-validation
+  - akaike-information-criterion
+prereqs: ["1.1", "1.2"]
+equations:
+  - { id: "1.73", name: Akaike information criterion }
+widgets: [CrossValidationVsHoldout]
+difficulty: 2
+---
+
+import CrossValidationVsHoldout from '@widgets/ch01/CrossValidationVsHoldout';
+import FoldPartitionDiagram from '@widgets/ch01/figures/FoldPartitionDiagram';
+import ValidationSpendsData from '@widgets/ch01/figures/ValidationSpendsData';
+import AicPicksModel from '@widgets/ch01/figures/AicPicksModel';
+
+## Intuition
+
+Picking a polynomial order by whichever value drives training error lowest always answers
+"the largest one available," because a bigger model can only match or beat a smaller one
+on the data it was fit to. That is not a choice, it is a tie won by default.
+
+A real choice needs a score the model could not have gamed by memorising. The cheapest
+version holds out part of the data and never lets fitting see it. The catch is a genuine
+trade: data spent watching is data not spent training, and a small watch set is a noisy
+judge. Rotating which slice gets held out fixes the noise at the cost of fitting the model
+several times over instead of once. A purely training-side score avoids that cost but has
+to guess at the penalty instead of measuring it.
+
+## The math
+
+Cross-validation partitions the data into $S$ groups, trains on $S-1$ of them, and scores
+on the remainder, rotated so every point is scored exactly once.
+
+<Figure caption="Step through all four runs. Every point is held out exactly once, so the four scores together use the whole dataset." source="1.18">
+  <FoldPartitionDiagram client:visible />
+</Figure>
+
+<Figure caption="What each scheme trains on versus checks, and how many times it has to fit." width="wide">
+  <ValidationSpendsData client:visible />
+</Figure>
+
+An entirely different route needs no held-out data at all. The Akaike information
+criterion scores a model by its best-fit log likelihood minus a flat penalty per parameter:
+
+<MathBlock id="1.73" name="Akaike information criterion">
+
+$$\ln p(D \mid \mathbf{w}_{\mathrm{ML}}) - M$$
+
+</MathBlock>
+
+Larger is better. The penalty is fixed rather than measured from the data, which is why it
+tends to favour models simpler than cross-validation would pick.
+
+## Interactive
+
+<Widget
+  title="What a validation split buys over training error alone"
+  figure="1.18"
+  caption="Drag S from 2 up to 20 (leave-one-out) and watch the cross-validation curve settle onto the true, 100-point test curve while the single 20% split stays noisy."
+>
+  <CrossValidationVsHoldout client:visible />
+</Widget>
+
+At low $S$ notice how far a single unlucky split can sit from the truth; that gap is what
+the extra fits are paying to close.
+
+## Worked example
+
+Twenty points, the same sinusoidal source as 1.1, model orders $M=0$ to $9$. Five-fold
+cross-validation, using only training data, picks $M=5$. A held-out set of 100 points,
+never touched during fitting, puts the true minimum at $M=5$ too: cross-validation reached
+the right answer with a fifth of the data 1.1 used to reveal it in the first place.
+
+<Figure caption="Left: the true answer, which needs 100 points nothing else here uses. Right: AIC, which needs none." width="wide">
+  <AicPicksModel client:visible />
+</Figure>
+
+AIC, reading only the 20 training points and their fit quality, lands on $M=3$: close, but
+one order simpler, exactly the "favours simplicity" tendency the penalty's fixed size
+predicts.
+
+## Recall
+
+<Recall question="Why can't training error alone select model complexity?" concepts={["validation-set"]}>
+Training error is the quantity being minimised, so a larger model can never score worse on
+it than a smaller one it contains. It has no mechanism for penalising complexity.
+</Recall>
+
+<Recall question="What does cross-validation buy over a single hold-out split, and what does it cost?" concepts={["cross-validation"]}>
+It uses every point for validation exactly once, instead of trusting one arbitrary split,
+at the cost of S separate model fits instead of one.
+</Recall>
+
+<Recall question="Why does AIC tend to favour simpler models than cross-validation does?" concepts={["akaike-information-criterion"]}>
+Its penalty is a fixed count of parameters, not a measurement of how much those parameters
+actually overfit this data, so it cannot adapt the penalty the way held-out performance
+does.
+</Recall>
+
+<Recall question="When is leave-one-out cross-validation the natural choice?" concepts={["cross-validation"]}>
+When data is too scarce to spare a validation block of any real size; S=N uses all but one
+point for training on every run.
+</Recall>
+
+## Connections
+
+- **Depends on** [1.1](/sections/1-1) for the over-fitting problem this section addresses,
+  and [1.2](/sections/1-2) for the likelihood AIC scores.
+- **[3.4](/sections/3-4)** replaces AIC's fixed penalty with one the data itself sets.
+
