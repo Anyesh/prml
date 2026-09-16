@@ -1,0 +1,160 @@
+---
+chapter: 12
+section: "12.3"
+title: Kernel PCA
+bookPages: [586, 590]
+summary: Running PCA in a feature space reached through a kernel finds structure, like concentric rings, that no linear projection of the original coordinates ever could.
+concepts: [kernel-pca, centred-gram-matrix]
+prereqs: ["12.1", "6.2"]
+equations:
+  - { id: "12.73", name: feature-space covariance }
+  - { id: "12.78", name: kernel function }
+  - { id: "12.80", name: reduced eigenproblem }
+  - { id: "12.83", name: centred Gram matrix }
+  - { id: "12.82", name: projection onto a component }
+widgets: [KernelPcaRings]
+difficulty: 3
+---
+
+import KernelPcaRings from '@widgets/ch12/KernelPcaRings';
+import CenteredGramHeatmap from '@widgets/ch12/figures3/CenteredGramHeatmap';
+import FeatureSpaceContours from '@widgets/ch12/figures3/FeatureSpaceContours';
+import GammaSeparationSweep from '@widgets/ch12/figures3/GammaSeparationSweep';
+import LinearProjectionMixed from '@widgets/ch12/figures3/LinearProjectionMixed';
+
+## Intuition
+
+Every version of PCA so far draws one straight line, or a handful of them, through the
+data. That is fine when the interesting structure really is linear, but plenty of data
+is not: two rings, one inside the other, on a table. No single straight-line projection
+can separate a point on the inner ring from one on the outer, because both rings pass
+through every direction at some angle.
+
+Kernel PCA runs ordinary PCA in a different space instead, one reached by a nonlinear
+feature map, where the rings do become separable by a single direction. The trick
+chapter 6 supplies is that the feature map itself never has to be built or even named:
+every quantity PCA needs only ever appears as an inner product between two feature
+vectors, and a kernel function supplies that inner product directly from the original
+points. The eigenvalue problem that comes out is the size of the dataset, never the
+size, possibly infinite, of the feature space.
+
+## The math
+
+In a feature space reached by $\phi$, the covariance is
+
+<MathBlock id="12.73" name="feature-space covariance">
+
+$$\mathbf{C} = \frac{1}{N}\sum_{n=1}^{N}\phi(\mathbf{x}_n)\phi(\mathbf{x}_n)^{\mathrm{T}}$$
+
+</MathBlock>
+
+Its eigenvectors are linear combinations of the feature vectors, so substituting turns
+the eigenvalue problem into one on pairwise kernel values alone,
+$k(\mathbf{x}_n,\mathbf{x}_m)=\phi(\mathbf{x}_n)^{\mathrm{T}}\phi(\mathbf{x}_m)$:
+
+<MathBlock id="12.78" name="kernel function">
+
+$$k(\mathbf{x}_n,\mathbf{x}_m) = \phi(\mathbf{x}_n)^{\mathrm{T}}\phi(\mathbf{x}_m)$$
+
+</MathBlock>
+
+<MathBlock id="12.80" name="reduced eigenproblem">
+
+$$\mathbf{K}\mathbf{a}_i = \lambda_i N \mathbf{a}_i$$
+
+</MathBlock>
+
+<Figure caption="The centred Gram matrix for the two-ring data: blocks of shared colour mark points the kernel treats as alike." width="wide">
+  <CenteredGramHeatmap client:visible />
+</Figure>
+
+Feature vectors are rarely zero-mean, so the Gram matrix is centred as though they were,
+without ever forming them:
+
+<MathBlock id="12.83" name="centred Gram matrix">
+
+$$\tilde{\mathbf{K}} = \mathbf{K} - \mathbf{1}_N\mathbf{K} - \mathbf{K}\mathbf{1}_N + \mathbf{1}_N\mathbf{K}\mathbf{1}_N$$
+
+</MathBlock>
+
+A new point projects onto component $i$ using only its own kernel values against the
+training set:
+
+<MathBlock id="12.82" name="projection onto a component">
+
+$$y_i(\mathbf{x}) = \sum_{n=1}^{N} a_{in}\,k(\mathbf{x},\mathbf{x}_n)$$
+
+</MathBlock>
+
+<Figure caption="Level sets of the first kernel component, drawn back in the original two coordinates: closed loops, not straight bands." width="wide">
+  <FeatureSpaceContours client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Kernel PCA on two rings"
+  figure="12.3"
+  caption="Turn the kernel width down until the top plot separates cleanly, then up until the rings blur back together: the same width tradeoff every kernel method faces."
+>
+  <KernelPcaRings client:visible />
+</Widget>
+
+<Figure caption="How cleanly the sign of the first kernel component separates the two rings, across kernel widths.">
+  <GammaSeparationSweep client:visible />
+</Figure>
+
+## Worked example
+
+A linear projection of the two-ring data (radii $1$ and $3$, forty-eight points) spreads
+inner-ring values across $[-0.99, 0.90]$ and outer-ring values across $[-3.11, 2.94]$,
+with $10$ of $24$ inner points and $12$ of $24$ outer points landing on each side of
+zero: no separation at all.
+
+<Figure caption="The same linear projection, split by ring: the two distributions sit almost on top of each other.">
+  <LinearProjectionMixed client:visible />
+</Figure>
+
+Kernel PCA with a Gaussian kernel at $\gamma=0.25$ gives a
+first eigenvalue of $8.01$ and confines projections to $[0.007, 0.084]$ for every inner
+point and $[-0.074, -0.024]$ for every outer one, complete separation by sign, from a
+projection linear PCA could never produce.
+
+## Recall
+
+<Recall question="Why can no linear projection separate the two rings?" concepts={["kernel-pca"]}>
+Both rings extend through every direction, so any single straight line's projection
+overlaps for inner and outer points alike. Separating them needs a projection that is
+not a straight line in the original coordinates.
+</Recall>
+
+<Recall question="How does kernel PCA avoid ever constructing the feature map?" concepts={["kernel-pca"]}>
+Every step of PCA needed here only ever uses inner products between feature vectors,
+and the kernel function supplies exactly that value from the two original points, so
+the (possibly infinite-dimensional) feature vectors themselves are never built.
+</Recall>
+
+<Recall question="Why must the Gram matrix be centred before its eigenproblem is solved?" concepts={["centred-gram-matrix"]}>
+PCA's covariance assumes zero-mean features, but a feature map's outputs are rarely
+zero-mean. The centring correction applies that shift's effect to the kernel values
+directly, without ever computing the mean feature vector itself.
+</Recall>
+
+<Recall question="What does the kernel width gamma trade off in the rings example?" concepts={["kernel-pca"]}>
+Too wide, and every point looks similar to every other, collapsing the useful structure.
+Too narrow, and only near-identical points look alike, losing the shared ring
+membership. A working width sits between those extremes.
+</Recall>
+
+<Recall question="Why is kernel PCA's eigenproblem the size of the dataset rather than the feature space?" concepts={["kernel-pca"]}>
+Every eigenvector is a linear combination of the training feature vectors, so its
+coefficients, one per data point, are what the eigenproblem solves for, regardless of
+how large or even infinite the feature space itself is.
+</Recall>
+
+## Connections
+
+- **Builds on** [12.1](/sections/12-1)'s variance argument, run in a different space, and
+  [6.2](/sections/6-2)'s kernel substitution, which supplies that space without naming it.
+- **Leads to** [12.4](/sections/12-4), where the manifold itself, not just a kernel trick,
+  becomes the object of interest.

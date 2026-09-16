@@ -1,0 +1,189 @@
+---
+chapter: 12
+section: "12.2"
+title: Probabilistic PCA
+bookPages: [570, 585]
+summary: Making PCA a generative Gaussian model gives it a likelihood, a closed-form maximum-likelihood fit, and an EM algorithm, while recovering the same subspace as noise vanishes.
+concepts: [probabilistic-pca, rotational-ambiguity, factor-analysis, expectation-maximisation]
+prereqs: ["12.1", "9.4"]
+equations:
+  - { id: "12.31", name: latent prior }
+  - { id: "12.32", name: conditional data distribution }
+  - { id: "12.36", name: marginal covariance }
+  - { id: "12.45", name: maximum-likelihood loading matrix }
+  - { id: "12.46", name: maximum-likelihood noise variance }
+  - { id: "12.54", name: E-step latent mean }
+  - { id: "12.56", name: M-step loading update }
+  - { id: "12.57", name: M-step noise update }
+widgets: [PpcaEmStepThrough]
+difficulty: 4
+---
+
+import PpcaEmStepThrough from '@widgets/ch12/PpcaEmStepThrough';
+import MarginalDensityContour from '@widgets/ch12/figures2/MarginalDensityContour';
+import RotationalAmbiguity from '@widgets/ch12/figures2/RotationalAmbiguity';
+import PpcaVsFactorAnalysis from '@widgets/ch12/figures2/PpcaVsFactorAnalysis';
+import EmSigmaConvergence from '@widgets/ch12/figures2/EmSigmaConvergence';
+
+## Intuition
+
+Section 12.1 finds a subspace by staring at one fixed dataset and asking which
+directions carry the variance. That answer has no opinion about its own confidence, no
+way to say whether a point is well explained or barely so, and no footing for comparing
+two candidate subspace sizes against each other. It also cannot be run through the
+general expectation-maximisation argument chapter 9 built, because nothing behind it is
+an explicit probability model.
+
+Probabilistic PCA supplies exactly that model: draw a low-dimensional latent point from
+a standard Gaussian, map it linearly into the data space, and add isotropic noise. Fit
+the loading matrix and noise level by maximum likelihood, and as the noise vanishes the
+fit collapses onto the very subspace section 12.1 already found by a wholly different
+argument. What is new is everything a generative model buys: a likelihood for comparing
+dimensions, a route through missing coordinates, and an EM algorithm needing no full
+covariance matrix at all.
+
+## The math
+
+A standard Gaussian latent variable, mapped linearly with isotropic noise:
+
+<MathBlock id="12.31" name="latent prior">
+
+$$p(\mathbf{z}) = \mathcal{N}(\mathbf{z}\mid\mathbf{0},\mathbf{I})$$
+
+</MathBlock>
+
+<MathBlock id="12.32" name="conditional data distribution">
+
+$$p(\mathbf{x}\mid\mathbf{z}) = \mathcal{N}(\mathbf{x}\mid\mathbf{W}\mathbf{z}+\boldsymbol{\mu},\sigma^2\mathbf{I})$$
+
+</MathBlock>
+
+Integrating $\mathbf{z}$ out leaves $\mathbf{x}$ itself Gaussian, with covariance
+
+<MathBlock id="12.36" name="marginal covariance">
+
+$$\mathbf{C} = \mathbf{W}\mathbf{W}^{\mathrm{T}} + \sigma^2\mathbf{I}$$
+
+</MathBlock>
+
+<Figure caption="Log-density contours of the fitted marginal over the data, with the latent axis drawn through the mean." width="wide">
+  <MarginalDensityContour client:visible />
+</Figure>
+
+A rotation $\mathbf{W}\mathbf{R}$ by any orthogonal $\mathbf{R}$ leaves
+$\mathbf{W}\mathbf{W}^{\mathrm{T}}$, and so this whole marginal, unchanged: $\mathbf{W}$
+is identifiable only up to rotation of the latent space.
+
+<Figure caption="Two loading bases for the same data, related by a rotation R: slide it and watch the marginal ellipse never move." width="wide">
+  <RotationalAmbiguity client:visible />
+</Figure>
+
+Maximum likelihood has a closed form (Tipping and Bishop, 1999b): with $\mathbf{U}_M$
+the top $M$ eigenvectors of $\mathbf{S}$ and $\mathbf{L}_M$ their eigenvalues,
+
+<MathBlock id="12.45" name="maximum-likelihood loading matrix">
+
+$$\mathbf{W}_{\mathrm{ML}} = \mathbf{U}_M(\mathbf{L}_M-\sigma^2\mathbf{I})^{1/2}$$
+
+</MathBlock>
+
+<MathBlock id="12.46" name="maximum-likelihood noise variance">
+
+$$\sigma^2_{\mathrm{ML}} = \frac{1}{D-M}\sum_{i=M+1}^{D}\lambda_i$$
+
+</MathBlock>
+
+For large $D$, EM never forms $\mathbf{S}$ at all. The E step needs only
+
+<MathBlock id="12.54" name="E-step latent mean">
+
+$$\mathrm{E}[\mathbf{z}_n] = \mathbf{M}^{-1}\mathbf{W}^{\mathrm{T}}(\mathbf{x}_n-\bar{\mathbf{x}})$$
+
+</MathBlock>
+
+and its second moment, and the M step refits both parameters from those alone:
+
+<MathBlock id="12.56" name="M-step loading update">
+
+$$\mathbf{W}_{\mathrm{new}} = \Big[\sum_n(\mathbf{x}_n-\bar{\mathbf{x}})\mathrm{E}[\mathbf{z}_n]^{\mathrm{T}}\Big]\Big[\sum_n\mathrm{E}[\mathbf{z}_n\mathbf{z}_n^{\mathrm{T}}]\Big]^{-1}$$
+
+</MathBlock>
+
+<MathBlock id="12.57" name="M-step noise update">
+
+$$\sigma^2_{\mathrm{new}} = \frac{1}{ND}\sum_n\Big\{\|\mathbf{x}_n-\bar{\mathbf{x}}\|^2 - 2\mathrm{E}[\mathbf{z}_n]^{\mathrm{T}}\mathbf{W}_{\mathrm{new}}^{\mathrm{T}}(\mathbf{x}_n-\bar{\mathbf{x}}) + \mathrm{Tr}\big(\mathrm{E}[\mathbf{z}_n\mathbf{z}_n^{\mathrm{T}}]\mathbf{W}_{\mathrm{new}}^{\mathrm{T}}\mathbf{W}_{\mathrm{new}}\big)\Big\}$$
+
+</MathBlock>
+
+## Interactive
+
+<Widget
+  title="EM for probabilistic PCA"
+  figure="12.2"
+  caption="Step through E and M rounds. Watch sigma squared fall and the axis swing toward the data direction, while the log-likelihood only ever climbs."
+>
+  <PpcaEmStepThrough client:visible />
+</Widget>
+
+Restart from a very different initial axis and it still lands in the same place, only
+along a different early path.
+
+## Worked example
+
+Sixty points generated along a hidden direction $(0.8, 0.6)$ with noise standard
+deviation $0.4$ give, by the closed form, $\sigma^2_{\mathrm{ML}}=0.155$ and a loading
+direction within about $4.1$ degrees of the true generator. Starting EM instead from a
+near-isotropic guess ($\sigma^2=1$), the log-likelihood climbs from $-215.4$ to $-153.5$
+over eight rounds, never once falling, with $\sigma^2$ down to $0.184$ and still
+shrinking toward the closed-form value when the rounds run out.
+
+<Figure caption="Sigma squared falling across EM rounds toward the closed-form maximum-likelihood value it never quite reaches in eight rounds.">
+  <EmSigmaConvergence client:visible />
+</Figure>
+
+On data with one quiet axis and two noisy ones, factor analysis recovers noise
+variances near $0.07$, $0.61$, and $0.53$, tracking the true asymmetry; PPCA's single
+shared $\sigma^2=0.435$ cannot, and overstates the quiet axis's variance at $1.72$
+against an empirical $1.62$.
+
+<Figure caption="The quiet axis against a noisy one: PPCA's shared noise term misses what factor analysis's per-axis term catches." width="wide">
+  <PpcaVsFactorAnalysis client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="What does probabilistic PCA have that ordinary PCA does not?" concepts={["probabilistic-pca"]}>
+An explicit generative model with a likelihood, so dimensions can be compared, missing
+data handled, and the fit run through EM. Its maximum-likelihood solution recovers
+ordinary PCA exactly as the noise variance goes to zero.
+</Recall>
+
+<Recall question="Why is the loading matrix W only identifiable up to rotation?" concepts={["rotational-ambiguity"]}>
+The marginal covariance depends on W only through W W^T, and right-multiplying W by any
+orthogonal matrix leaves that product, and so the whole model, unchanged.
+</Recall>
+
+<Recall question="What is the one modelling difference between factor analysis and PPCA?" concepts={["factor-analysis"]}>
+PPCA's noise is isotropic, one shared sigma squared on every axis; factor analysis lets
+each observed coordinate keep its own noise variance on the diagonal.
+</Recall>
+
+<Recall question="Why bother with EM when a closed form for PPCA already exists?" concepts={["expectation-maximisation"]}>
+The closed form needs an eigendecomposition of the full covariance, costing order D
+cubed. EM's E and M steps only ever touch M-dimensional quantities, which is far cheaper
+once D is large and M is small.
+</Recall>
+
+<Recall question="What happens to the EM updates as sigma squared is driven to zero?" concepts={["probabilistic-pca"]}>
+They reduce to ordinary PCA's power-iteration-like update: the posterior over z becomes
+a deterministic projection, and the M step becomes exactly the reconstruction rule from
+12.1.
+</Recall>
+
+## Connections
+
+- **Builds on** [12.1](/sections/12-1) for the subspace this recovers, and
+  [9.4](/sections/9-4)'s general EM argument, applied here to a Gaussian latent variable.
+- **Uses** [2.3](/sections/2-3)'s Gaussian conditioning to derive the latent posterior.
+- **Leads to** [12.3](/sections/12-3) and [12.4](/sections/12-4), which relax linearity
+  and Gaussianity in turn.

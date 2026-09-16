@@ -1,0 +1,180 @@
+---
+chapter: 12
+section: "12.1"
+title: Principal Component Analysis
+bookPages: [561, 569]
+summary: Maximising variance and minimising reconstruction error are the same question asked two ways, and both answers are the top eigenvectors of the data's covariance matrix.
+concepts: [principal-component-analysis, reconstruction-error, whitening-transform]
+prereqs: ["3.6", "2.3"]
+equations:
+  - { id: "12.3", name: covariance matrix }
+  - { id: "12.5", name: stationarity condition }
+  - { id: "12.6", name: variance at the optimum }
+  - { id: "12.15", name: distortion from M discarded directions }
+  - { id: "12.17", name: eigenvector condition }
+  - { id: "12.21", name: reconstruction from M components }
+  - { id: "12.24", name: whitening transform }
+widgets: [PcaAxesExplorer]
+difficulty: 2
+---
+
+import PcaAxesExplorer from '@widgets/ch12/PcaAxesExplorer';
+import VarianceReconstructionDuality from '@widgets/ch12/figures/VarianceReconstructionDuality';
+import EigenvalueSpectrumTradeoff from '@widgets/ch12/figures/EigenvalueSpectrumTradeoff';
+import ReconstructionByComponents from '@widgets/ch12/figures/ReconstructionByComponents';
+import WhiteningEffect from '@widgets/ch12/figures/WhiteningEffect';
+
+## Intuition
+
+Section 3.6 closed on an uncomfortable observation: real data is recorded in far more
+numbers than it actually needs. A photograph of a face is a grid of a million pixel
+values, but faces do not vary in a million independent ways; change the lighting or the
+expression and most pixels move together, along a much smaller set of shared directions.
+A basis fixed before training ever saw the data cannot exploit that, because it does not
+know where the data went.
+
+Principal component analysis lets the data choose its own basis. Ask two questions of
+the same cloud of points. Which single direction, picking just one, spreads the data out
+the most? And which direction, if dropped, would lose the least on rebuilding each point
+from what remained? These sound like different goals, one about maximising and one about
+minimising, yet they share exactly one answer, reachable with nothing harder than an
+eigenvalue problem.
+
+## The math
+
+For data $\mathbf{x}_n$ with mean $\bar{\mathbf{x}}$, the covariance matrix is
+
+<MathBlock id="12.3" name="covariance matrix">
+
+$$\mathbf{S} = \frac{1}{N}\sum_{n=1}^{N}(\mathbf{x}_n-\bar{\mathbf{x}})(\mathbf{x}_n-\bar{\mathbf{x}})^{\mathrm{T}}$$
+
+</MathBlock>
+
+Maximising the variance $\mathbf{u}_1^{\mathrm{T}}\mathbf{S}\mathbf{u}_1$ of the data
+projected onto a unit vector, by a Lagrange multiplier for the constraint
+$\mathbf{u}_1^{\mathrm{T}}\mathbf{u}_1=1$, gives a stationarity condition:
+
+<MathBlock id="12.5" name="stationarity condition">
+
+$$\mathbf{S}\mathbf{u}_1 = \lambda_1 \mathbf{u}_1$$
+
+</MathBlock>
+
+so $\mathbf{u}_1$ is an eigenvector and the captured variance is its own eigenvalue:
+
+<MathBlock id="12.6" name="variance at the optimum">
+
+$$\mathbf{u}_1^{\mathrm{T}}\mathbf{S}\mathbf{u}_1 = \lambda_1$$
+
+</MathBlock>
+
+<Figure caption="The same rotating direction's captured variance and reconstruction error, plotted together: one curve's peak is the other's trough, at the same angle." width="wide">
+  <VarianceReconstructionDuality client:visible />
+</Figure>
+
+Asking the question the other way, keeping $M$ directions and measuring the squared
+error from discarding the rest, gives the same eigenvectors minimising
+
+<MathBlock id="12.15" name="distortion from M discarded directions">
+
+$$J = \sum_{i=M+1}^{D}\mathbf{u}_i^{\mathrm{T}}\mathbf{S}\mathbf{u}_i$$
+
+</MathBlock>
+
+<MathBlock id="12.17" name="eigenvector condition">
+
+$$\mathbf{S}\mathbf{u}_i = \lambda_i \mathbf{u}_i$$
+
+</MathBlock>
+
+so $J$ is minimised by discarding the smallest eigenvalues. Reconstruction from the
+kept $M$ reads
+
+<MathBlock id="12.21" name="reconstruction from M components">
+
+$$\hat{\mathbf{x}}_n = \bar{\mathbf{x}} + \sum_{i=1}^{M}\big((\mathbf{x}_n-\bar{\mathbf{x}})^{\mathrm{T}}\mathbf{u}_i\big)\mathbf{u}_i$$
+
+</MathBlock>
+
+and rescaling every kept axis by its own eigenvalue whitens the data to unit variance:
+
+<MathBlock id="12.24" name="whitening transform">
+
+$$\mathbf{y}_n = \boldsymbol{\Lambda}^{-1/2}\mathbf{U}(\mathbf{x}_n - \bar{\mathbf{x}})$$
+
+</MathBlock>
+
+<Figure caption="The eigenvalue spectrum, largest first, with the chosen cutoff M and the resulting error, exactly the sum of the bars left out." width="wide">
+  <EigenvalueSpectrumTradeoff client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Rotating and reshaping the cloud"
+  figure="12.1"
+  caption="Stretch and turn the cloud with the sliders. The two arrows re-find the axes of greatest and least spread every time, and the bar chart tracks the variance each one carries."
+>
+  <PcaAxesExplorer client:visible />
+</Widget>
+
+Set the two spreads equal and watch both arrows lose any preferred direction: with no
+elongation, no single axis carries more variance than any other.
+
+## Worked example
+
+Sixty points in three dimensions, generated along two dominant directions plus a faint
+third, give a covariance whose eigenvalues are $8.656$, $3.048$, and $0.084$. Keeping
+$M=2$ retains $8.656+3.048=11.704$ of the total $11.789$, which is $99.28\%$ of the
+variance. Equation 12.15's reconstruction error for that choice comes out to $0.0844$,
+matching the discarded eigenvalue exactly, to nine decimal places, since they are the
+same number computed two different ways.
+
+<Figure caption="One twelve-coordinate sample, its two-latent-dimension origin, and its reconstruction as more components are added back." width="wide">
+  <ReconstructionByComponents client:visible />
+</Figure>
+
+<Figure caption="A correlated cloud before and after whitening: same data, axes rescaled so every direction carries unit variance." width="wide">
+  <WhiteningEffect client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="Why do the maximum-variance and minimum-error formulations of PCA give the same axes?" concepts={["principal-component-analysis"]}>
+Because for orthonormal directions the total variance is fixed, so variance captured
+and squared error left over always sum to the same constant. Maximising one term
+minimises the other, and both are solved by the same eigenvectors of the covariance.
+</Recall>
+
+<Recall question="What does the reconstruction error equal once the eigenvectors are found?" concepts={["reconstruction-error"]}>
+The sum of the eigenvalues belonging to the discarded directions. Nothing about the
+individual data points enters once the spectrum is known.
+</Recall>
+
+<Recall question="Why can two eigenvalues that are close in the population still produce very different sample eigenvalues?" concepts={["principal-component-analysis"]}>
+Nearby eigenvalues make the eigenvectors ill-determined: a small perturbation from
+finite-sample noise can rotate freely inside their shared subspace and, more
+surprisingly, can pull the sample eigenvalues themselves further apart than the
+population values ever were, even though the subspace they span stays stable.
+</Recall>
+
+<Recall question="What does whitening change about the data, and what does it leave alone?" concepts={["whitening-transform"]}>
+It rescales every principal axis to unit variance, so the new coordinates are
+uncorrelated with equal spread. It keeps every dimension, so it is a rescaling, not a
+reduction.
+</Recall>
+
+<Recall question="Why does a basis fixed before seeing the data fail where PCA succeeds?" concepts={["principal-component-analysis"]}>
+A fixed basis cannot know where the data actually varies, so it must cover the whole
+ambient space evenly. PCA reads the directions of real variation off the data itself,
+and needs far fewer of them.
+</Recall>
+
+## Connections
+
+- **Answers** the question [3.6](/sections/3-6) leaves open: a basis chosen after seeing
+  the data, rather than fixed in advance.
+- **Builds on** [2.3](/sections/2-3)'s Gaussian eigen-decomposition and conditioning
+  results, which the covariance matrix here is built from.
+- **Leads to** [12.2](/sections/12-2), which turns this into a generative model with a
+  likelihood, and [12.3](/sections/12-3), which runs the same idea through a kernel.

@@ -1,0 +1,79 @@
+- id: principal-component-analysis
+  name: "Principal component analysis"
+  definition: "Finding the M directions in data space that either capture the most variance or leave the least squared reconstruction error, which turn out to be the same M directions: the top eigenvectors of the data's covariance matrix."
+  introducedIn: "12.1"
+  usedIn: ["12.2", "12.3", "12.4"]
+  requires: []
+  aliases: ["PCA"]
+
+- id: reconstruction-error
+  name: "Reconstruction error"
+  definition: "The squared distance between a point and its projection back from a lower-dimensional subspace. Summed over the data, it equals exactly the sum of the eigenvalues left out of that subspace."
+  introducedIn: "12.1"
+  usedIn: ["12.4"]
+  requires: ["principal-component-analysis"]
+  aliases: []
+
+- id: whitening-transform
+  name: "Whitening transform"
+  definition: "Rescaling data along its own principal axes so every axis ends up with unit variance and zero correlation with the others. A preprocessing step, not a dimensionality reduction, since all axes are kept."
+  introducedIn: "12.1"
+  usedIn: []
+  requires: ["principal-component-analysis"]
+  aliases: ["sphering"]
+
+- id: probabilistic-pca
+  name: "Probabilistic PCA"
+  definition: "A Gaussian latent-variable model in which the data is a linear function of a lower-dimensional latent variable plus isotropic noise. Its maximum-likelihood solution recovers standard PCA in the zero-noise limit, but as a proper generative model it also has a likelihood, can run through EM, and extends to mixtures."
+  introducedIn: "12.2"
+  usedIn: ["12.4"]
+  requires: ["principal-component-analysis"]
+  aliases: ["PPCA"]
+
+- id: rotational-ambiguity
+  name: "Rotational ambiguity"
+  definition: "Probabilistic PCA's loading matrix is identifiable only up to right-multiplication by an arbitrary orthogonal matrix, because the marginal distribution depends on it only through one product that any such rotation leaves unchanged. A property of the model, not a defect of the fitting procedure."
+  introducedIn: "12.2"
+  usedIn: []
+  requires: ["probabilistic-pca"]
+  aliases: []
+
+- id: factor-analysis
+  name: "Factor analysis"
+  definition: "The same linear-Gaussian latent-variable model as probabilistic PCA, but with a diagonal rather than isotropic noise covariance, so each observed coordinate keeps its own noise level instead of sharing one."
+  introducedIn: "12.2"
+  usedIn: []
+  requires: ["probabilistic-pca"]
+  aliases: []
+
+- id: kernel-pca
+  name: "Kernel PCA"
+  definition: "Principal component analysis carried out in a nonlinear feature space reached through a kernel, so the algorithm needs only pairwise kernel values and never constructs the feature vectors themselves."
+  introducedIn: "12.3"
+  usedIn: []
+  requires: ["principal-component-analysis"]
+  aliases: []
+
+- id: centred-gram-matrix
+  name: "Centred Gram matrix"
+  definition: "The matrix of pairwise kernel values, corrected as if every feature vector had been shifted to have zero mean, without ever forming that (possibly infinite-dimensional) feature vector directly."
+  introducedIn: "12.3"
+  usedIn: []
+  requires: ["kernel-pca"]
+  aliases: []
+
+- id: nonlinear-manifold-learning
+  name: "Nonlinear manifold learning"
+  definition: "Recovering a low-dimensional, possibly curved surface that the data lies near, when no single linear subspace fits it well. Principal curves, locally linear embedding, Isomap and the generative topographic mapping are different answers to the same question PCA answers linearly."
+  introducedIn: "12.4"
+  usedIn: []
+  requires: ["principal-component-analysis", "data-manifold"]
+  aliases: []
+
+- id: independent-component-analysis
+  name: "Independent component analysis"
+  definition: "A latent-variable model like factor analysis, but with a factorised, non-Gaussian prior over the latent variables instead of a Gaussian one, which is what lets it recover sources up to permutation and scale rather than only up to rotation."
+  introducedIn: "12.4"
+  usedIn: []
+  requires: ["factor-analysis"]
+  aliases: ["ICA"]

@@ -1,0 +1,141 @@
+---
+chapter: 12
+section: "12.4"
+title: Nonlinear Latent Variable Models
+bookPages: [591, 604]
+summary: A principal curve bends to follow data no flat subspace can, delivering the curved-manifold picture section 3.6 promised, alongside non-Gaussian and neural relaxations of the same linear assumption.
+concepts: [nonlinear-manifold-learning, independent-component-analysis, data-manifold]
+prereqs: ["12.1", "12.2"]
+equations:
+  - { id: "12.89", name: factorised non-Gaussian prior }
+  - { id: "12.90", name: heavy-tailed latent density }
+  - { id: "12.91", name: autoassociative reconstruction error }
+  - { id: "12.92", name: principal-curve self-consistency }
+widgets: [PrincipalCurveStepThrough]
+difficulty: 4
+---
+
+import PrincipalCurveStepThrough from '@widgets/ch12/PrincipalCurveStepThrough';
+import ManifoldAmbientView from '@widgets/ch12/figures4/ManifoldAmbientView';
+import LinearVsManifoldReconstruction from '@widgets/ch12/figures4/LinearVsManifoldReconstruction';
+import HeavyTailedPrior from '@widgets/ch12/figures4/HeavyTailedPrior';
+
+## Intuition
+
+Every model so far in this chapter still draws something straight through the data: a
+line, a plane, or a subspace reached through a kernel that stays linear once inside its
+feature space. Section 3.6 promised more than that: real data can lie near a genuinely
+curved surface, one no flat subspace, however chosen, tracks well over its whole length.
+A spiral rolled through space is the simplest case a straight line can only average and
+never follow.
+
+This section is the payoff of that promise. A principal curve does explicitly what 3.6
+asked for: bend to follow the data itself, using the same self-consistency idea that
+made EM work in chapter 9, now applied to a shape rather than a set of parameters.
+Independent component analysis and autoassociative neural networks relax two other
+assumptions PCA never questioned, a Gaussian latent variable and a strictly linear
+reconstruction, each buying a different kind of nonlinearity for a different kind of
+data.
+
+## The math
+
+Independent component analysis keeps a factorised latent prior but drops the Gaussian
+assumption:
+
+<MathBlock id="12.89" name="factorised non-Gaussian prior">
+
+$$p(\mathbf{z}) = \prod_{j} p(z_j)$$
+
+</MathBlock>
+
+with heavy-tailed choices such as
+
+<MathBlock id="12.90" name="heavy-tailed latent density">
+
+$$p(z) = \frac{1}{\pi\cosh(z)}$$
+
+</MathBlock>
+
+<Figure caption="The heavy-tailed source density against a standard Gaussian of the same scale: more mass at the peak and in the tails, less in between.">
+  <HeavyTailedPrior client:visible />
+</Figure>
+
+An autoassociative network with linear hidden units, trained to minimise
+
+<MathBlock id="12.91" name="autoassociative reconstruction error">
+
+$$E(\mathbf{w}) = \frac{1}{2}\sum_n\|\mathbf{y}(\mathbf{x}_n,\mathbf{w})-\mathbf{x}_n\|^2$$
+
+</MathBlock>
+
+finds nothing past the same PCA subspace; only further nonlinear layers escape it. A
+principal curve instead bends to fit the data directly, its shape fixed by
+self-consistency: the average of every point projecting nearest a spot on the curve
+must land back on that same spot:
+
+<MathBlock id="12.92" name="principal-curve self-consistency">
+
+$$\mathrm{E}[\mathbf{x} \mid g_f(\mathbf{x})=\lambda] = f(\lambda)$$
+
+</MathBlock>
+
+<Figure caption="Data recorded in two ambient coordinates, lying near the one-dimensional curve that actually generated it." width="wide">
+  <ManifoldAmbientView client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Fitting a principal curve"
+  figure="12.19"
+  caption="Step from the straight linear-PCA start through each self-consistency round, watching the curve bend to track the roll while colour marks each point's position along it."
+>
+  <PrincipalCurveStepThrough client:visible />
+</Widget>
+
+## Worked example
+
+Forty points sampled along a rolled curve in two ambient coordinates give linear PCA an
+eigenvalue spectrum of $11.37$ and $3.19$; keeping one axis leaves a mean squared
+reconstruction error of exactly $3.19$, the discarded eigenvalue. Fitting a principal
+curve to the same data over six self-consistency rounds, started from that same linear
+axis, brings the mean squared distance from each point to the curve down to $1.12$: a
+$2.85\times$ reduction, from a curve with the same one latent coordinate the linear fit
+already had, just no longer forced to be straight.
+
+<Figure caption="Mean squared reconstruction error: one straight line against the fitted curve, on the same data." width="wide">
+  <LinearVsManifoldReconstruction client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="Why can no flat subspace track a rolled curve well over its whole length?" concepts={["nonlinear-manifold-learning"]}>
+A flat subspace is straight everywhere, while the curve bends; any single straight
+direction fits some stretches only by cutting across the roll, averaging away exactly
+the structure that makes it a curve.
+</Recall>
+
+<Recall question="What does the principal-curve self-consistency condition actually require?" concepts={["nonlinear-manifold-learning"]}>
+That the curve pass through the average of every point that lands nearest it there:
+projecting the data onto the curve and then averaging by projected position must
+reproduce the curve itself, not shift it.
+</Recall>
+
+<Recall question="Why do linear hidden units in an autoassociative network never beat PCA?" concepts={["data-manifold"]}>
+A linear map composed with another linear map is still linear, so the network's global
+optimum is provably the same subspace PCA already finds. Genuine nonlinearity needs
+nonlinear hidden layers, not just a bottleneck.
+</Recall>
+
+<Recall question="What does independent component analysis change relative to factor analysis?" concepts={["independent-component-analysis"]}>
+It keeps the latent variables independent and linearly mixed but drops the Gaussian
+prior for a factorised, non-Gaussian one, which is what makes the sources identifiable
+up to permutation and scale rather than only up to an arbitrary rotation.
+</Recall>
+
+## Connections
+
+- **Builds on** [12.1](/sections/12-1) and [12.2](/sections/12-2) for the linear machinery
+  each relaxation starts from.
+- **Answers** the surface [3.6](/sections/3-6) first argued the data must lie near, now
+  with a curve that actually finds it.
