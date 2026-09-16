@@ -20,6 +20,8 @@ difficulty: 4
 ---
 
 import EvidenceApproximation from '@widgets/ch03/EvidenceApproximation';
+import EvidenceTerms from '@widgets/ch03/figures2/EvidenceTerms';
+import EffectiveParameters from '@widgets/ch03/figures2/EffectiveParameters';
 
 ## Intuition
 
@@ -57,6 +59,10 @@ $$\ln p(\mathbf{t} \mid \alpha, \beta) = \frac{M}{2}\ln\alpha + \frac{N}{2}\ln\b
 
 </MathBlock>
 
+<Figure caption="The competing terms of 3.86 plotted separately. Fit improves without limit; the Occam term worsens without limit; only their sum turns over." width="wide">
+  <EvidenceTerms client:visible />
+</Figure>
+
 $-\frac{1}{2}\ln|\mathbf{A}|$ is the Occam factor in exact form: the log-volume of the
 posterior, charging for every direction the data pinned down. Compute in logs throughout,
 because $|\mathbf{A}|$ underflows long before its log does.
@@ -69,6 +75,10 @@ $\lambda_i$ the eigenvalues of $\beta\boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\
 $$\gamma = \sum_{i}\frac{\lambda_i}{\alpha + \lambda_i}$$
 
 </MathBlock>
+
+<Figure caption="One bar per direction. Tighten the prior and the bars collapse towards zero together, taking γ with them." width="wide">
+  <EffectiveParameters client:visible />
+</Figure>
 
 Each term sits in $[0, 1)$: near one where data dominates that direction, near zero where the
 prior does. So $\gamma$ interpolates between $0$ and $M$ and measures complexity as used.

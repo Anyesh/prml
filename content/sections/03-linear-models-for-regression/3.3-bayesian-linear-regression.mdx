@@ -176,9 +176,11 @@ $$
   <PosteriorRidge client:visible />
 </Figure>
 
-Its eigenvalues are about $48.3$ and $0.95$. The large one is the direction the point
-constrained; the small one is barely above the prior's $2$, because one point fixes where
-the line passes but not its slope. That is the blob becoming a ridge in the widget.
+Its eigenvalues are $47.25$ and exactly $2$. The large one is the direction the observation
+constrained. The small one is exactly the prior's $\alpha$, untouched, because the direction
+orthogonal to $\boldsymbol{\phi}(0.9)$ is one the observation said nothing about at all. One
+point fixes where the line passes and leaves its slope entirely to the prior. That is the
+blob becoming a ridge in the figure above.
 
 Predicting at $x = 0.9$, equation 3.59 gives $0.04 + 0.022 \approx 0.062$. Out at $x = 3$,
 where nothing was seen, the same expression gives about $0.30$: five times the variance from

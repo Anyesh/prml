@@ -15,6 +15,8 @@ difficulty: 2
 ---
 
 import BasisFunctionExplorer from '@widgets/ch03/BasisFunctionExplorer';
+import CoverageExplosion from '@widgets/ch03/figures2/CoverageExplosion';
+import ManifoldInAmbientSpace from '@widgets/ch03/figures2/ManifoldInAmbientSpace';
 
 ## Intuition
 
@@ -42,6 +44,10 @@ Take Gaussian bumps of width $s$ in $D$ dimensions, wanting one within $s$ of an
 the unit cube. Along one axis that needs about $1/s$. Covering the cube needs the product
 over all axes, so $M \sim (1/s)^D$. With $s = 0.2$ and $D = 10$ that is $5^{10}$, about ten
 million basis functions, and $\boldsymbol{\Phi}$ from 3.16 would have ten million columns.
+
+<Figure caption="Shrink the spacing and watch the count on the line, then on the square, then against dimension. The multiplication is what gets raised to the power of D." width="wide">
+  <CoverageExplosion client:visible />
+</Figure>
 
 Every result in this chapter still holds at that size and none is any use. $\mathbf{S}_N$
 from 3.54 is $M \times M$ and its Cholesky costs $O(M^3)$; 3.86 needs $\ln|\mathbf{A}|$ on
@@ -83,6 +89,10 @@ Yet the problem is tractable in practice, and the reason is the first rescue abo
 images do not fill that space. They lie near a surface of maybe ten or twenty intrinsic
 dimensions, parameterised by stroke thickness, slant, and loop size. Almost every point in
 the 784-dimensional cube is noise, not a digit.
+
+<Figure caption="Toggle between spreading centres over the ambient square and placing them along the data. Almost every uniformly placed centre sits where no data ever appears." width="wide">
+  <ManifoldInAmbientSpace client:visible />
+</Figure>
 
 So what is needed is not $2^{784}$ functions but enough to cover a twenty-dimensional
 manifold, sitting *on* it. Which you cannot arrange in advance, because the manifold is only
