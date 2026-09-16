@@ -1,0 +1,33 @@
+---
+export interface Props {
+  label?: string;
+}
+
+const { label = 'Search' } = Astro.props;
+---
+
+<button type="button" class="search-button" data-palette-trigger aria-haspopup="dialog">
+  <span>{label}</span>
+  <kbd>⌘K</kbd>
+</button>
+
+<style>
+  .search-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--prml-space-3);
+    padding: var(--prml-space-2) var(--prml-space-4);
+    border: 1px solid var(--prml-color-border);
+    border-radius: var(--prml-radius-pill);
+    background: var(--prml-color-surface);
+    color: var(--prml-color-ink-muted);
+    font-family: var(--prml-font-sans);
+    font-size: var(--prml-text-sm);
+    cursor: pointer;
+  }
+
+  .search-button:hover {
+    border-color: var(--prml-color-border-strong);
+    color: var(--prml-color-ink);
+  }
+</style>

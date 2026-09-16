@@ -1,0 +1,20 @@
+<a class="skip-link" href="#main">Skip to content</a>
+
+<style>
+  .skip-link {
+    position: absolute;
+    left: var(--prml-space-3);
+    top: -100%;
+    background: var(--prml-color-surface);
+    color: var(--prml-color-ink);
+    padding: var(--prml-space-2) var(--prml-space-4);
+    border-radius: var(--prml-radius-md);
+    border: 1px solid var(--prml-color-border-strong);
+    z-index: var(--prml-z-overlay);
+    transition: top var(--prml-motion-fast) var(--prml-motion-ease);
+  }
+
+  .skip-link:focus {
+    top: var(--prml-space-3);
+  }
+</style>

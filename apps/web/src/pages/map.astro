@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Concept Map" description="An interactive map of how PRML Interactive's concepts connect.">
+  <div class="page">
+    <h1>Concept Map</h1>
+    <p>How the concepts across all fourteen chapters connect to each other.</p>
+    <div id="concept-graph-mount" class="graph-shell" data-pagefind-ignore>
+      <p class="empty-state">The interactive concept graph has not been built yet.</p>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .graph-shell {
+    margin-top: var(--prml-space-6);
+    min-height: var(--prml-space-10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--prml-color-border-strong);
+    border-radius: var(--prml-radius-lg);
+    background: var(--prml-color-sunken);
+    padding: var(--prml-space-8);
+  }
+</style>

@@ -1,0 +1,121 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import { sectionUrl, equationAnchor } from '../layouts/routes';
+
+const sections = (await getCollection('sections')).filter((s) => !s.data.draft);
+const equations = sections
+  .flatMap((s) =>
+    s.data.equations.map((eq) => ({
+      id: eq.id,
+      name: eq.name,
+      section: s.data.section,
+      sectionTitle: s.data.title,
+    })),
+  )
+  .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+---
+
+<BaseLayout title="Equation Index" description="Every numbered equation in PRML Interactive, searchable by number.">
+  <div class="page">
+    <h1>Equation Index</h1>
+
+    <div class="equation-filter">
+      <label for="equation-filter-input">Filter by number</label>
+      <input id="equation-filter-input" type="search" placeholder="e.g. 3.49" autocomplete="off" />
+    </div>
+
+    {
+      equations.length === 0 ? (
+        <p class="empty-state">No equations have been published yet.</p>
+      ) : (
+        <ul id="equation-list">
+          {equations.map((eq) => (
+            <li data-equation-id={eq.id}>
+              <a href={`${sectionUrl(eq.section)}#${equationAnchor(eq.id)}`}>
+                <span class="equation-id">{eq.id}</span>
+                <span class="equation-name">{eq.name}</span>
+                <span class="equation-section">{eq.sectionTitle}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </div>
+
+  <script is:inline>
+    (function () {
+      var input = document.getElementById('equation-filter-input');
+      var list = document.getElementById('equation-list');
+      if (!input || !list) return;
+      input.addEventListener('input', function () {
+        var q = input.value.trim().toLowerCase();
+        var items = list.querySelectorAll('li');
+        items.forEach(function (li) {
+          var id = (li.getAttribute('data-equation-id') || '').toLowerCase();
+          li.hidden = q.length > 0 && id.indexOf(q) === -1;
+        });
+      });
+    })();
+  </script>
+</BaseLayout>
+
+<style>
+  .equation-filter {
+    display: flex;
+    flex-direction: column;
+    gap: var(--prml-space-1);
+    max-width: var(--prml-layout-rail-width);
+    margin-block: var(--prml-space-5);
+  }
+
+  .equation-filter label {
+    font-family: var(--prml-font-sans);
+    font-size: var(--prml-text-sm);
+    color: var(--prml-color-ink-muted);
+  }
+
+  .equation-filter input {
+    padding: var(--prml-space-2) var(--prml-space-3);
+    border: 1px solid var(--prml-color-border);
+    border-radius: var(--prml-radius-md);
+    background: var(--prml-color-surface);
+    color: var(--prml-color-ink);
+  }
+
+  #equation-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--prml-space-1);
+  }
+
+  #equation-list a {
+    display: flex;
+    gap: var(--prml-space-3);
+    align-items: baseline;
+    padding: var(--prml-space-2) var(--prml-space-3);
+    border-radius: var(--prml-radius-md);
+    text-decoration: none;
+    color: var(--prml-color-ink);
+  }
+
+  #equation-list a:hover {
+    background: var(--prml-color-sunken);
+  }
+
+  .equation-id {
+    font-family: var(--prml-font-mono);
+    color: var(--prml-color-accent);
+    min-width: var(--prml-space-8);
+  }
+
+  .equation-section {
+    margin-left: auto;
+    color: var(--prml-color-ink-faint);
+    font-size: var(--prml-text-sm);
+  }
+</style>

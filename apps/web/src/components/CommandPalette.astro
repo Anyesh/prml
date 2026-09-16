@@ -1,0 +1,170 @@
+---
+import '../styles/palette.css';
+---
+
+<dialog id="palette" class="palette-dialog" aria-label="Search the site">
+  <div class="palette-field">
+    <input
+      id="palette-input"
+      type="search"
+      role="combobox"
+      aria-controls="palette-results"
+      aria-expanded="true"
+      aria-autocomplete="list"
+      autocomplete="off"
+      spellcheck="false"
+      placeholder="Section, concept, or equation number"
+    />
+  </div>
+  <ul id="palette-results" class="palette-results" role="listbox" aria-label="Results"></ul>
+  <p id="palette-status" class="palette-empty" role="status" hidden>No matches.</p>
+  <footer class="palette-hint">
+    <kbd>↑</kbd><kbd>↓</kbd> move <kbd>↵</kbd> open <kbd>esc</kbd> close
+  </footer>
+</dialog>
+
+<script>
+  import uFuzzy from '@leeoniya/ufuzzy';
+
+  interface Entry {
+    readonly kind: 'section' | 'concept' | 'equation';
+    readonly label: string;
+    readonly sub: string;
+    readonly url: string;
+    readonly haystack: string;
+  }
+
+  const dialog = document.getElementById('palette') as HTMLDialogElement | null;
+  const input = document.getElementById('palette-input') as HTMLInputElement | null;
+  const list = document.getElementById('palette-results');
+  const status = document.getElementById('palette-status');
+  if (!dialog || !input || !list || !status) throw new Error('palette markup missing');
+
+  const fuzzy = new uFuzzy({ intraMax: 1 });
+  let entries: Entry[] | null = null;
+  let shown: Entry[] = [];
+  let active = 0;
+
+  async function load(): Promise<Entry[]> {
+    if (entries) return entries;
+    const res = await fetch('/search-index.json');
+    const data = await res.json();
+    entries = [
+      ...data.sections.map((s: any) => ({
+        kind: 'section' as const,
+        label: `${s.id} ${s.title}`,
+        sub: s.summary,
+        url: s.url,
+        haystack: `${s.id} ${s.title} ${s.summary}`,
+      })),
+      ...data.concepts.map((c: any) => ({
+        kind: 'concept' as const,
+        label: c.name,
+        sub: (c.aliases ?? []).join(', '),
+        url: c.url,
+        haystack: `${c.name} ${(c.aliases ?? []).join(' ')}`,
+      })),
+      ...data.equations.map((e: any) => ({
+        kind: 'equation' as const,
+        label: e.id,
+        sub: e.name,
+        url: e.url,
+        haystack: `${e.id} ${e.name}`,
+      })),
+    ];
+    return entries;
+  }
+
+  function render(): void {
+    list.textContent = '';
+    status.hidden = shown.length > 0;
+    shown.forEach((entry, i) => {
+      const li = document.createElement('li');
+      li.id = `palette-opt-${i}`;
+      li.role = 'option';
+      li.ariaSelected = String(i === active);
+      li.className = i === active ? 'active' : '';
+      li.dataset['url'] = entry.url;
+      li.innerHTML =
+        '<span class="palette-kind"></span><span class="palette-label"></span><span class="palette-sub"></span>';
+      li.children[0]!.textContent = entry.kind;
+      li.children[1]!.textContent = entry.label;
+      li.children[2]!.textContent = entry.sub;
+      list.append(li);
+    });
+    input.setAttribute('aria-activedescendant', shown.length ? `palette-opt-${active}` : '');
+  }
+
+  function search(query: string): void {
+    const all = entries ?? [];
+    if (!query.trim()) {
+      shown = all.slice(0, 12);
+    } else {
+      const haystacks = all.map((e) => e.haystack);
+      const order = fuzzy.filter(haystacks, query);
+      // uFuzzy returns null rather than an empty array when the needle cannot match at all.
+      const ranked = order ? fuzzy.info(order, haystacks, query) : null;
+      shown = ranked ? fuzzy.sort(ranked, haystacks, query).slice(0, 12).map((i) => all[ranked.idx[i]!]!) : [];
+    }
+    active = 0;
+    render();
+  }
+
+  async function open(): Promise<void> {
+    if (dialog.open) return;
+    // showModal gives the focus trap, Escape handling, inert background and focus
+    // restoration for free, which is why this is a dialog rather than a div.
+    dialog.showModal();
+    input.value = '';
+    await load();
+    search('');
+    input.focus();
+  }
+
+  function move(delta: number): void {
+    if (!shown.length) return;
+    active = (active + delta + shown.length) % shown.length;
+    render();
+    list.children[active]?.scrollIntoView({ block: 'nearest' });
+  }
+
+  function go(): void {
+    const target = shown[active];
+    if (target) window.location.href = target.url;
+  }
+
+  document.addEventListener('keydown', (event) => {
+    const mod = event.metaKey || event.ctrlKey;
+    if (mod && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      void open();
+    }
+  });
+
+  window.addEventListener('prml:open-palette', () => void open());
+
+  input.addEventListener('input', () => search(input.value));
+
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      move(1);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      move(-1);
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      go();
+    }
+  });
+
+  list.addEventListener('click', (event) => {
+    const li = (event.target as HTMLElement).closest('li');
+    const url = li?.dataset['url'];
+    if (url) window.location.href = url;
+  });
+
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+</script>

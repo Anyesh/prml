@@ -1,0 +1,103 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { sectionUrl, equationAnchor, conceptAnchor } from '../layouts/routes';
+
+export interface Props {
+  equations: { id: string; name: string }[];
+  concepts: CollectionEntry<'concepts'>[];
+  prereqs: string[];
+}
+
+const { equations, concepts, prereqs } = Astro.props;
+const hasAnything = equations.length > 0 || concepts.length > 0 || prereqs.length > 0;
+---
+
+<div class="aside-content">
+  {
+    equations.length > 0 && (
+      <section aria-label="Equations on this page">
+        <h2>Equations</h2>
+        <ul>
+          {equations.map((eq) => (
+            <li>
+              <a href={`#${equationAnchor(eq.id)}`}>
+                eq {eq.id} <span class="equation-name">{eq.name}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  {
+    concepts.length > 0 && (
+      <section aria-label="Concepts introduced">
+        <h2>Concepts</h2>
+        <ul>
+          {concepts.map((c) => (
+            <li>
+              <a href={`#${conceptAnchor(c.data.id)}`}>{c.data.name}</a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  {
+    prereqs.length > 0 && (
+      <section aria-label="Needs">
+        <h2>Needs</h2>
+        <ul>
+          {prereqs.map((p) => (
+            <li>
+              <a href={sectionUrl(p)}>{p}</a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  {!hasAnything && <p class="empty-state">Nothing indexed for this section yet.</p>}
+</div>
+
+<style>
+  .aside-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--prml-space-5);
+    font-family: var(--prml-font-sans);
+    font-size: var(--prml-text-sm);
+  }
+
+  .aside-content h2 {
+    margin: 0 0 var(--prml-space-2);
+    font-size: var(--prml-text-xs);
+    text-transform: uppercase;
+    color: var(--prml-color-ink-faint);
+  }
+
+  .aside-content ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--prml-space-1);
+  }
+
+  .aside-content a {
+    color: var(--prml-color-ink-muted);
+    text-decoration: none;
+  }
+
+  .aside-content a:hover {
+    color: var(--prml-color-accent);
+  }
+
+  .equation-name {
+    color: var(--prml-color-ink-faint);
+  }
+</style>

@@ -1,0 +1,51 @@
+---
+import { sectionUrl } from '../layouts/routes';
+
+export interface Props {
+  prereqs: string[];
+}
+
+const { prereqs } = Astro.props;
+---
+
+<div class="prereq-banner" role="note" data-pagefind-ignore>
+  <p class="prereq-banner-label">You need {prereqs.length === 1 ? 'this' : 'these'} first</p>
+  <ul class="prereq-banner-list">
+    {
+      prereqs.map((p) => (
+        <li>
+          <a href={sectionUrl(p)}>{p}</a>
+        </li>
+      ))
+    }
+  </ul>
+</div>
+
+<style>
+  .prereq-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--prml-space-3);
+    margin-block: var(--prml-space-5);
+    padding: var(--prml-space-3) var(--prml-space-4);
+    border: 1px solid var(--prml-color-border);
+    border-radius: var(--prml-radius-md);
+    background: var(--prml-color-sunken);
+    font-family: var(--prml-font-sans);
+    font-size: var(--prml-text-sm);
+  }
+
+  .prereq-banner-label {
+    margin: 0;
+    color: var(--prml-color-ink-muted);
+  }
+
+  .prereq-banner-list {
+    display: flex;
+    gap: var(--prml-space-3);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+</style>

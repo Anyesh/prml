@@ -1,0 +1,43 @@
+---
+import SectionLayout from '../../layouts/SectionLayout.astro';
+import WidgetMount from '../../components/WidgetMount.astro';
+import { MathBlock, Recall } from '@prml/ui';
+import { getCollection, getEntry, render, type CollectionEntry } from 'astro:content';
+import { sectionSlug } from '../../layouts/routes';
+
+export async function getStaticPaths() {
+  const sections = await getCollection('sections');
+  return sections
+    .filter((s) => !s.data.draft)
+    .map((section) => ({
+      params: { id: sectionSlug(section.data.section) },
+      props: { section },
+    }));
+}
+
+interface Props {
+  section: CollectionEntry<'sections'>;
+}
+
+const { section } = Astro.props;
+const { Content } = await render(section);
+
+const chapter = await getEntry('chapters', String(section.data.chapter));
+if (!chapter) {
+  throw new Error(
+    `Section ${section.data.section} declares chapter ${section.data.chapter}, which has no entry in content/chapters.yaml`,
+  );
+}
+
+const allSections = await getCollection('sections');
+const siblingSections = allSections
+  .filter((s) => s.data.chapter === section.data.chapter && !s.data.draft)
+  .sort((a, b) => a.data.section.localeCompare(b.data.section, undefined, { numeric: true }));
+
+const allConcepts = await getCollection('concepts');
+const sectionConcepts = allConcepts.filter((c) => section.data.concepts.includes(c.data.id));
+---
+
+<SectionLayout section={section} chapter={chapter} siblingSections={siblingSections} concepts={sectionConcepts}>
+  <Content components={{ Widget: WidgetMount, MathBlock, Recall }} />
+</SectionLayout>

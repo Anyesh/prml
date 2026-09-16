@@ -1,0 +1,114 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ChapterCard from '../components/ChapterCard.astro';
+import SearchButton from '../components/SearchButton.astro';
+import { getCollection } from 'astro:content';
+
+const chapters = (await getCollection('chapters')).sort((a, b) => a.data.number - b.data.number);
+---
+
+<BaseLayout
+  title="PRML Interactive"
+  description="An interactive, widget-driven rebuild of Pattern Recognition and Machine Learning, one section at a time."
+>
+  <div class="page">
+    <section class="hero">
+      <h1>PRML Interactive</h1>
+      <p>
+        An interactive rebuild of <cite>Pattern Recognition and Machine Learning</cite>, one
+        section at a time. Read the intuition, work the math, then drive a widget until the
+        idea clicks.
+      </p>
+      <SearchButton label="Search sections, concepts, equations" />
+    </section>
+
+    <section class="resume" id="resume-slot" hidden data-pagefind-ignore>
+      <h2>Resume where you left off</h2>
+      <a id="resume-link" href="#">&nbsp;</a>
+    </section>
+
+    <section class="chapters">
+      <h2>Chapters</h2>
+      {
+        chapters.length === 0 ? (
+          <p class="empty-state">Chapters are being authored. None are published yet.</p>
+        ) : (
+          <ul class="chapter-grid">
+            {chapters.map((c) => (
+              <li>
+                <ChapterCard chapter={c} />
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </section>
+  </div>
+
+  <script is:inline>
+    (function () {
+      try {
+        var raw = localStorage.getItem('prml:last-visited');
+        if (!raw) return;
+        var data = JSON.parse(raw);
+        if (!data || !data.url || !data.title) return;
+        var slot = document.getElementById('resume-slot');
+        var link = document.getElementById('resume-link');
+        if (!slot || !link) return;
+        link.href = data.url;
+        link.textContent = data.title;
+        slot.hidden = false;
+      } catch (err) {}
+    })();
+  </script>
+</BaseLayout>
+
+<style>
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--prml-space-4);
+    padding-block: var(--prml-space-7);
+  }
+
+  .hero h1 {
+    font-size: var(--prml-text-display);
+    margin: 0;
+  }
+
+  .hero p {
+    max-width: var(--prml-layout-prose-width);
+    font-family: var(--prml-font-serif);
+    font-size: var(--prml-text-md);
+    color: var(--prml-color-ink-muted);
+  }
+
+  .resume {
+    margin-block: var(--prml-space-6);
+    padding: var(--prml-space-4) var(--prml-space-5);
+    border: 1px solid var(--prml-color-border);
+    border-radius: var(--prml-radius-lg);
+    background: var(--prml-color-sunken);
+  }
+
+  .resume h2 {
+    margin: 0 0 var(--prml-space-1);
+    font-size: var(--prml-text-sm);
+    text-transform: uppercase;
+    color: var(--prml-color-ink-faint);
+  }
+
+  .chapters {
+    margin-block: var(--prml-space-7);
+  }
+
+  .chapter-grid {
+    list-style: none;
+    margin: var(--prml-space-4) 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(calc(var(--prml-space-10) * 2), 1fr));
+    gap: var(--prml-space-4);
+  }
+</style>

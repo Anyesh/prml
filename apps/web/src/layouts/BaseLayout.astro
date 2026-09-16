@@ -1,0 +1,79 @@
+---
+import '../styles/global.css';
+import SkipLink from '../components/SkipLink.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import CommandPalette from '../components/CommandPalette.astro';
+
+export interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title} · PRML Interactive</title>
+    {description && <meta name="description" content={description} />}
+    <script is:inline>
+      try {
+        var stored = localStorage.getItem('prml:theme');
+        if (stored === 'light' || stored === 'dark') {
+          document.documentElement.setAttribute('data-theme', stored);
+        }
+      } catch (err) {}
+    </script>
+  </head>
+  <body>
+    <SkipLink />
+    <SiteHeader />
+    <main id="main">
+      <slot />
+    </main>
+    <footer data-pagefind-ignore>
+      <p>
+        PRML Interactive is an unofficial, private study companion. It is not affiliated
+        with or endorsed by the publisher of <cite>Pattern Recognition and Machine Learning</cite>.
+      </p>
+    </footer>
+    <CommandPalette />
+    <script is:inline>
+      document.addEventListener('click', function (e) {
+        var el = e.target;
+        if (!el || !el.closest) return;
+
+        if (el.closest('[data-palette-trigger]')) {
+          window.dispatchEvent(new CustomEvent('prml:open-palette'));
+          return;
+        }
+
+        // MathBlock and the other prose components ship no JavaScript of their own, so
+        // their one interactive affordance is delegated here instead.
+        var copy = el.closest('[data-copy-anchor]');
+        if (copy && navigator.clipboard) {
+          var url = location.origin + location.pathname + '#' + copy.dataset.copyAnchor;
+          navigator.clipboard.writeText(url).then(function () {
+            copy.classList.add('is-copied');
+            setTimeout(function () {
+              copy.classList.remove('is-copied');
+            }, 1500);
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
+
+<style>
+  footer {
+    max-width: var(--prml-layout-widget-width);
+    margin-inline: auto;
+    padding: var(--prml-space-6) var(--prml-space-4) var(--prml-space-9);
+    color: var(--prml-color-ink-faint);
+    font-size: var(--prml-text-xs);
+  }
+</style>

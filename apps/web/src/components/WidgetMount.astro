@@ -1,0 +1,66 @@
+---
+// Widget components live under src/widgets/ch<nn>/ and are owned by chapter agents, not
+// this component. import.meta.glob resolves whatever exists at build time; it returns an
+// empty map (not an error) while that directory is absent, so this stays safe to render
+// against the current empty content collections.
+//
+// Contract assumed for a widget module (unverified: no real widget exists yet to check
+// this against): `default` is the interactive component; `title`, `caption`, and `figure`
+// are optional named exports consumed by WidgetFrame for its header and figure caption.
+import { WidgetFrame } from '@prml/ui';
+
+type WidgetComponent = (props: Record<string, unknown>) => unknown;
+
+interface WidgetModule {
+  default?: WidgetComponent;
+  title?: string;
+  caption?: string;
+  figure?: string;
+}
+
+export interface Props {
+  chapter: number;
+  name: string;
+}
+
+const { chapter, name } = Astro.props;
+const chapterDir = `ch${String(chapter).padStart(2, '0')}`;
+const modules = import.meta.glob('/src/widgets/ch*/*.tsx');
+const matchKey = Object.keys(modules).find((key) => key.endsWith(`/${chapterDir}/${name}.tsx`));
+const loader = matchKey ? modules[matchKey] : undefined;
+const mod = loader ? ((await loader()) as WidgetModule) : undefined;
+const Widget = mod?.default;
+---
+
+{
+  Widget ? (
+    <div class="widget-slot" data-pagefind-ignore>
+      <WidgetFrame client:visible title={mod?.title ?? name} caption={mod?.caption ?? ''} figure={mod?.figure}>
+        <Widget />
+      </WidgetFrame>
+    </div>
+  ) : (
+    <div class="widget-slot widget-slot--missing" data-pagefind-ignore>
+      <p>
+        The "{name}" widget for chapter {chapter} has not been built yet.
+      </p>
+    </div>
+  )
+}
+
+<style>
+  .widget-slot {
+    margin-block: var(--prml-space-6);
+    border: 1px solid var(--prml-color-border);
+    border-radius: var(--prml-radius-lg);
+    background: var(--prml-color-surface);
+    padding: var(--prml-space-5);
+  }
+
+  .widget-slot--missing {
+    color: var(--prml-color-ink-muted);
+    font-family: var(--prml-font-sans);
+    font-size: var(--prml-text-sm);
+    text-align: center;
+  }
+</style>

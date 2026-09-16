@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ChapterCard from '../components/ChapterCard.astro';
+import SearchButton from '../components/SearchButton.astro';
+import { getCollection } from 'astro:content';
+
+const chapters = (await getCollection('chapters')).sort((a, b) => a.data.number - b.data.number);
+---
+
+<BaseLayout title="Page Not Found">
+  <div class="page">
+    <h1>Page not found</h1>
+    <p>That page doesn't exist. Try searching, or jump to a chapter.</p>
+    <SearchButton label="Search PRML Interactive" />
+
+    {
+      chapters.length > 0 && (
+        <ul class="chapter-grid">
+          {chapters.map((c) => (
+            <li>
+              <ChapterCard chapter={c} />
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .chapter-grid {
+    list-style: none;
+    margin: var(--prml-space-6) 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(calc(var(--prml-space-10) * 2), 1fr));
+    gap: var(--prml-space-4);
+  }
+</style>

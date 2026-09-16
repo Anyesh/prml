@@ -1,0 +1,118 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import BaseLayout from './BaseLayout.astro';
+import ChapterRail from '../components/ChapterRail.astro';
+import SectionAside from '../components/SectionAside.astro';
+import PrereqBanner from '../components/PrereqBanner.astro';
+import { chapterUrl } from './routes';
+
+export interface Props {
+  section: CollectionEntry<'sections'>;
+  chapter: CollectionEntry<'chapters'>;
+  siblingSections: CollectionEntry<'sections'>[];
+  concepts: CollectionEntry<'concepts'>[];
+}
+
+const { section, chapter, siblingSections, concepts } = Astro.props;
+const { section: sectionId, title, summary, bookPages, prereqs, equations, chapter: chapterNumber } = section.data;
+
+const conceptFilters = section.data.concepts.map((id) => `concept:${id}`);
+const pagefindFilter = [`chapter:${chapterNumber}`, ...conceptFilters].join(', ');
+const pagefindMeta = `section:${sectionId}, title:${title}`;
+---
+
+<BaseLayout title={`${sectionId} ${title}`} description={summary}>
+  <div class="section-shell">
+    <details class="chapter-rail" data-pagefind-ignore>
+      <summary>Chapter {chapterNumber} sections</summary>
+      <ChapterRail current={sectionId} chapter={chapter} sections={siblingSections} />
+    </details>
+
+    <article
+      class="section-content prose"
+      data-pagefind-body
+      data-pagefind-filter={pagefindFilter}
+      data-pagefind-meta={pagefindMeta}
+    >
+      <p class="section-eyebrow">
+        <a href={chapterUrl(chapterNumber)}>Chapter {chapterNumber}</a> · pp. {bookPages[0]}–{bookPages[1]}
+      </p>
+      <h1 id="section-title">{sectionId} {title}</h1>
+
+      {prereqs.length > 0 && <PrereqBanner prereqs={prereqs} />}
+
+      <slot />
+    </article>
+
+    <details class="section-aside" data-pagefind-ignore>
+      <summary>On this page</summary>
+      <SectionAside equations={equations} concepts={concepts} prereqs={prereqs} />
+    </details>
+  </div>
+
+  <script is:inline define:vars={{ sectionId, label: `${sectionId} ${title}` }}>
+    try {
+      var visitedRaw = localStorage.getItem('prml:visited');
+      var visited = visitedRaw ? JSON.parse(visitedRaw) : [];
+      if (!Array.isArray(visited)) visited = [];
+      if (visited.indexOf(sectionId) === -1) {
+        visited.push(sectionId);
+        localStorage.setItem('prml:visited', JSON.stringify(visited));
+      }
+      localStorage.setItem(
+        'prml:last-visited',
+        JSON.stringify({ url: window.location.pathname, title: label }),
+      );
+    } catch (err) {}
+  </script>
+</BaseLayout>
+
+<style>
+  .section-shell {
+    display: grid;
+    grid-template-columns: var(--prml-layout-rail-width) minmax(0, 1fr) var(--prml-layout-aside-width);
+    gap: var(--prml-space-6);
+    align-items: start;
+    max-width: calc(
+      var(--prml-layout-rail-width) + var(--prml-layout-widget-width) + var(--prml-layout-aside-width) +
+        var(--prml-space-6) * 2
+    );
+    margin-inline: auto;
+    padding: var(--prml-space-6) var(--prml-space-4);
+  }
+
+  .chapter-rail,
+  .section-aside {
+    position: sticky;
+    top: var(--prml-space-5);
+  }
+
+  .section-eyebrow {
+    font-family: var(--prml-font-sans);
+    font-size: var(--prml-text-sm);
+    color: var(--prml-color-ink-muted);
+  }
+
+  @media (min-width: 900px) {
+    .chapter-rail > summary,
+    .section-aside > summary {
+      display: none;
+    }
+
+    .chapter-rail > :not(summary),
+    .section-aside > :not(summary) {
+      display: block !important;
+    }
+  }
+
+  @media (max-width: 899.98px) {
+    .section-shell {
+      grid-template-columns: 1fr;
+    }
+
+    .chapter-rail,
+    .section-aside {
+      position: static;
+    }
+  }
+</style>

@@ -1,0 +1,47 @@
+<button type="button" class="theme-toggle" data-theme-toggle aria-label="Toggle color theme">
+  <span aria-hidden="true">◐</span>
+</button>
+
+<script is:inline>
+  document.addEventListener('click', function (e) {
+    var btn = e.target && e.target.closest && e.target.closest('[data-theme-toggle]');
+    if (!btn) return;
+    try {
+      var STORAGE_KEY = 'prml:theme';
+      var current = document.documentElement.getAttribute('data-theme');
+      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var next;
+      if (current === 'light') next = 'dark';
+      else if (current === 'dark') next = null;
+      else next = prefersDark ? 'light' : 'dark';
+
+      if (next) {
+        localStorage.setItem(STORAGE_KEY, next);
+        document.documentElement.setAttribute('data-theme', next);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+        document.documentElement.removeAttribute('data-theme');
+      }
+    } catch (err) {}
+  });
+</script>
+
+<style>
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--prml-space-7);
+    height: var(--prml-space-7);
+    border: 1px solid var(--prml-color-border);
+    border-radius: var(--prml-radius-pill);
+    background: var(--prml-color-surface);
+    color: var(--prml-color-ink-muted);
+    cursor: pointer;
+  }
+
+  .theme-toggle:hover {
+    color: var(--prml-color-ink);
+    border-color: var(--prml-color-border-strong);
+  }
+</style>

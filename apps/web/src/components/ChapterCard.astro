@@ -1,0 +1,62 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { chapterUrl } from '../layouts/routes';
+
+export interface Props {
+  chapter: CollectionEntry<'chapters'>;
+}
+
+const { chapter } = Astro.props;
+const { number, title, summary, bookPages } = chapter.data;
+---
+
+<a class="chapter-card" href={chapterUrl(number)}>
+  <span class="chapter-number">Chapter {number}</span>
+  <h3>{title}</h3>
+  <p>{summary}</p>
+  <span class="chapter-pages">pp. {bookPages[0]}–{bookPages[1]}</span>
+</a>
+
+<style>
+  .chapter-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--prml-space-2);
+    padding: var(--prml-space-5);
+    border: 1px solid var(--prml-color-border);
+    border-radius: var(--prml-radius-lg);
+    background: var(--prml-color-surface);
+    color: var(--prml-color-ink);
+    text-decoration: none;
+    height: 100%;
+  }
+
+  .chapter-card:hover {
+    border-color: var(--prml-color-border-strong);
+  }
+
+  .chapter-number {
+    font-family: var(--prml-font-sans);
+    font-size: var(--prml-text-xs);
+    text-transform: uppercase;
+    color: var(--prml-color-ink-faint);
+  }
+
+  .chapter-card h3 {
+    margin: 0;
+    font-size: var(--prml-text-lg);
+  }
+
+  .chapter-card p {
+    margin: 0;
+    font-size: var(--prml-text-sm);
+    color: var(--prml-color-ink-muted);
+    flex: 1;
+  }
+
+  .chapter-pages {
+    font-family: var(--prml-font-mono);
+    font-size: var(--prml-text-xs);
+    color: var(--prml-color-ink-faint);
+  }
+</style>

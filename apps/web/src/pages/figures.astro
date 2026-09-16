@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Figures" description="A gallery of PRML's figures, rebuilt as interactive plots.">
+  <div class="page">
+    <h1>Figures</h1>
+    <p>Rebuilds of the book's figures as real, interactive plots rather than scans.</p>
+    <div id="figures-gallery" class="figures-shell" data-pagefind-ignore>
+      <p class="empty-state">No figures have been rebuilt yet.</p>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .figures-shell {
+    margin-top: var(--prml-space-6);
+    min-height: var(--prml-space-10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--prml-color-border-strong);
+    border-radius: var(--prml-radius-lg);
+    background: var(--prml-color-sunken);
+    padding: var(--prml-space-8);
+  }
+</style>

@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Review" description="Spaced-repetition recall cards drawn from every section you've visited.">
+  <div class="page">
+    <h1>Review</h1>
+    <p>Recall cards from sections you've read, surfaced again when they're due.</p>
+    <div id="review-mount" class="review-shell" data-pagefind-ignore>
+      <p class="empty-state">Recall isn't wired up yet. Visit some sections first.</p>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .review-shell {
+    margin-top: var(--prml-space-6);
+    min-height: var(--prml-space-10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--prml-color-border-strong);
+    border-radius: var(--prml-radius-lg);
+    background: var(--prml-color-sunken);
+    padding: var(--prml-space-8);
+  }
+</style>

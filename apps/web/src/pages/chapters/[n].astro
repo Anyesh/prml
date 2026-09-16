@@ -1,0 +1,112 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection, type CollectionEntry } from 'astro:content';
+import { sectionUrl } from '../../layouts/routes';
+
+export async function getStaticPaths() {
+  const chapters = await getCollection('chapters');
+  return chapters.map((chapter) => ({
+    params: { n: chapter.data.id },
+    props: { chapter },
+  }));
+}
+
+interface Props {
+  chapter: CollectionEntry<'chapters'>;
+}
+
+const { chapter } = Astro.props;
+const allSections = await getCollection('sections');
+const sections = allSections
+  .filter((s) => s.data.chapter === chapter.data.number && !s.data.draft)
+  .sort((a, b) => a.data.section.localeCompare(b.data.section, undefined, { numeric: true }));
+---
+
+<BaseLayout title={`Chapter ${chapter.data.number}: ${chapter.data.title}`} description={chapter.data.summary}>
+  <div class="page">
+    <p class="chapter-eyebrow">
+      Chapter {chapter.data.number} · pp. {chapter.data.bookPages[0]}–{chapter.data.bookPages[1]}
+    </p>
+    <h1>{chapter.data.title}</h1>
+    <p class="chapter-summary">{chapter.data.summary}</p>
+
+    {
+      sections.length === 0 ? (
+        <p class="empty-state">No sections have been published for this chapter yet.</p>
+      ) : (
+        <ol class="section-list">
+          {sections.map((s) => (
+            <li>
+              <a href={sectionUrl(s.data.section)}>
+                <span class="section-number">{s.data.section}</span>
+                <span class="section-title">{s.data.title}</span>
+              </a>
+              <p class="section-summary">{s.data.summary}</p>
+              <p class="section-meta">
+                Difficulty {s.data.difficulty}/5
+                {s.data.concepts.length > 0 ? ` · ${s.data.concepts.join(', ')}` : ''}
+              </p>
+            </li>
+          ))}
+        </ol>
+      )
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .chapter-eyebrow {
+    font-family: var(--prml-font-sans);
+    font-size: var(--prml-text-sm);
+    color: var(--prml-color-ink-muted);
+  }
+
+  .chapter-summary {
+    max-width: var(--prml-layout-prose-width);
+    font-family: var(--prml-font-serif);
+    color: var(--prml-color-ink-muted);
+  }
+
+  .section-list {
+    list-style: none;
+    margin: var(--prml-space-6) 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--prml-space-5);
+  }
+
+  .section-list li {
+    padding: var(--prml-space-4);
+    border: 1px solid var(--prml-color-border);
+    border-radius: var(--prml-radius-lg);
+    background: var(--prml-color-surface);
+  }
+
+  .section-list a {
+    display: flex;
+    gap: var(--prml-space-3);
+    align-items: baseline;
+    text-decoration: none;
+    font-family: var(--prml-font-sans);
+    font-weight: var(--prml-weight-medium);
+    color: var(--prml-color-ink);
+  }
+
+  .section-number {
+    font-family: var(--prml-font-mono);
+    color: var(--prml-color-ink-faint);
+  }
+
+  .section-summary {
+    margin: var(--prml-space-2) 0 0;
+    color: var(--prml-color-ink-muted);
+    font-size: var(--prml-text-sm);
+  }
+
+  .section-meta {
+    margin: var(--prml-space-2) 0 0;
+    font-size: var(--prml-text-xs);
+    color: var(--prml-color-ink-faint);
+  }
+</style>

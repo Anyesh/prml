@@ -1,0 +1,4 @@
+- number: 1
+  title: "Introduction"
+  summary: "Placeholder chapter entry so the chapters collection is non-empty and the site builds. Replace with the real chapter 1 summary once its chapter agent lands the authored content."
+  bookPages: [1, 4]
