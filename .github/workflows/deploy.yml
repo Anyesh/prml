@@ -1,0 +1,62 @@
+name: Deploy to GitHub Pages
+
+# The site is built with `base: '/prml'` in apps/web/astro.config.mjs, and a project
+# Pages site is served from https://<owner>.github.io/<repository>. Those two must agree,
+# so renaming this repository breaks every URL in the build until `base` is changed to match.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The gates that read source run before the build, so a content or type error fails
+      # in seconds rather than after Astro has rendered 68 pages.
+      - run: pnpm lint
+      - run: pnpm lint:content
+      - run: pnpm typecheck
+      - run: pnpm test
+
+      - run: pnpm build
+
+      # These two read `apps/web/dist`, so they can only run once it exists: every section
+      # must be present in the Pagefind index, and no page may exceed its bundle budget.
+      - run: pnpm gate:search
+      - run: pnpm gate:bundle
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
