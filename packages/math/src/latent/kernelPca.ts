@@ -1,29 +1,7 @@
 import type { Mat, Vec } from '../types.js';
 import { eigSym } from '../linalg/decompose.js';
-import { dot, vecSub } from '../linalg/core.js';
-
-export type KernelPcaKernel = (a: Vec, b: Vec) => number;
-
-/** PRML 12.86's example: `exp(-gamma ||x - x'||^2)`. */
-export function kernelPcaRbfKernel(gamma: number): KernelPcaKernel {
-  return (a, b) => {
-    const diff = vecSub(a, b);
-    return Math.exp(-gamma * dot(diff, diff));
-  };
-}
-
-export function kernelPcaGramMatrix(data: Mat, kernel: KernelPcaKernel): Mat {
-  const n = data.length;
-  const k: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
-  for (let i = 0; i < n; i++) {
-    for (let j = i; j < n; j++) {
-      const v = kernel(data[i]!, data[j]!);
-      k[i]![j] = v;
-      k[j]![i] = v;
-    }
-  }
-  return k;
-}
+import { dot } from '../linalg/core.js';
+import { gramMatrix, type KernelFunction } from '../kernels/index.js';
 
 /**
  * PRML 12.83-12.85: centres a Gram matrix as if its feature vectors had zero mean,
@@ -38,7 +16,7 @@ export function centerGramMatrix(k: Mat): Mat {
 
 export interface KernelPcaModel {
   readonly data: Mat;
-  readonly kernel: KernelPcaKernel;
+  readonly kernel: KernelFunction;
   readonly rowMeans: Vec;
   readonly grandMean: number;
   /** Rows are components, normalised per PRML 12.81; only strictly positive eigenvalues are kept. */
@@ -52,9 +30,9 @@ export interface KernelPcaModel {
  * order and largest-magnitude-positive sign convention carry through the (positive)
  * normalising scale unchanged, so no separate sign-fixing step is needed here.
  */
-export function kernelPcaFit(data: Mat, kernel: KernelPcaKernel, numComponents: number): KernelPcaModel {
+export function kernelPcaFit(data: Mat, kernel: KernelFunction, numComponents: number): KernelPcaModel {
   const n = data.length;
-  const k = kernelPcaGramMatrix(data, kernel);
+  const k = gramMatrix(kernel, data);
   const rowMeans = k.map((row) => row.reduce((a, b) => a + b, 0) / n);
   const grandMean = rowMeans.reduce((a, b) => a + b, 0) / n;
   const kCentered = centerGramMatrix(k);

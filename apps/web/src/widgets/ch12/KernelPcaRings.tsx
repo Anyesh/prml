@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { kernelPcaFit, kernelPcaRbfKernel, kernelPcaTrainingProjections, pcaFitCov, pcaProject } from '@prml/math';
+import { kernelPcaFit, rbfKernelGamma, kernelPcaTrainingProjections, pcaFitCov, pcaProject } from '@prml/math';
 import { Axes, divergingScale, Plot, ScatterField } from '@prml/viz';
 import { Slider } from '@prml/ui';
 import { ringsData } from './data.js';
@@ -19,7 +19,7 @@ const LINEAR_PROJECTION = pcaProject(DATA, LINEAR_PCA.mean, LINEAR_PCA.component
 export default function KernelPcaRings() {
   const [gamma, setGamma] = useState(0.25);
 
-  const model = useMemo(() => kernelPcaFit(DATA, kernelPcaRbfKernel(gamma), 1), [gamma]);
+  const model = useMemo(() => kernelPcaFit(DATA, rbfKernelGamma(gamma), 1), [gamma]);
   const projections = useMemo(() => kernelPcaTrainingProjections(model).map((row) => row[0]!), [model]);
 
   const maxAbs = Math.max(...projections.map((v) => Math.abs(v)), 1e-9);

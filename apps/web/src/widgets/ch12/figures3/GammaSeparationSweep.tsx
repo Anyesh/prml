@@ -1,4 +1,4 @@
-import { kernelPcaFit, kernelPcaRbfKernel, kernelPcaTrainingProjections, linspace } from '@prml/math';
+import { kernelPcaFit, rbfKernelGamma, kernelPcaTrainingProjections, linspace } from '@prml/math';
 import { Axes, Curve, Plot, Rule, useResolvedTokens } from '@prml/viz';
 import { ringsData } from '../data.js';
 
@@ -9,7 +9,7 @@ const N_PER_RING = 24;
 const GAMMAS = linspace(0.02, 1, 40);
 
 function separationFraction(gamma: number): number {
-  const model = kernelPcaFit(DATA, kernelPcaRbfKernel(gamma), 1);
+  const model = kernelPcaFit(DATA, rbfKernelGamma(gamma), 1);
   const proj = kernelPcaTrainingProjections(model).map((row) => row[0]!);
   const inner = proj.slice(0, N_PER_RING);
   const outer = proj.slice(N_PER_RING);

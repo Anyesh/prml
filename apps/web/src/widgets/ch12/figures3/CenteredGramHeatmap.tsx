@@ -1,11 +1,11 @@
-import { centerGramMatrix, kernelPcaGramMatrix, kernelPcaRbfKernel } from '@prml/math';
+import { centerGramMatrix, gramMatrix, rbfKernelGamma } from '@prml/math';
 import { divergingScale, Heatmap, Plot } from '@prml/viz';
 import { ringsData } from '../data.js';
 
 import '../../widgets.css';
 
 const DATA = ringsData();
-const K = kernelPcaGramMatrix(DATA, kernelPcaRbfKernel(0.25));
+const K = gramMatrix(rbfKernelGamma(0.25), DATA);
 const K_CENTERED = centerGramMatrix(K);
 const N = DATA.length;
 const MAX_ABS = Math.max(...K_CENTERED.flat().map((v) => Math.abs(v)));

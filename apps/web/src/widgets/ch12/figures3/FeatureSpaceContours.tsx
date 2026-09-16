@@ -1,11 +1,11 @@
-import { evalGrid, kernelPcaFit, kernelPcaProject, kernelPcaRbfKernel, linspace } from '@prml/math';
+import { evalGrid, kernelPcaFit, kernelPcaProject, rbfKernelGamma, linspace } from '@prml/math';
 import { Axes, ContourField, Plot, ScatterField, useResolvedTokens } from '@prml/viz';
 import { ringsData } from '../data.js';
 
 import '../../widgets.css';
 
 const DATA = ringsData();
-const MODEL = kernelPcaFit(DATA, kernelPcaRbfKernel(0.25), 1);
+const MODEL = kernelPcaFit(DATA, rbfKernelGamma(0.25), 1);
 const DOMAIN: readonly [number, number] = [-4, 4];
 const GRID_AXIS = linspace(DOMAIN[0], DOMAIN[1], 50);
 const GRID = evalGrid(GRID_AXIS, GRID_AXIS, (x, y) => kernelPcaProject(MODEL, [x, y])[0]!);
