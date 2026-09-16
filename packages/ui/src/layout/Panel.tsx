@@ -1,10 +1,10 @@
-import { useId, type ReactNode } from 'react';
+import { useId, type CSSProperties, type ReactNode } from 'react';
 import './Panel.css';
 
 export interface PanelProps {
   title?: string;
   children: ReactNode;
-  columns?: 1 | 2;
+  columns?: 1 | 2 | 3;
   dense?: boolean;
 }
 
@@ -22,7 +22,13 @@ export function Panel({ title, children, columns = 1, dense = false }: PanelProp
           {title}
         </h3>
       ) : null}
-      <div className={`prml-panel-grid prml-panel-grid--${columns}`}>{children}</div>
+      <div
+        className="prml-panel-grid"
+        data-columns={columns}
+        style={{ '--prml-panel-columns': columns } as CSSProperties}
+      >
+        {children}
+      </div>
     </section>
   );
 }

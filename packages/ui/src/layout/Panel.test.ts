@@ -23,13 +23,17 @@ describe('Panel markup', () => {
     const html = renderToStaticMarkup(
       createElement(Panel, { children: createElement('span', null, 'child') }),
     );
-    expect(html).toContain('prml-panel-grid--1');
+    expect(html).toContain('data-columns="1"');
+    expect(html).toContain('--prml-panel-columns:1');
   });
 
-  it('accepts a two-column layout', () => {
-    const html = renderToStaticMarkup(
-      createElement(Panel, { columns: 2, children: createElement('span', null, 'child') }),
-    );
-    expect(html).toContain('prml-panel-grid--2');
+  it('carries the requested column count so the container query can narrow it', () => {
+    for (const columns of [2, 3] as const) {
+      const html = renderToStaticMarkup(
+        createElement(Panel, { columns, children: createElement('span', null, 'child') }),
+      );
+      expect(html).toContain(`data-columns="${columns}"`);
+      expect(html).toContain(`--prml-panel-columns:${columns}`);
+    }
   });
 });

@@ -23,28 +23,28 @@
   color: var(--prml-color-ink);
 }
 
-.prml-panel-grid--1 {
-  display: flex;
-  flex-direction: column;
-  gap: var(--prml-space-4);
-}
-
-.prml-panel-grid--2 {
+.prml-panel-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--prml-panel-columns, 1), minmax(0, 1fr));
   gap: var(--prml-space-4);
 }
 
-.prml-panel--dense .prml-panel-grid--1,
-.prml-panel--dense .prml-panel-grid--2 {
+.prml-panel--dense .prml-panel-grid {
   gap: var(--prml-space-2);
 }
 
-/* Container queries cannot read a custom property in their condition, so this threshold is a
-   literal duplicate of the point at which two controls stop fitting comfortably side by side;
-   it does not track a token and must be kept in sync by hand if that assumption changes. */
+/* Container queries cannot read a custom property in their condition, so these thresholds are
+   literal duplicates of the points at which controls stop fitting comfortably side by side;
+   they do not track a token and must be kept in sync by hand if that assumption changes.
+   The narrower query comes second so it wins the cascade at the smallest sizes. */
+@container (max-width: 44rem) {
+  .prml-panel-grid[data-columns='3'] {
+    --prml-panel-columns: 2;
+  }
+}
+
 @container (max-width: 30rem) {
-  .prml-panel-grid--2 {
-    grid-template-columns: 1fr;
+  .prml-panel-grid {
+    --prml-panel-columns: 1;
   }
 }
