@@ -1,0 +1,166 @@
+---
+chapter: 10
+section: "10.7"
+title: Expectation Propagation
+bookPages: [505, 522]
+summary: Refining one Gaussian factor at a time by matching moments against the true likelihood minimises the mass-covering KL direction locally, the opposite of mean-field, and reaches a posterior mean-field never could.
+concepts:
+  - expectation-propagation
+  - ep-moment-matching
+  - kl-divergence-asymmetry
+prereqs: ["10.1"]
+equations:
+  - { id: "10.191", name: fully factorised EP posterior }
+  - { id: "10.197", name: tilted-distribution normaliser }
+  - { id: "10.207", name: refined site factor }
+  - { id: "10.209", name: clutter likelihood }
+  - { id: "10.219", name: posterior signal probability }
+widgets: [ClutterEp]
+difficulty: 5
+---
+
+import ClutterEp from '@widgets/ch10/ClutterEp';
+import MomentMatchingIllustration from '@widgets/ch10/figures/MomentMatchingIllustration';
+import TrueVsEpPosterior from '@widgets/ch10/figures/TrueVsEpPosterior';
+import ClutterLikelihoodMixture from '@widgets/ch10/figures/ClutterLikelihoodMixture';
+import SignalProbabilityBars from '@widgets/ch10/figures/SignalProbabilityBars';
+
+## Intuition
+
+Mean-field always minimises the same direction of KL divergence, and the first section of
+this chapter showed exactly what that costs: a compact answer that locks onto part of the
+truth and reports too little uncertainty about the rest. Sometimes that cost is too high,
+and the other direction, the one that spreads out to cover everything, is worth reaching
+for instead.
+
+The catch is that the other direction has no general closed-form recipe the way mean-field
+does. Expectation propagation gets there anyway, by working locally rather than globally:
+refine one piece of the approximation at a time, matching it to the true local behaviour
+by moments rather than by an intractable global integral, and repeat until nothing moves.
+
+Each refinement briefly forgets what it already believed, asks what the true model alone
+would say, and folds the answer back in. That act of temporarily forgetting is the whole
+trick, and it is the one operation mean-field never performs.
+
+## The math
+
+The approximate posterior stays a product of simple site factors throughout:
+
+<MathBlock id="10.191" name="fully factorised EP posterior">
+
+$$q(\boldsymbol{\theta}) = \frac{1}{Z} \prod_i \tilde{f}_i(\boldsymbol{\theta})$$
+
+</MathBlock>
+
+Refining one site removes it to form a cavity, then re-admits the true factor in its
+place and asks what Gaussian matches the result's first two moments:
+
+<MathBlock id="10.197" name="tilted-distribution normaliser">
+
+$$Z_j = \int f_j(\boldsymbol{\theta})\, q^{\backslash j}(\boldsymbol{\theta})\, d\boldsymbol{\theta}$$
+
+</MathBlock>
+
+<Figure caption="The cavity, the true (non-Gaussian) tilted density formed by multiplying in the real likelihood factor, and the Gaussian that matches its mean and variance exactly.">
+  <MomentMatchingIllustration client:visible />
+</Figure>
+
+The refined site is read off from the ratio of the matched result to the cavity, which is
+never itself required to be a proper density:
+
+<MathBlock id="10.207" name="refined site factor">
+
+$$\tilde{f}_j(\boldsymbol{\theta}) = Z_j \frac{q^{\text{new}}(\boldsymbol{\theta})}{q^{\backslash j}(\boldsymbol{\theta})}$$
+
+</MathBlock>
+
+For a signal buried in background clutter, the true factor is a two-component mixture the
+cavity alone cannot represent:
+
+<MathBlock id="10.209" name="clutter likelihood">
+
+$$p(x_n \mid \theta) = (1-w)\,\mathcal{N}(x_n \mid \theta, 1) + w\,\mathcal{N}(x_n \mid 0, a)$$
+
+</MathBlock>
+
+<Figure caption="10.209's two components at theta = 2.5: a narrow signal peak sitting on a broad clutter background, and their sum.">
+  <ClutterLikelihoodMixture client:visible />
+</Figure>
+
+and moment matching against it produces, as a byproduct, a genuine posterior probability
+that a given point was signal rather than noise:
+
+<MathBlock id="10.219" name="posterior signal probability">
+
+$$\rho_n = 1 - \frac{w}{Z_n}\mathcal{N}(x_n \mid 0, a)$$
+
+</MathBlock>
+
+## Interactive
+
+<Widget
+  title="Expectation propagation on the clutter problem"
+  figure="10.16"
+  caption="Step through one sweep, point by point. Watch the posterior tighten around the true theta while outliers barely move it, because each moment match down-weights whichever point looks like clutter."
+>
+  <ClutterEp client:visible />
+</Widget>
+
+Watch the second panel as much as the first: a bar dropping below 0.5 is 10.219 quietly
+deciding, from the data alone, that a point is more likely background than signal.
+
+## Worked example
+
+Eight points, five drawn near $\theta=2.5$ and three drawn as wide background clutter, fed
+through one EP sweep against a broad prior. The exact posterior, available here only
+because the problem is small enough to normalise on a grid, and EP's Gaussian land on
+almost the same mean; the difference worth noticing is in the spread.
+
+<Figure caption="The true (grid-normalised) posterior against EP's Gaussian approximation, same data, one full sweep.">
+  <TrueVsEpPosterior client:visible />
+</Figure>
+
+EP's variance sits close to the true posterior's own spread rather than the narrower
+figure a forward-KL fit would have reported for the same non-Gaussian target: the
+mass-covering direction this section chose is doing exactly what section 10.1 predicted it
+would.
+
+<Figure caption="Signal probability (10.219) for each of the eight points after one sweep: the three clutter draws fall below 0.5, the five signal draws sit above it.">
+  <SignalProbabilityBars client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="Which KL direction does expectation propagation minimise, and where?" concepts={["kl-divergence-asymmetry"]}>
+The reverse, mass-covering direction, but only locally: each site refinement moment-matches
+against one true factor at a time, never against the full joint the way an exact reverse-KL
+fit would need to.
+</Recall>
+
+<Recall question="What does removing a site to form a cavity accomplish?" concepts={["expectation-propagation"]}>
+It stops a factor from being refined against information it already contributed, so the
+moment match sees only the cavity's belief before this factor and the true likelihood, the
+same principle a leave-one-out estimate uses elsewhere.
+</Recall>
+
+<Recall question="Why does the clutter problem need moment matching rather than an exact update?" concepts={["ep-moment-matching"]}>
+The true factor is a two-component mixture, and the product of a Gaussian cavity with it is
+not Gaussian. Matching only the first two moments is what forces the result back into a
+family EP can keep multiplying together.
+</Recall>
+
+<Recall question="What does a low posterior signal probability for one point indicate?" concepts={["ep-moment-matching"]}>
+By 10.219, that the clutter component of 10.209 explains that observation better than the
+signal component does, given everything else EP currently believes about theta.
+</Recall>
+
+## Connections
+
+- **Builds on** [10.1](/sections/10-1)'s KL-direction distinction, resolved here as a local
+  rather than global choice of direction.
+- **Contrasts with** every mean-field section in this chapter: same coordinate-ascent
+  rhythm, opposite KL direction, no lower bound guaranteeing monotonic improvement.
+- **Runs on** the same factor-graph structure as [10.4](/sections/10-4)'s message passing,
+  with moment-matched messages in place of exact ones, and connects to the sum-product
+  algorithm of chapter 8 when every factor happens to be discrete.
+

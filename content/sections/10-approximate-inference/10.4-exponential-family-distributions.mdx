@@ -1,0 +1,147 @@
+---
+chapter: 10
+section: "10.4"
+title: Exponential Family Distributions
+bookPages: [490, 492]
+summary: When every conditional distribution in a model belongs to the exponential family, the mean-field update rule collapses to passing natural-parameter messages along the edges of a factor graph.
+concepts:
+  - variational-message-passing
+  - mean-field-approximation
+prereqs: ["10.2", "2.4"]
+equations:
+  - { id: "10.113", name: complete-data exponential family }
+  - { id: "10.115", name: optimal factor for one node }
+  - { id: "10.119", name: natural-parameter posterior }
+  - { id: "10.121", name: natural-parameter update }
+widgets: [FactorGraphDiagram]
+difficulty: 3
+---
+
+import FactorGraphDiagram from '@widgets/ch10/FactorGraphDiagram';
+import MarkovBlanketHighlight from '@widgets/ch10/figures/MarkovBlanketHighlight';
+import NaturalParameterAccumulation from '@widgets/ch10/figures/NaturalParameterAccumulation';
+import MessagePassingDirection from '@widgets/ch10/figures/MessagePassingDirection';
+
+## Intuition
+
+Every worked example so far has needed its own derivation: a Gaussian's mean and
+precision update one way, a mixture's responsibilities another, a regression's weight
+precision a third. Underneath, all three did the same thing, because a Gaussian, a
+Dirichlet, a Wishart, and a Gamma are all members of one family with a shared shape.
+
+Restricting a model to conditional distributions built from that shared shape turns the
+general mean-field update into something that no longer needs re-deriving per model.
+Every node's optimal factor depends only on the nodes touching it, and updating it is a
+fixed, generic computation on messages passed along the edges of the graph. Naming this
+once buys every future conjugate model the update for free.
+
+That locality is the useful part, not a footnote. A model with a thousand nodes never
+needs its own thousand-term derivation; it needs the one local rule, applied wherever an
+edge exists.
+
+## The math
+
+A model built entirely from exponential-family conditionals writes its complete-data
+likelihood as
+
+<MathBlock id="10.113" name="complete-data exponential family">
+
+$$p(\mathbf{X}, \mathbf{Z} \mid \boldsymbol{\eta}) = \prod_{n} h(\mathbf{x}_n, \mathbf{z}_n)\, g(\boldsymbol{\eta})\, \exp\big(\boldsymbol{\eta}^{\mathrm{T}} \mathbf{u}(\mathbf{x}_n, \mathbf{z}_n)\big)$$
+
+</MathBlock>
+
+Applying the general mean-field rule to one node gives a factor that only reads its
+neighbours:
+
+<MathBlock id="10.115" name="optimal factor for one node">
+
+$$\ln q^{*}(\mathbf{Z}) = \sum_n \Big[\ln h(\mathbf{x}_n, \mathbf{z}_n) + \mathbb{E}[\boldsymbol{\eta}^{\mathrm{T}}]\, \mathbf{u}(\mathbf{x}_n, \mathbf{z}_n)\Big] + \text{const}$$
+
+</MathBlock>
+
+<Figure caption="The Markov blanket of one latent node z: parents, children, and children's other parents. Nothing further out ever enters its update." source="10.5">
+  <MarkovBlanketHighlight client:visible />
+</Figure>
+
+Conjugacy makes the parameter node's own posterior stay in the prior's family too, with
+its natural parameter simply accumulating a contribution per observation:
+
+<MathBlock id="10.119" name="natural-parameter posterior">
+
+$$q^{*}(\boldsymbol{\eta}) = f(\nu_N, \boldsymbol{\chi}_N)\, g(\boldsymbol{\eta})^{\nu_N} \exp(\boldsymbol{\eta}^{\mathrm{T}}\boldsymbol{\chi}_N)$$
+
+</MathBlock>
+
+<MathBlock id="10.121" name="natural-parameter update">
+
+$$\boldsymbol{\chi}_N = \boldsymbol{\chi}_0 + \sum_n \mathbb{E}_{z_n}[\mathbf{u}(\mathbf{x}_n, \mathbf{z}_n)]$$
+
+</MathBlock>
+
+<Figure caption="One Dirichlet natural parameter accumulating a responsibility per point seen, exactly 10.121 running live rather than in closed form.">
+  <NaturalParameterAccumulation client:visible />
+</Figure>
+
+Every update in the previous two sections is one instance of 10.115 and 10.121; nothing
+there was special-cased.
+
+<Figure caption="Every edge in this graph carries one labelled expected sufficient statistic. Every hand-derived update in the last two sections is one of these messages, computed once rather than re-derived per model.">
+  <MessagePassingDirection client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Which nodes a mean-field update can see"
+  figure="10.5"
+  caption="Toggle x observed. The update for any one node only ever needs its Markov blanket, so watch which nodes stay dim regardless."
+>
+  <FactorGraphDiagram client:visible />
+</Widget>
+
+Observed or not, x sits in the same place in the graph, and the update rule for its
+neighbours does not change; observation only fixes a value, never the structure a message
+travels through.
+
+## Worked example
+
+The variational mixture's own responsibility update is 10.115 read directly off its
+graph: $z_n$'s Markov blanket is $\{\boldsymbol{\pi}, \mathbf{x}_n, \boldsymbol{\mu},
+\boldsymbol{\Lambda}\}$, and its optimal factor needs exactly $\mathbb{E}[\ln\pi_k]$,
+$\mathbb{E}[\ln|\Lambda_k|]$, and $\mathbb{E}_{\mu_k,\Lambda_k}[\cdots]$: three
+expectations from three neighbours, nothing from further away.
+
+The Dirichlet parameter $\alpha_k$ is 10.121 in its simplest form: it starts at $\alpha_0$
+and adds exactly one responsibility per point, so after $N$ points it reads
+$\alpha_0 + \sum_n r_{nk}$, the same $N_k$-based update seen twice already, now visibly a
+running sum rather than a batch formula.
+
+## Recall
+
+<Recall question="Why does exponential-family structure make the mean-field update local?" concepts={["variational-message-passing"]}>
+10.115 shows the optimal factor for any node depends only on the expected sufficient
+statistics of its neighbours in the graph, never on nodes further away, because the log
+joint factorises node by node.
+</Recall>
+
+<Recall question="What does a conjugate node's natural parameter do as data arrives?" concepts={["variational-message-passing"]}>
+It accumulates: 10.121 adds one neighbour's expected sufficient statistic per observation
+to the prior's own natural parameter, exactly a running sum rather than a batch refit.
+</Recall>
+
+<Recall question="Why is one general update rule enough for every conjugate-exponential model?" concepts={["mean-field-approximation"]}>
+Because 10.115 is derived once from the exponential family's shared form, not per
+distribution; any model built from such conditionals inherits the same local computation
+without a fresh derivation.
+</Recall>
+
+## Connections
+
+- **Builds on** [10.2](/sections/10-2)'s and [10.3](/sections/10-3)'s updates, both
+  instances of 10.115 derived here in general form, and [2.4](/sections/2-4)'s exponential
+  family.
+- **Runs on** the factor graphs and sum-product machinery of chapter 8, applied to
+  expected sufficient statistics instead of exact messages.
+- **Leads to** [10.5](/sections/10-5), where a likelihood outside this family needs a
+  different kind of bound entirely.
+

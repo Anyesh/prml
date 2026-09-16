@@ -1,0 +1,152 @@
+---
+chapter: 10
+section: "10.5"
+title: Local Variational Methods
+bookPages: [493, 497]
+summary: A convex function equals the best of all its tangent lines, and turning that identity around gives a family of bounds tight at one chosen point, which is what tames a likelihood the rest of this chapter's machinery cannot touch directly.
+concepts:
+  - local-variational-bound
+prereqs: ["10.1"]
+equations:
+  - { id: "10.125", name: tangent-line bound }
+  - { id: "10.136", name: convex-duality upper bound }
+  - { id: "10.141", name: lambda of xi }
+  - { id: "10.144", name: Gaussian lower bound on the sigmoid }
+widgets: [LogisticSigmoidBound]
+difficulty: 4
+---
+
+import LogisticSigmoidBound from '@widgets/ch10/LogisticSigmoidBound';
+import ConvexDualityTangent from '@widgets/ch10/figures/ConvexDualityTangent';
+import UpperVsLowerBound from '@widgets/ch10/figures/UpperVsLowerBound';
+import TangentGapVisualization from '@widgets/ch10/figures/TangentGapVisualization';
+import WorkedExampleBoundGap from '@widgets/ch10/figures/WorkedExampleBoundGap';
+
+## Intuition
+
+Every bound so far has been global: a whole distribution standing in for another whole
+distribution, everywhere at once. Some functions resist that. The logistic sigmoid inside
+a Bernoulli likelihood has no Gaussian conjugate anywhere, global or otherwise, so
+averaging over a posterior through it has no closed form to reach for.
+
+A local bound gives up global accuracy on purpose. Instead of one approximation good
+everywhere, build a family of simple curves, each exact at exactly one point and safely on
+one side everywhere else. Pick the point that matters for the calculation at hand, and the
+approximation is no longer an approximation there.
+
+The price is a new number to choose: which point. That choice becomes one more thing the
+overall fit optimises, alongside whatever else it was already solving for, and the two
+kinds of optimisation turn out to interleave into the same coordinate ascent already
+familiar from every other section here.
+
+## The math
+
+A convex function lies above every one of its tangent lines, so it can be rebuilt as a
+maximum over them:
+
+<MathBlock id="10.125" name="tangent-line bound">
+
+$$y(x) = f(\xi) + f'(\xi)(x - \xi), \qquad f(x) = \max_{\xi} \, y(x)$$
+
+</MathBlock>
+
+<Figure caption="exp(-x) and three of its tangent lines. Each is a valid lower bound, exact only where it touches." source="10.10">
+  <ConvexDualityTangent client:visible />
+</Figure>
+
+The logistic sigmoid is not itself convex, but its logarithm is, which gives an upper
+bound on the sigmoid through the same duality:
+
+<MathBlock id="10.136" name="convex-duality upper bound">
+
+$$\ln \sigma(x) \le \lambda x - g(\lambda)$$
+
+</MathBlock>
+
+Applying the same trick to $x^2$ instead of $x$ produces a bound that is concave rather
+than convex in the right variable, and a specific coefficient falls out of matching slopes
+at the touch point:
+
+<MathBlock id="10.141" name="lambda of xi">
+
+$$\lambda(\xi) = \frac{1}{2\xi}\Big[\sigma(\xi) - \tfrac12\Big]$$
+
+</MathBlock>
+
+which assembles into a Gaussian-shaped lower bound on the sigmoid itself:
+
+<MathBlock id="10.144" name="Gaussian lower bound on the sigmoid">
+
+$$\sigma(x) \ge \sigma(\xi) \exp\!\left[\frac{x - \xi}{2} - \lambda(\xi)(x^2 - \xi^2)\right]$$
+
+</MathBlock>
+
+<Figure caption="The exponential upper bound (10.137) and the Gaussian lower bound (10.144) sandwiching the same sigmoid, from opposite sides and different derivations.">
+  <UpperVsLowerBound client:visible />
+</Figure>
+
+Exact at $x=\xi$ and $x=-\xi$ by construction, this is the bound that turns a Bernoulli
+likelihood into something Gaussian integration can handle.
+
+## Interactive
+
+<Widget
+  title="The local bound on the logistic sigmoid"
+  figure="10.12"
+  caption="Drag xi. The bound touches the true sigmoid at x = +/- xi and falls below it everywhere else; the two touch points slide together as one curve."
+>
+  <LogisticSigmoidBound client:visible />
+</Widget>
+
+Watch how little of the curve the bound gets right at once: tight near $\pm\xi$, loose far
+away. That trade is deliberate, and the next section spends one $\xi_n$ per observation
+so each one is tight exactly where its own data point needs it.
+
+<Figure caption="The gap between the true sigmoid and the bound, for two choices of xi. Both curves touch zero at their own +/- xi and peak between them.">
+  <TangentGapVisualization client:visible />
+</Figure>
+
+## Worked example
+
+At $\xi = 2.5$, $\lambda(\xi) = [\sigma(2.5) - 0.5]/5 \approx 0.0842$. The bound
+$\sigma(\xi)\exp[(x-\xi)/2 - \lambda(\xi)(x^2-\xi^2)]$ evaluates to $\sigma(2.5) \approx
+0.924$ at $x=2.5$ exactly, matching the true sigmoid to machine precision, and to
+$\sigma(-2.5)\approx 0.076$ at $x=-2.5$, also exact.
+
+At $x=0$, midway between the touch points, the bound gives $\sigma(\xi)\exp[-\xi/2 +
+\lambda(\xi)\xi^2] \approx 0.437$, against the true $\sigma(0)=0.5$: an 87-thousandths gap,
+the largest anywhere on this curve, sitting exactly where the two touch points are
+furthest from doing any work.
+
+<Figure caption="The four numbers above, marked on the curve and its xi = 2.5 bound: exact at the two red points on the sigmoid, gapped at x = 0.">
+  <WorkedExampleBoundGap client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="Why does the sigmoid need a local rather than a global bound?" concepts={["local-variational-bound"]}>
+It has no conjugate Gaussian form anywhere, so no single tractable family approximates it
+everywhere at once. A local bound instead buys exactness at one chosen point and accepts
+looseness elsewhere.
+</Recall>
+
+<Recall question="What does the variational parameter xi actually choose?" concepts={["local-variational-bound"]}>
+The point where the bound touches the true sigmoid exactly, by 10.144; moving xi slides
+that touch point, and optimising xi is choosing where the approximation should be tight.
+</Recall>
+
+<Recall question="Why does the bound get looser away from x = +/- xi?" concepts={["local-variational-bound"]}>
+It is built from a fixed quadratic shape whose only freedom is where it touches; away from
+that point the true sigmoid's curvature and the bound's fixed curvature diverge, by
+construction rather than by accident.
+</Recall>
+
+## Connections
+
+- **Builds on** [10.1](/sections/10-1)'s optimise-over-a-family idea, now applied to one
+  function rather than a whole posterior.
+- **Leads to** [10.6](/sections/10-6), where one $\xi_n$ per observation turns this bound
+  into a full Bayesian logistic regression.
+- **The exponential upper bound** is the same duality argument from the opposite side,
+  useful whenever an upper rather than a lower bound is what a calculation needs.
+

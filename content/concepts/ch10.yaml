@@ -1,0 +1,103 @@
+- id: variational-inference
+  name: "Variational inference"
+  definition: "Turning an intractable posterior into an optimisation problem: pick a tractable family of distributions and search it for the member closest to the true posterior, measured by KL divergence. Trades exactness for a bound that is always computable."
+  introducedIn: "10.1"
+  usedIn: ["10.2", "10.3", "10.4", "10.5", "10.6", "10.7"]
+  requires: ["kl-divergence"]
+  aliases: ["variational Bayes"]
+
+- id: variational-lower-bound
+  name: "Variational lower bound"
+  definition: "A functional of an approximating distribution q, always at or below the true log model evidence, whose gap to that evidence is exactly KL(q, true posterior). Maximising it over q is equivalent to minimising that KL, without ever evaluating the posterior itself. The same shape as the EM lower bound, generalised from one E-step distribution to an arbitrary variational family."
+  introducedIn: "10.1"
+  usedIn: ["10.2", "10.3", "10.6", "10.7"]
+  requires: ["variational-inference", "em-lower-bound"]
+  aliases: ["ELBO", "L(q)"]
+
+- id: mean-field-approximation
+  name: "Mean-field approximation"
+  definition: "Restricting the variational family to distributions that factorise over disjoint groups of variables. The optimal factor for one group is the exponential of the expected log joint density under every other group's current factor, which turns one hard integral into a coordinate ascent over easy ones."
+  introducedIn: "10.1"
+  usedIn: ["10.2", "10.4"]
+  requires: ["variational-inference"]
+  aliases: []
+
+- id: kl-divergence-asymmetry
+  name: "KL direction asymmetry"
+  definition: "Minimising KL(q, p) versus KL(p, q) against the same target produces qualitatively different approximations under a factorised q: the forward direction is zero-forcing and locks onto one mode with an under-reported variance, while the reverse direction is zero-avoiding and spreads mass to cover every region p ever visits, including gaps between modes."
+  introducedIn: "10.1"
+  usedIn: ["10.7"]
+  requires: ["kl-divergence", "mean-field-approximation"]
+  aliases: ["zero-forcing vs zero-avoiding", "exclusive vs inclusive KL"]
+
+- id: variational-mixture-of-gaussians
+  name: "Variational mixture of Gaussians"
+  definition: "A fully Bayesian Gaussian mixture: Dirichlet prior over mixing coefficients, Normal-Wishart prior over each component's mean and precision, fit by mean-field coordinate ascent instead of EM. The E-step becomes a responsibility update under expected log parameters rather than point parameters, and the M-step updates whole posterior distributions instead of point estimates."
+  introducedIn: "10.2"
+  usedIn: []
+  requires: ["variational-inference", "gaussian-mixture", "responsibility", "dirichlet-distribution"]
+  aliases: ["VBGMM"]
+
+- id: gaussian-wishart-prior
+  name: "Gaussian-Wishart prior"
+  definition: "The conjugate prior for a Gaussian's unknown mean and precision together: a Gaussian over the mean whose own precision scales with the Gaussian precision, times a Wishart over that precision. Conjugacy keeps the posterior in the same family after any number of observations, which is what lets the variational mixture's M-step stay in closed form."
+  introducedIn: "10.2"
+  usedIn: []
+  requires: ["multivariate-gaussian"]
+  aliases: ["Normal-Wishart prior"]
+
+- id: automatic-component-pruning
+  name: "Automatic component pruning"
+  definition: "Starting a variational mixture with more components than the data supports, some components' effective data count converges to zero on its own, driving that component's Dirichlet parameter back to its prior value and its responsibility to nothing. No held-out model selection step decides the count; the same coordinate ascent that fits the model also silences the components it does not need."
+  introducedIn: "10.2"
+  usedIn: []
+  requires: ["variational-mixture-of-gaussians"]
+  aliases: []
+
+- id: variational-linear-regression
+  name: "Variational linear regression"
+  definition: "Bayesian linear regression with a Gamma prior over the weight precision instead of a fixed value, fit by alternating a Gaussian posterior over the weights with a Gamma posterior over their shared precision. Recovers the same evidence-driven pruning of over-parameterised models as chapter 3's type-II maximum likelihood, but as the fixed point of a bound rather than an outer optimisation loop."
+  introducedIn: "10.3"
+  usedIn: []
+  requires: ["variational-inference", "posterior-distribution", "conjugate-prior", "model-evidence"]
+  aliases: []
+
+- id: variational-message-passing
+  name: "Variational message passing"
+  definition: "Running the mean-field update rule locally on a factor graph for models built from exponential-family conditional distributions: each node's optimal factor depends only on messages from its neighbours, so one general-purpose algorithm computes the coordinate-ascent update for any conjugate-exponential graph rather than a bespoke derivation per model."
+  introducedIn: "10.4"
+  usedIn: []
+  requires: ["mean-field-approximation", "exponential-family"]
+  aliases: ["VMP"]
+
+- id: local-variational-bound
+  name: "Local variational bound"
+  definition: "A convex-duality bound that replaces one awkward function with a family of tractable ones, each touching the true function at a single point set by a variational parameter and lying on one side of it everywhere else. Optimising that parameter tightens the bound at the point that matters, trading a global approximation for one that is exact locally."
+  introducedIn: "10.5"
+  usedIn: ["10.6"]
+  requires: ["variational-inference"]
+  aliases: ["convex variational bound"]
+
+- id: variational-logistic-regression
+  name: "Variational logistic regression"
+  definition: "Bayesian logistic regression made tractable by bounding the sigmoid likelihood with the local variational bound, which turns every observation's contribution into something quadratic in the weights. The resulting posterior is Gaussian in closed form, updated jointly with the per-observation bound parameters that keep the approximation tight."
+  introducedIn: "10.6"
+  usedIn: []
+  requires: ["local-variational-bound", "logistic-regression", "bayesian-logistic-regression"]
+  aliases: []
+
+- id: expectation-propagation
+  name: "Expectation propagation"
+  definition: "An iterative approximation scheme that refines one factor of a fully-factorised posterior at a time: remove that factor to form a cavity, match the moments of the cavity times the true factor, then read off the refined factor from the difference. Locally minimises the reverse KL direction at every site, in contrast to mean-field's forward direction."
+  introducedIn: "10.7"
+  usedIn: []
+  requires: ["variational-inference", "kl-divergence-asymmetry"]
+  aliases: ["EP", "assumed density filtering generalised"]
+
+- id: ep-moment-matching
+  name: "Moment matching (EP)"
+  definition: "Choosing a site's refined Gaussian factor so the cavity times that factor has the same mean and variance as the cavity times the true, possibly non-Gaussian, factor. For the clutter problem's two-component mixture this has a closed form: no sampling or optimisation, only reshaping mass to fit a Gaussian's first two moments."
+  introducedIn: "10.7"
+  usedIn: []
+  requires: ["expectation-propagation"]
+  aliases: []

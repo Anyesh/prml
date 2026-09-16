@@ -1,0 +1,164 @@
+---
+chapter: 10
+section: "10.6"
+title: Variational Logistic Regression
+bookPages: [498, 504]
+summary: Bounding every observation's sigmoid with its own local tangent turns Bayesian logistic regression's intractable posterior into a Gaussian, fit by the same alternating updates as every other model in this chapter.
+concepts:
+  - variational-logistic-regression
+prereqs: ["10.5", "4.5"]
+equations:
+  - { id: "10.157", name: posterior mean }
+  - { id: "10.158", name: posterior precision }
+  - { id: "10.163", name: xi re-estimation }
+  - { id: "10.164", name: closed-form lower bound }
+  - { id: "10.178", name: alpha shape update }
+  - { id: "10.182", name: expected alpha }
+widgets: [DecisionBoundaryUncertainty]
+difficulty: 4
+---
+
+import DecisionBoundaryUncertainty from '@widgets/ch10/DecisionBoundaryUncertainty';
+import XiConvergence from '@widgets/ch10/figures/XiConvergence';
+import AlphaEvolution from '@widgets/ch10/figures/AlphaEvolution';
+import PosteriorVsPriorEllipse from '@widgets/ch10/figures/PosteriorVsPriorEllipse';
+import LogisticLowerBoundCurve from '@widgets/ch10/figures/LogisticLowerBoundCurve';
+
+## Intuition
+
+Chapter 4's Laplace approximation handles Bayesian logistic regression by fitting a single
+Gaussian to the mode of the exact posterior, information from everywhere else in that
+posterior discarded once the curvature at the peak is read off. It works, but it is a
+one-shot summary, not a fit that could recognisably be pushed further.
+
+Bounding every observation's likelihood with the previous section's local sigmoid bound
+gives a full alternative: multiply a Gaussian prior by likelihood terms that are each
+already Gaussian-shaped in the weights, and the posterior comes out Gaussian exactly,
+not approximately at a point. The price is one extra number per observation, the
+touch-point of its own bound, fit alongside the weights rather than chosen in advance.
+
+Nothing about this needs the data seen all at once. Each observation contributes through
+its own bound parameter, so the same machine that fits ten points fits ten thousand,
+one local tangent per row.
+
+## The math
+
+Bounding $p(t_n \mid \mathbf{w})$ with 10.144 turns the log joint into something quadratic
+in $\mathbf{w}$, and the mean-field factor $q(\mathbf{w})$ comes out Gaussian with
+parameters built from every observation's own $\xi_n$:
+
+<MathBlock id="10.157" name="posterior mean">
+
+$$\mathbf{m}_N = \mathbf{S}_N \Big[\mathbf{S}_0^{-1}\mathbf{m}_0 + \sum_n (t_n - \tfrac12)\boldsymbol{\phi}_n\Big]$$
+
+</MathBlock>
+
+<MathBlock id="10.158" name="posterior precision">
+
+$$\mathbf{S}_N^{-1} = \mathbf{S}_0^{-1} + 2\sum_n \lambda(\xi_n)\,\boldsymbol{\phi}_n\boldsymbol{\phi}_n^{\mathrm{T}}$$
+
+</MathBlock>
+
+Each $\xi_n$ is then re-fit to the second moment of $\boldsymbol{\phi}_n^{\mathrm{T}}\mathbf{w}$
+under the current $q(\mathbf{w})$:
+
+<MathBlock id="10.163" name="xi re-estimation">
+
+$$(\xi_n^{\text{new}})^2 = \boldsymbol{\phi}_n^{\mathrm{T}}(\mathbf{S}_N + \mathbf{m}_N\mathbf{m}_N^{\mathrm{T}})\boldsymbol{\phi}_n$$
+
+</MathBlock>
+
+<Figure caption="Every observation's xi_n across coordinate-ascent rounds. Points near the boundary settle at a larger value than points the model is already confident about.">
+  <XiConvergence client:visible />
+</Figure>
+
+Cycling 10.157-10.163 to a fixed point maximises the bound below, in closed form because
+every term involved is Gaussian or a Gaussian moment:
+
+<MathBlock id="10.164" name="closed-form lower bound">
+
+$$\mathcal{L}(\boldsymbol{\xi}) = \tfrac12\ln\frac{|\mathbf{S}_N|}{|\mathbf{S}_0|} - \tfrac12\mathbf{m}_N^{\mathrm{T}}\mathbf{S}_N^{-1}\mathbf{m}_N + \tfrac12\mathbf{m}_0^{\mathrm{T}}\mathbf{S}_0^{-1}\mathbf{m}_0 + \sum_n\Big[\ln\sigma(\xi_n) - \tfrac{\xi_n}{2} - \lambda(\xi_n)\xi_n^2\Big]$$
+
+</MathBlock>
+
+Giving the prior precision its own Gamma posterior extends this exactly as section 10.3
+extended plain Bayesian regression:
+
+<MathBlock id="10.178" name="alpha shape update">
+
+$$a_N = a_0 + \frac{M}{2}$$
+
+</MathBlock>
+
+<MathBlock id="10.182" name="expected alpha">
+
+$$\mathbb{E}[\alpha] = \frac{a_N}{b_N}$$
+
+</MathBlock>
+
+<Figure caption="The re-estimated prior precision alpha across outer rounds, each round a full inner fit of q(w) and every xi_n.">
+  <AlphaEvolution client:visible />
+</Figure>
+
+<Figure caption="The closed-form bound of 10.164 across coordinate-ascent rounds. It rises monotonically, the same guarantee every other bound in this chapter carries.">
+  <LogisticLowerBoundCurve client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Decision boundaries drawn from the posterior, not just the mean"
+  figure="10.13"
+  caption="Increase the number of sampled boundaries. Where the classes overlap, sampled lines fan out; far from the data, they barely move."
+>
+  <DecisionBoundaryUncertainty client:visible />
+</Widget>
+
+The mean boundary alone looks like an ordinary logistic fit; only the spread of sampled
+boundaries around it reveals which part of the input space the posterior is still unsure
+about.
+
+## Worked example
+
+Two well-separated clusters of fourteen points each, fit with a broad isotropic prior. The
+mean boundary lands almost exactly midway between the class centres, unsurprising for
+balanced, separable data. What 10.158 adds is visible only in the sampled boundaries: near
+the origin, where the two classes' spread overlaps slightly, boundaries drawn from
+$q(\mathbf{w})$ fan out by several degrees of slope, while far from the origin every
+sampled boundary tracks the mean to within a hair, because $\mathbf{S}_N$ shrinks fastest
+in directions the data pins down hardest.
+
+<Figure caption="The prior over two of the three weights, shrinking to the converged posterior after seeing the data.">
+  <PosteriorVsPriorEllipse client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="What does bounding the sigmoid buy that the Laplace approximation does not?" concepts={["variational-logistic-regression"]}>
+A Gaussian posterior reached by explicitly optimising a lower bound on the true evidence,
+rather than a Gaussian read off the curvature at one point of the true posterior with no
+bound guaranteeing how good that summary is.
+</Recall>
+
+<Recall question="Why does each observation need its own xi_n rather than one shared value?" concepts={["variational-logistic-regression"]}>
+The local bound of 10.5 is tight at one point per curve; a single xi could not sit close to
+every observation's own $\phi_n^T w$ at once, so 10.163 lets each observation choose its
+own touch point.
+</Recall>
+
+<Recall question="How does hyperparameter inference here extend section 10.3?" concepts={["variational-logistic-regression"]}>
+Identically: the prior precision alpha gets its own Gamma posterior (10.178) instead of a
+fixed value, fit by the same outer coordinate ascent, now wrapped around a Gaussian
+posterior built from bounded likelihood terms instead of an exact Gaussian likelihood.
+</Recall>
+
+## Connections
+
+- **Builds on** [10.5](/sections/10-5)'s local bound and [4.5](/sections/4-5)'s Laplace
+  approximation, which this section replaces with an optimised rather than a read-off
+  Gaussian.
+- **Mirrors** [10.3](/sections/10-3)'s hyperparameter treatment almost verbatim once
+  $q(\mathbf{w})$ is in hand.
+- **Leads to** [10.7](/sections/10-7), an entirely different route to a Gaussian
+  approximation of the same kind of likelihood.
+

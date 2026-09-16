@@ -1,0 +1,158 @@
+---
+chapter: 10
+section: "10.2"
+title: "Illustration: Variational Mixture of Gaussians"
+bookPages: [474, 485]
+summary: Putting a Dirichlet and a Gaussian-Wishart prior on a mixture's parameters turns EM into coordinate ascent that can decide, on its own, that some of the components it was given are not needed.
+concepts:
+  - gaussian-wishart-prior
+  - automatic-component-pruning
+  - responsibility
+prereqs: ["10.1", "9.2"]
+equations:
+  - { id: "10.46", name: log responsibility }
+  - { id: "10.49", name: responsibility normalisation }
+  - { id: "10.58", name: Dirichlet update }
+  - { id: "10.63", name: Wishart degrees-of-freedom update }
+  - { id: "10.81", name: predictive Student-t mixture }
+widgets: [VbGmmPruning]
+difficulty: 4
+---
+
+import VbGmmPruning from '@widgets/ch10/VbGmmPruning';
+import LowerBoundVsK from '@widgets/ch10/figures/LowerBoundVsK';
+import AlphaPriorEffect from '@widgets/ch10/figures/AlphaPriorEffect';
+import VbPredictiveContour from '@widgets/ch10/figures/VbPredictiveContour';
+import ResponsibilityAssignment from '@widgets/ch10/figures/ResponsibilityAssignment';
+
+## Intuition
+
+EM for a Gaussian mixture always uses every component it is handed. Offer it six clusters
+for data that only has three, and it will split the extra three across the data anyway,
+because nothing in the maximum-likelihood objective rewards leaving one empty.
+
+Putting a prior on the mixing weights changes that. A component with no data pulling on it
+has nothing to override the prior's own preference for a small share, and a Dirichlet prior
+concentrated near zero prefers exactly that: most of the weight, most of the time, on as
+few components as it can get away with. The result is a fit that can delete a component on
+its own, purely by the same coordinate ascent chapter 9 already used, now applied one level
+up.
+
+## The math
+
+Responsibilities generalise 9.13 with the parameters replaced by their expectations under
+the current Gaussian-Wishart and Dirichlet posteriors:
+
+<MathBlock id="10.46" name="log responsibility">
+
+$$\ln \rho_{nk} = \mathbb{E}[\ln \pi_k] + \tfrac{1}{2}\mathbb{E}[\ln|\Lambda_k|] - \tfrac{D}{2}\ln 2\pi - \tfrac{1}{2}\mathbb{E}_{\mu_k,\Lambda_k}\big[(\mathbf{x}_n-\boldsymbol\mu_k)^{\mathrm{T}}\Lambda_k(\mathbf{x}_n-\boldsymbol\mu_k)\big]$$
+
+</MathBlock>
+
+<MathBlock id="10.49" name="responsibility normalisation">
+
+$$r_{nk} = \frac{\rho_{nk}}{\sum_j \rho_{nj}}$$
+
+</MathBlock>
+
+<Figure caption="Every point coloured by whichever surviving component it is most responsible for. The pruned components never win this argmax." source="10.6">
+  <ResponsibilityAssignment client:visible />
+</Figure>
+
+The M step updates the Dirichlet and Gaussian-Wishart posteriors from the same weighted
+statistics chapter 9 computed, $N_k$, $\bar{\mathbf{x}}_k$, $\mathbf{S}_k$:
+
+<MathBlock id="10.58" name="Dirichlet update">
+
+$$\alpha_k = \alpha_0 + N_k$$
+
+</MathBlock>
+
+<MathBlock id="10.63" name="Wishart degrees-of-freedom update">
+
+$$\nu_k = \nu_0 + N_k$$
+
+</MathBlock>
+
+A component nothing is responsible for has $N_k \approx 0$, so 10.58 and 10.63 (and every
+other M-step update) simply return the prior. No special case deletes a component; the
+same update that grows a useful one starves an unused one automatically.
+
+<Figure caption="Converged lower bound against the number of components offered, on data with three true clusters. It peaks exactly at three." source="10.7">
+  <LowerBoundVsK client:visible />
+</Figure>
+
+The lower bound itself sums seven expectation terms and is what a model-comparison figure
+like the one above actually maximises. The predictive density marginalises the
+posterior in closed form to a mixture of Student-t distributions:
+
+<MathBlock id="10.81" name="predictive Student-t mixture">
+
+$$p(\mathbf{x} \mid \mathbf{X}) = \frac{1}{\hat\alpha}\sum_k \alpha_k\, \mathrm{St}(\mathbf{x} \mid \mathbf{m}_k, \mathbf{L}_k, \nu_k+1-D)$$
+
+</MathBlock>
+
+not a Gaussian mixture: uncertainty in the precision itself thickens each component's tails.
+
+<Figure caption="The Student-t predictive density built from the converged posterior, contours already fading where a pruned component would have sat.">
+  <VbPredictiveContour client:visible />
+</Figure>
+
+<Figure caption="Number of components (of six offered) surviving above a small weight threshold, for three Dirichlet concentrations. A tighter prior prunes harder." width="wide">
+  <AlphaPriorEffect client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Automatic pruning: six components offered, two kept"
+  figure="10.6"
+  caption="Step through the fit. Watch the surplus bars sink toward the prior while the grey EM bars, run on the same six components, all stay near an even split."
+>
+  <VbGmmPruning client:visible />
+</Widget>
+
+## Worked example
+
+With three true clusters and six offered components, the fit above starts every mixing
+weight near $1/6$. By the fifth sweep, the three components nearest an empty region already
+have weight below $0.02$; by the last sweep the survivors sum to over $0.97$ of the total,
+each sitting close to one true cluster. EM given the same six starts and the same data
+never drops below roughly $1/6$ on any component, because its objective has no term that
+penalises using one.
+
+## Recall
+
+<Recall question="Why does a Gaussian-Wishart prior keep every posterior factor in closed form across iterations?" concepts={["gaussian-wishart-prior"]}>
+It is conjugate to the Gaussian likelihood for an unknown mean and precision taken
+together, so multiplying it by the responsibility-weighted likelihood in the M step returns
+another Gaussian-Wishart. The family never has to change across sweeps.
+</Recall>
+
+<Recall question="What mechanism actually prunes a surplus component?" concepts={["automatic-component-pruning"]}>
+Nothing special-cased. A component with near-zero effective count N_k has every one of its
+M-step updates (10.58, 10.63, and the rest) revert to the prior, because the data term in
+each update is scaled by N_k.
+</Recall>
+
+<Recall question="Why is the predictive density a Student-t mixture rather than a Gaussian one?" concepts={["responsibility"]}>
+Because the predictive marginalises out the posterior's own uncertainty about each
+component's precision, not just its mean. Averaging a Gaussian over an unknown precision
+with a Gamma-family distribution is exactly the derivation behind the Student-t.
+</Recall>
+
+<Recall question="Does raising the offered component count K risk over-fitting the way it would in EM?" concepts={["automatic-component-pruning"]}>
+Not the same way. The lower bound in the figure above peaks at the true K and does not keep
+rising past it, because surplus components are pruned rather than fit to noise.
+</Recall>
+
+## Connections
+
+- **Builds on** [10.1](/sections/10-1)'s general mean-field result, specialised to the
+  Gaussian mixture's own factorisation.
+- **Continues from** [9.2](/sections/9-2), whose responsibilities and M-step statistics
+  reappear here with expectations in place of point values.
+- **Leads to** [10.3](/sections/10-3), where the same treatment of a hyperparameter prior
+  is applied to linear regression instead of a mixture.
+- **Model comparison by K** is the same use of L(q) that [10.1](/sections/10-1) sets up.
+
