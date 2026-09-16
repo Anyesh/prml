@@ -19,7 +19,11 @@ Requests are absorbed into the primitives centrally between waves.
 
 ## Open
 
-_(none)_
+### Simplex
+- **Wanted by**: ch02/DirichletSimplex, ch02/figures/DirichletCorners
+- **Shape**: the 2-simplex as an equilateral triangle in barycentric coordinates, so a Dirichlet density can be drawn over it the way the book's figures 2.4 and 2.5 do
+- **Props**: `{ vertices?: [string, string, string]; z?: number }` plus a projection helper turning a 3-vector that sums to one into plot coordinates
+- **Why no existing primitive fits**: `Plot` publishes two linear scales, so the widget currently renders the simplex as the right triangle in the (mu1, mu2) plane and lets the third component stay implicit. That is a correct region but the wrong picture: it hides the symmetry between the three components, which is the whole point of the Dirichlet's concentration parameter.
 
 ## Absorbed
 
@@ -31,3 +35,12 @@ _(none)_
 - **Resolved**: added as `Annotation` in `primitives/Annotation.tsx`, with `plate` for
   legibility over a field, plus a `Rule` for reference lines at a fixed data value, which
   the same two figures needed and `Axes`'s zero-line could not provide.
+
+### Bars
+- **Wanted by**: ch01/figures/TwoBoxMarbles, ch01/figures/EntropyAcrossDistributions, ch01/figures/MutualInformationDiagram, ch02/figures/MLThreeHeads, ch02/figures/MultinomialPosteriorUpdate
+- **Shape**: rectangles from a baseline to a value, one per category, for discrete probability distributions and comparison bars
+- **Props**: `{ bars: { at, value, color, opacity? }[]; thickness?: number; baseline?: number; orientation?: 'vertical' | 'horizontal'; z?: number }`
+- **Why no existing primitive fits**: `Curve` joins samples of a continuous function, which asserts a distance between neighbours that a category axis does not have, and `Heatmap` fills a grid rather than drawing to a baseline. Five figures across two chapters fell back to grids of styled `div`s, which pass lint but sit outside the shared scale, token and z-ordering system.
+- **Resolved**: added as `Bars` in `primitives/Bars.tsx`. Categorical tick labels needed no new
+  primitive: `Axes` already accepts explicit `ticks` and a `format` mapping a slot index to
+  its label.

@@ -6,6 +6,7 @@ export { useResolvedTokens, useDrag, usePlotClick, type ResolvedTokens, type Dra
 
 export * from './primitives/Axes.js';
 export * from './primitives/Curve.js';
+export * from './primitives/Bars.js';
 export * from './primitives/ColorScale.js';
 export * from './primitives/Legend.js';
 export * from './primitives/ContourField.js';
