@@ -44,3 +44,13 @@ Requests are absorbed into the primitives centrally between waves.
 - **Resolved**: added as `Bars` in `primitives/Bars.tsx`. Categorical tick labels needed no new
   primitive: `Axes` already accepts explicit `ticks` and a `format` mapping a slot index to
   its label.
+
+### Histogram
+- **Wanted by**: ch04/figures/FisherProjectionHistograms
+- **Shape**: per-class density bars over a shared one-dimensional axis, for comparing two projected distributions
+- **Props**: `{ bins: number[]; counts: number[]; color: string }[]`
+- **Why no existing primitive fits**: the figure substituted a hand-rolled Gaussian kernel density estimate drawn with `Curve`, which works but reimplements binning in every figure that wants it.
+- **Resolved**: `Bars` covers this once the caller bins its own samples, which is the part
+  that genuinely varies between figures. The chapter 4 figure kept its kernel density
+  estimate because a smooth projected density is the better picture there, not because the
+  primitive was missing.
