@@ -1,0 +1,148 @@
+---
+chapter: 14
+section: "14.2"
+title: Committees
+bookPages: [655, 656]
+summary: Averaging M independently fitted models cancels their uncorrelated mistakes, cuts error by a factor of M in the best case, and by far less once the mistakes are correlated.
+concepts:
+  - committee
+  - bootstrap-aggregating
+  - bias-variance-tradeoff
+prereqs: ["14.1", "3.2"]
+equations:
+  - { id: "14.7", name: committee prediction }
+  - { id: "14.10", name: average member error }
+  - { id: "14.11", name: committee error }
+  - { id: "14.14", name: committee error under uncorrelated mistakes }
+widgets: [CommitteeOfBootstraps]
+difficulty: 2
+---
+
+import CommitteeOfBootstraps from '@widgets/ch14/CommitteeOfBootstraps';
+import SingleBootstrapVsOriginal from '@widgets/ch14/figures/SingleBootstrapVsOriginal';
+import CorrelatedErrorEffect from '@widgets/ch14/figures/CorrelatedErrorEffect';
+import PointwiseErrorComparison from '@widgets/ch14/figures/PointwiseErrorComparison';
+
+## Intuition
+
+Fit the same flexible model to a hundred different samples of the same process and the
+fits scatter: that scatter is variance, and it is pure waste, since it carries no signal
+about the truth. Average the hundred fits and the waste tends to cancel, because each
+fit's mistake points in whatever direction its own sample's noise happened to push it.
+
+A committee turns that observation into a procedure. Fit several models independently and
+average their predictions. Nothing about any single member has to be good, only that their
+errors disagree with each other, so that averaging leaves the shared signal and cancels the
+private noise.
+
+The catch is the same one chapter 3 raised and set aside: cancelling requires several
+datasets, and a real problem hands over exactly one. The fix reused here is the bootstrap,
+resampling that one dataset with replacement to manufacture the variability a committee
+needs to have anything to cancel.
+
+<Figure caption="One bootstrap resample against the original 25 points. A resample keeps most points once, a few twice or more, and drops the rest; that gap between resamples is the whole source of a committee's disagreement." width="wide">
+  <SingleBootstrapVsOriginal client:visible />
+</Figure>
+
+## The math
+
+A committee of $M$ members averages their predictions:
+
+<MathBlock id="14.7" name="committee prediction">
+
+$$y_{\text{COM}}(\mathbf{x}) = \frac{1}{M}\sum_{m=1}^{M}y_m(\mathbf{x})$$
+
+</MathBlock>
+
+Writing each member as the truth plus its own error, $y_m = h + \epsilon_m$, the members'
+own average error is
+
+<MathBlock id="14.10" name="average member error">
+
+$$E_{\text{AV}} = \frac{1}{M}\sum_{m=1}^{M}\mathbb{E}_{\mathbf{x}}\big[\epsilon_m(\mathbf{x})^2\big]$$
+
+</MathBlock>
+
+while the committee's error uses the *average* error, not the average of squared errors:
+
+<MathBlock id="14.11" name="committee error">
+
+$$E_{\text{COM}} = \mathbb{E}_{\mathbf{x}}\left[\left(\frac{1}{M}\sum_{m=1}^{M}\epsilon_m(\mathbf{x})\right)^2\right]$$
+
+</MathBlock>
+
+If every $\epsilon_m$ has zero mean and the errors are pairwise uncorrelated, the
+cross-terms vanish and
+
+<MathBlock id="14.14" name="committee error under uncorrelated mistakes">
+
+$$E_{\text{COM}} = \frac{1}{M}E_{\text{AV}}$$
+
+</MathBlock>
+
+Real errors correlate at some level $\rho$, and the ratio degrades from $1/M$ to
+$\rho + (1-\rho)/M$: a floor at $\rho$ that no amount of averaging removes.
+
+<Figure caption="Computed, not asserted: the predicted ratio at three correlation levels. Uncorrelated errors (rho = 0) reach the full 1/M reduction; correlated ones plateau far above it." width="wide">
+  <CorrelatedErrorEffect client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Bagging the sinusoidal fit"
+  figure="14.2"
+  caption="Drag committee size M. Watch the spray of member fits stay wild while their bold average tracks the truth, and watch the right panel's two curves separate, then read off how far below the dotted 1/M line the real committee curve settles."
+>
+  <CommitteeOfBootstraps client:visible />
+</Widget>
+
+Every member here is the same degree-6 polynomial, so nothing about model choice differs
+between members. Whatever separates them starts and ends with which bootstrap resample
+they saw.
+
+## Worked example
+
+<Figure caption="Squared error at each test point for 20 bootstrap members: their mean error against the committee's own. The committee curve sits at or below the member curve everywhere, never above it." width="wide">
+  <PointwiseErrorComparison client:visible />
+</Figure>
+
+At $M = 20$ on this dataset, the committee's error is below the members' average error at
+every one of the 50 test points plotted, matching 14.11's guarantee $E_{\text{COM}} \leq
+E_{\text{AV}}$: convexity of the square means the average-then-square can never exceed the
+square-then-average. Whether the gap reaches 14.14's factor of $1/M \approx 0.05$ depends
+entirely on how correlated the 20 fits turned out to be, which the widget's right panel
+shows directly.
+
+## Recall
+
+<Recall question="What has to be true of the members' errors for a committee to reach the full factor-of-M reduction in 14.14?" concepts={["committee"]}>
+Zero mean and pairwise uncorrelated. Averaging turns the cross terms in 14.11 to zero, and
+only the diagonal terms of 14.10 survive, scaled by $1/M$.
+</Recall>
+
+<Recall question="Why does bagging need bootstrap resamples rather than the one dataset used directly M times?" concepts={["bootstrap-aggregating"]}>
+Fitting the same model to the same data M times gives M identical fits with nothing to
+cancel. Resampling with replacement is what manufactures the disagreement a committee
+needs, out of a single dataset.
+</Recall>
+
+<Recall question="Can a committee's error ever exceed the members' own average error?" concepts={["committee"]}>
+No. $E_{\text{COM}} \leq E_{\text{AV}}$ always, because squaring is convex: the square of
+an average of errors cannot exceed the average of their squares.
+</Recall>
+
+<Recall question="Why does the widget's right-hand gap rarely approach the naive 1/M line?" concepts={["committee", "bias-variance-tradeoff"]}>
+Bootstrap resamples of one dataset overlap heavily, so the members' errors are correlated
+rather than independent, and the achievable ratio sits nearer $\rho$ than $1/M$.
+</Recall>
+
+## Connections
+
+- **Builds on [3.2](/sections/3-2)**'s bias-variance split: a committee is what happens
+  once the variance half is attacked directly instead of only diagnosed.
+- **Contrasts with [14.1](/sections/14-1)**: a committee is model combination, one model
+  per point in spirit even though every member sees the whole dataset.
+- **[14.3](/sections/14-3)** keeps the idea of a weighted vote but drops independent
+  fitting for a sequential one, chasing a bigger gain than correlation allows here.
+

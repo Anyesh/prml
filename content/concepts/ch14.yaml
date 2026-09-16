@@ -1,0 +1,95 @@
+- id: bayesian-model-averaging
+  name: "Bayesian model averaging"
+  definition: "Marginalising over which single model produced an entire dataset, given a prior over models. As data accumulates, the posterior over models concentrates onto the one true generator, and every other model's contribution vanishes."
+  introducedIn: "14.1"
+  usedIn: []
+  requires: []
+  aliases: ["BMA"]
+
+- id: model-combination
+  name: "Model combination"
+  definition: "Letting different points in a dataset be explained by different models or components, rather than assuming one model generated everything. Committees, boosting, decision trees and conditional mixtures are all instances, and none of them concentrate onto a single component as data grows, unlike Bayesian model averaging."
+  introducedIn: "14.1"
+  usedIn: ["14.2", "14.3", "14.4", "14.5"]
+  requires: []
+  aliases: []
+
+- id: committee
+  name: "Committee"
+  definition: "A prediction formed by averaging several models' independent predictions. Reduces the variance term of the bias-variance decomposition when the members' errors are uncorrelated, at no cost to bias, though real errors are correlated enough that the reduction rarely reaches the naive 1/M factor."
+  introducedIn: "14.2"
+  usedIn: ["14.3"]
+  requires: ["bias-variance-tradeoff", "model-combination"]
+  aliases: []
+
+- id: bootstrap-aggregating
+  name: "Bootstrap aggregating"
+  definition: "Building a committee's variability from a single data set by refitting the same model to bootstrap resamples of it, rather than needing genuinely independent data sets. The members disagree because the resamples do, not because the underlying data-generating process changed."
+  introducedIn: "14.2"
+  usedIn: []
+  requires: ["committee"]
+  aliases: ["bagging"]
+
+- id: boosting
+  name: "Boosting"
+  definition: "Training committee members in sequence, each on a reweighted version of the data that emphasises the points earlier members got wrong. Unlike bagging, the members are not fitted independently, so the error reduction is not limited to averaging away uncorrelated mistakes."
+  introducedIn: "14.3"
+  usedIn: []
+  requires: ["committee"]
+  aliases: []
+
+- id: adaboost
+  name: "AdaBoost"
+  definition: "The standard boosting algorithm: fit a weak classifier, reweight points by how badly it did, and combine every round's classifier into a vote weighted by that round's own accuracy. Equivalent to sequentially minimising an exponential error function one term at a time."
+  introducedIn: "14.3"
+  usedIn: []
+  requires: ["boosting"]
+  aliases: []
+
+- id: exponential-error
+  name: "Exponential error function"
+  definition: "The loss AdaBoost implicitly minimises, exp(-t times y(x)) summed over the data. Its sequential minimisation reproduces AdaBoost's reweighting rule exactly, but it punishes a confidently wrong point far more harshly than cross-entropy does, which is why boosting is not robust to outliers."
+  introducedIn: "14.3"
+  usedIn: []
+  requires: ["adaboost"]
+  aliases: []
+
+- id: decision-tree
+  name: "Decision tree"
+  definition: "A model that partitions the input space into axis-aligned regions by a sequence of binary threshold tests, fitting a simple model independently within each region. Model combination taken to a hard extreme: exactly one region, and one model, is responsible for any given input."
+  introducedIn: "14.4"
+  usedIn: ["14.5"]
+  requires: ["model-combination"]
+  aliases: ["CART", "classification and regression tree"]
+
+- id: cost-complexity-pruning
+  name: "Cost-complexity pruning"
+  definition: "Growing a decision tree past the point any single split looks worthwhile, then collapsing it back by trading total leaf error against a penalty on the number of leaves. Needed because a greedy split search cannot see that a currently useless split enables a useful one beneath it."
+  introducedIn: "14.4"
+  usedIn: []
+  requires: ["decision-tree"]
+  aliases: ["weakest-link pruning"]
+
+- id: conditional-mixture
+  name: "Conditional mixture"
+  definition: "A mixture model whose components are themselves conditional distributions, such as linear or logistic regressions, fitted by the same responsibility-weighted EM used for an unconditional mixture. Softens a decision tree's hard region boundaries into a blend of components."
+  introducedIn: "14.5"
+  usedIn: []
+  requires: ["model-combination", "responsibility", "expectation-maximisation"]
+  aliases: []
+
+- id: gating-network
+  name: "Gating network"
+  definition: "A model that turns a conditional mixture's fixed mixing coefficients into functions of the input, so which component is responsible for a prediction can itself vary across input space. Fitted the same way any posterior class probability is: as a softmax, or for two components a single logistic unit, regressed onto the responsibilities."
+  introducedIn: "14.5"
+  usedIn: []
+  requires: ["conditional-mixture"]
+  aliases: []
+
+- id: mixture-of-experts
+  name: "Mixture of experts"
+  definition: "A conditional mixture whose mixing coefficients are supplied by a gating network rather than held fixed, so different components specialise in different, input-dependent regions. The probabilistic, soft-boundary counterpart of a decision tree."
+  introducedIn: "14.5"
+  usedIn: []
+  requires: ["conditional-mixture", "gating-network"]
+  aliases: []

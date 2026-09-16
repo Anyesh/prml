@@ -1,0 +1,178 @@
+---
+chapter: 14
+section: "14.3"
+title: Boosting
+bookPages: [657, 662]
+summary: AdaBoost trains weak classifiers in sequence, each seeing a reweighted dataset that leans on the last one's mistakes, and the whole procedure turns out to be minimizing one error function term by term.
+concepts:
+  - boosting
+  - adaboost
+  - exponential-error
+prereqs: ["14.2"]
+equations:
+  - { id: "14.15", name: weighted error of a base classifier }
+  - { id: "14.16", name: normalized weighted error epsilon }
+  - { id: "14.17", name: classifier vote weight alpha }
+  - { id: "14.18", name: data weight update }
+  - { id: "14.19", name: combined AdaBoost classifier }
+  - { id: "14.20", name: exponential error function }
+  - { id: "14.27", name: expected exponential error }
+  - { id: "14.28", name: minimizer is half the log-odds }
+widgets: [AdaBoostStepThrough]
+difficulty: 4
+---
+
+import AdaBoostStepThrough from '@widgets/ch14/AdaBoostStepThrough';
+import WeakLearnerIllustration from '@widgets/ch14/figures/WeakLearnerIllustration';
+import ErrorFunctionComparison from '@widgets/ch14/figures/ErrorFunctionComparison';
+import MarginDistributionShift from '@widgets/ch14/figures/MarginDistributionShift';
+import RegressionBoostingComparison from '@widgets/ch14/figures/RegressionBoostingComparison';
+
+## Intuition
+
+A committee fits its members independently and hopes their mistakes disagree. Boosting
+does not hope. It looks at exactly which points the last member got wrong and hands the
+next member a dataset that has been reweighted to make those points impossible to ignore.
+
+<Figure caption="One decision stump, a single threshold on one axis, on data that overlaps too much for any threshold to separate cleanly. This is a weak learner: better than chance, nowhere near enough on its own." source="14.1">
+  <WeakLearnerIllustration client:visible />
+</Figure>
+
+Each member in the sequence is typically tiny, often a single threshold called a decision
+stump. What carries the weight is the sequence: points that keep getting missed accumulate
+weight round after round until some member is forced to address them, and every member's
+final vote is scaled by how well it did on the weights it was actually trained on.
+
+Nothing about this needs a committee's assumption that errors are already uncorrelated.
+Boosting manufactures the disagreement on purpose, which is why it can reach further than
+bagging does.
+
+## The math
+
+Each round fits a classifier minimizing the currently weighted error:
+
+<MathBlock id="14.15" name="weighted error of a base classifier">
+
+$$J_m = \sum_{n=1}^{N}w_n^{(m)}\,\mathbb{I}(y_m(\mathbf{x}_n) \neq t_n)$$
+
+</MathBlock>
+
+<MathBlock id="14.16" name="normalized weighted error epsilon">
+
+$$\epsilon_m = \frac{\sum_{n=1}^{N}w_n^{(m)}\,\mathbb{I}(y_m(\mathbf{x}_n)\neq t_n)}{\sum_{n=1}^{N}w_n^{(m)}}$$
+
+</MathBlock>
+
+<MathBlock id="14.17" name="classifier vote weight alpha">
+
+$$\alpha_m = \ln\left(\frac{1-\epsilon_m}{\epsilon_m}\right)$$
+
+</MathBlock>
+
+<MathBlock id="14.18" name="data weight update">
+
+$$w_n^{(m+1)} = w_n^{(m)}\exp\{\alpha_m\,\mathbb{I}(y_m(\mathbf{x}_n)\neq t_n)\}$$
+
+</MathBlock>
+
+<MathBlock id="14.19" name="combined AdaBoost classifier">
+
+$$Y_M(\mathbf{x}) = \operatorname{sign}\left(\sum_{m=1}^{M}\alpha_m y_m(\mathbf{x})\right)$$
+
+</MathBlock>
+
+A correctly classified point's weight is untouched; a misclassified one is scaled up by
+$e^{\alpha_m}$, more so for a classifier that was otherwise accurate. Friedman et al. showed
+this whole recipe drops out of minimizing one error function a term at a time:
+
+<MathBlock id="14.20" name="exponential error function">
+
+$$E = \sum_{n=1}^{N}\exp\{-t_nf_m(\mathbf{x}_n)\}$$
+
+</MathBlock>
+
+<Figure caption="The exponential error next to cross-entropy, hinge, and misclassification error, all as functions of the margin z = t times y(x). Only the exponential curve keeps climbing this steeply for a confident wrong answer." width="wide">
+  <ErrorFunctionComparison client:visible />
+</Figure>
+
+Its population minimizer is exactly half the log-odds:
+
+<MathBlock id="14.27" name="expected exponential error">
+
+$$\mathbb{E}_{\mathbf{x},t}\big[\exp\{-ty(\mathbf{x})\}\big]$$
+
+</MathBlock>
+
+<MathBlock id="14.28" name="minimizer is half the log-odds">
+
+$$y(\mathbf{x}) = \frac{1}{2}\ln\left(\frac{p(t=1\mid\mathbf{x})}{p(t=-1\mid\mathbf{x})}\right)$$
+
+</MathBlock>
+
+## Interactive
+
+<Widget
+  title="Watch a committee build itself under pressure"
+  figure="14.2"
+  caption="Step through six rounds. Point size is the weight that round's stump was trained against; the dashed line is that stump; the solid curve is every round's vote combined so far."
+>
+  <AdaBoostStepThrough client:visible />
+</Widget>
+
+The dashed line moves less than the solid curve does. Most of the work each round is not a
+better single threshold; it is one more vote added to a growing sum.
+
+## Worked example
+
+<Figure caption="Every point's margin after one round against after all six. The fraction with a positive margin rises from 27 of 30 to 29 of 30, and the ones still near zero are the persistently hard points." width="wide">
+  <MarginDistributionShift client:visible />
+</Figure>
+
+On this 30-point set, round 1's stump alone has weighted error $\epsilon_1 = 0.10$ and vote
+weight $\alpha_1 = 2.20$; by round 6, $\epsilon_6$ has risen to $0.27$ as easy points stop
+contributing new information, so $\alpha_6$ falls to $1.01$. The combined vote in 14.19
+still improves on any single round, correctly classifying 29 of the 30 training points
+against 27 after round 1 alone, and the one point still wrong is exactly the kind 14.18
+keeps reweighting: it has stayed on the wrong side of every stump so far.
+
+The same additive-model idea covers regression once the exponential error is swapped for
+one that fits residuals, but the swap matters: squared residual error punishes an outlier
+quadratically, absolute error only linearly.
+
+<Figure caption="Squared error grows faster than absolute error for the same large residual, which is why regression boosting built on absolute deviation is the more outlier-robust choice." width="wide">
+  <RegressionBoostingComparison client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="What changes between rounds in AdaBoost, and what stays fixed?" concepts={["adaboost"]}>
+The data weights change every round, growing on points the previous classifier missed.
+The base learning procedure itself, whatever fits a classifier to weighted data, stays
+fixed throughout.
+</Recall>
+
+<Recall question="Why does a more accurate base classifier get a larger alpha in 14.17?" concepts={["adaboost"]}>
+Alpha is $\ln((1-\epsilon)/\epsilon)$, increasing as $\epsilon$ falls. A classifier with
+small weighted error votes with more weight in the final sum.
+</Recall>
+
+<Recall question="What loss is AdaBoost implicitly minimizing, one term at a time?" concepts={["exponential-error"]}>
+The exponential error of 14.20, summed over training points, with each new base classifier
+and its weight chosen to minimize the next unaccounted-for term.
+</Recall>
+
+<Recall question="Why is the exponential error less robust to outliers than cross-entropy?" concepts={["exponential-error"]}>
+For a confidently wrong prediction, cross-entropy grows linearly in the margin's
+magnitude while the exponential error grows exponentially, so one badly mislabelled point
+can dominate every later round.
+</Recall>
+
+## Connections
+
+- **Sharpens [14.2](/sections/14-2)**: still a weighted vote of members, but the weighting
+  is fit sequentially instead of assumed independent.
+- **[4.3](/sections/4-3)**'s cross-entropy error is 14.20's nearest relative and the more
+  robust alternative the math block plots against it.
+- Chapter 7's hinge loss appears in the same comparison: three continuous stand-ins for one
+  discontinuous ideal, the misclassification error.
+

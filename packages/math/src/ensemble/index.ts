@@ -1,1 +1,10 @@
-export {};
+export * from './weightedLeastSquares.js';
+export * from './weightedLogistic.js';
+export * from './weightedSoftmax.js';
+export * from './stumps.js';
+export * from './adaboost.js';
+export * from './errorFunctions.js';
+export * from './cart.js';
+export * from './mixtureLinearRegression.js';
+export * from './mixtureLogistic.js';
+export * from './mixtureExperts.js';

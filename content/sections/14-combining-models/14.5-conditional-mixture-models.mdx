@@ -1,0 +1,150 @@
+---
+chapter: 14
+section: "14.5"
+title: Conditional Mixture Models
+bookPages: [666, 676]
+summary: Replacing a mixture's unconditional components with regressions or classifiers gives multimodal predictions; letting the mixing coefficients depend on the input turns that mixture into a soft, trainable decision tree.
+concepts:
+  - conditional-mixture
+  - gating-network
+  - mixture-of-experts
+  - responsibility
+  - expectation-maximisation
+prereqs: ["14.4", "9.2"]
+equations:
+  - { id: "14.34", name: mixture of linear regression models }
+  - { id: "14.37", name: responsibility }
+  - { id: "14.42", name: weighted normal equations }
+  - { id: "14.53", name: mixture of experts }
+widgets: [MixtureOfExpertsRegimeChange]
+difficulty: 4
+---
+
+import MixtureOfExpertsRegimeChange from '@widgets/ch14/MixtureOfExpertsRegimeChange';
+import SingleLineVsData from '@widgets/ch14/figures/SingleLineVsData';
+import FixedMixturePredictiveDensity from '@widgets/ch14/figures/FixedMixturePredictiveDensity';
+import LogisticMixtureBoundaries from '@widgets/ch14/figures/LogisticMixtureBoundaries';
+
+## Intuition
+
+A decision tree's split is a hard rule: one region, one model, no blending. Soften that
+rule and the tree's spirit survives in a form chapter 9 already built the machinery for,
+a mixture, except the components are now regressions or classifiers instead of unconditional
+densities.
+
+<Figure caption="Data that switches which line generated it partway through. A single regression, fit to everything at once, cannot represent either half well." width="wide">
+  <SingleLineVsData client:visible />
+</Figure>
+
+The plainest version keeps a fixed mixing weight per component, learned once for the whole
+input space. That already beats a single model on data like this, but it still assigns
+real probability to both lines everywhere, since nothing about the mixture knows *where*
+each line applies. The fix is to let the mixing coefficients themselves be functions of the
+input: a gate that learns the boundary between regimes, turning the tree's hard split into
+a trainable, probabilistic one.
+
+## The math
+
+A mixture of $K$ linear regressions sharing one noise precision $\beta$:
+
+<MathBlock id="14.34" name="mixture of linear regression models">
+
+$$p(t\mid\boldsymbol{\phi}) = \sum_{k=1}^{K}\pi_k\,\mathcal{N}\big(t\mid\mathbf{w}_k^{\mathrm{T}}\boldsymbol{\phi}, \beta^{-1}\big)$$
+
+</MathBlock>
+
+Fitting it by EM needs exactly the responsibility chapter 9 already defines:
+
+<MathBlock id="14.37" name="responsibility">
+
+$$\gamma_{nk} = \frac{\pi_k\,\mathcal{N}\big(t_n\mid\mathbf{w}_k^{\mathrm{T}}\boldsymbol{\phi}_n,\beta^{-1}\big)}{\sum_j\pi_j\,\mathcal{N}\big(t_n\mid\mathbf{w}_j^{\mathrm{T}}\boldsymbol{\phi}_n,\beta^{-1}\big)}$$
+
+</MathBlock>
+
+<Figure caption="The converged mixture's predictive density: bimodal at every x, because a fixed-coefficient mixture never stops entertaining both lines everywhere." width="wide">
+  <FixedMixturePredictiveDensity client:visible />
+</Figure>
+
+and an M step that is weighted least squares, responsibility standing in for a per-point
+precision:
+
+<MathBlock id="14.42" name="weighted normal equations">
+
+$$\mathbf{w}_k = \big(\boldsymbol{\Phi}^{\mathrm{T}}\mathbf{R}_k\boldsymbol{\Phi}\big)^{-1}\boldsymbol{\Phi}^{\mathrm{T}}\mathbf{R}_k\mathbf{t}, \qquad \mathbf{R}_k = \operatorname{diag}(\gamma_{nk})$$
+
+</MathBlock>
+
+A mixture of logistic models is the same story with a Bernoulli component in place of the
+Gaussian. Letting the mixing coefficients depend on $\mathbf{x}$ turns either into a mixture
+of experts:
+
+<MathBlock id="14.53" name="mixture of experts">
+
+$$p(t\mid\mathbf{x}) = \sum_{k=1}^{K}\pi_k(\mathbf{x})\,p_k(t\mid\mathbf{x})$$
+
+</MathBlock>
+
+where the gating function $\pi_k(\mathbf{x})$ is fit the same way any posterior class
+probability is: as a softmax, or for two components a single logistic unit, regressed onto
+the responsibilities instead of onto hard labels.
+
+## Interactive
+
+<Widget
+  title="A gate finding two boundaries between three regimes"
+  figure="14.5.3"
+  caption="Step through EM rounds. Each of three experts' lines converges toward the regime it actually explains, while the gate's three probability curves sharpen into a soft partition with two boundaries, one per colour."
+>
+  <MixtureOfExpertsRegimeChange client:visible />
+</Widget>
+
+Two experts would only ever show a single boundary, indistinguishable from any other
+two-class split; three is the smallest case that shows a gate handling more than one
+decision at once.
+
+## Worked example
+
+<Figure caption="A mixture of two logistic models against a single one, on data no single linear boundary separates well; background shading is the mixture's posterior probability of class 1." width="wide">
+  <LogisticMixtureBoundaries client:visible />
+</Figure>
+
+On the two-line regression set, the converged mixture reaches a log-likelihood of $6.7$
+against $-41.3$ for the best single line: the same qualitative gap the book reports for its
+own two-line example, here even wider because the two true lines cross more sharply. On the
+two-class set above, a single logistic model reaches $-23.4$; the mixture of two reaches
+$-21.8$, a smaller but real gain, because these classes overlap enough that no split, hard
+or soft, separates them perfectly.
+
+## Recall
+
+<Recall question="What does a fixed-coefficient mixture of linear regressions get wrong that a mixture of experts fixes?" concepts={["mixture-of-experts"]}>
+Its predictive density stays multimodal everywhere, since the mixing coefficients cannot
+favour one component in the regions where only that component actually applies. A gate
+that depends on the input can.
+</Recall>
+
+<Recall question="What is the M step for wk in a mixture of linear regressions, and why does it not have a closed form for a mixture of logistic models?" concepts={["conditional-mixture"]}>
+It is weighted least squares, 14.42, because each component's log-likelihood is quadratic
+in wk. A logistic component's log-likelihood is not quadratic in wk, so its M step needs
+an iterative solve, IRLS, instead.
+</Recall>
+
+<Recall question="What does a gating network's target look like when it is trained, and how is that different from an ordinary classifier's target?" concepts={["gating-network"]}>
+A responsibility in [0, 1] rather than a hard 0/1 label. The same cross-entropy fitting
+procedure applies to both, since it never assumed the target was binary.
+</Recall>
+
+<Recall question="Why can a hierarchical mixture of experts be described as a probabilistic decision tree?" concepts={["mixture-of-experts", "decision-tree"]}>
+Its gates play the role of a tree's splits, except soft and input-dependent rather than a
+single hard threshold, and its experts play the role of the tree's per-region models.
+</Recall>
+
+## Connections
+
+- **Softens [14.4](/sections/14-4)**'s hard, axis-aligned split into an input-dependent,
+  probabilistic one.
+- **Reuses [9.2](/sections/9-2)**'s responsibility and EM machinery unchanged; only the
+  component density's shape changes.
+- **[5.6](/sections/5-6)**'s mixture density network shares this section's predictive
+  shape but derives its mixing coefficients from a neural network's hidden units instead.
+

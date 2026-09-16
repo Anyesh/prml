@@ -1,0 +1,145 @@
+---
+chapter: 14
+section: "14.4"
+title: Tree-based Models
+bookPages: [663, 665]
+summary: A decision tree picks exactly one model per region of input space through a sequence of axis-aligned threshold tests, grown greedily past the useful point and then pruned back.
+concepts:
+  - decision-tree
+  - cost-complexity-pruning
+prereqs: ["14.2"]
+equations:
+  - { id: "14.29", name: optimal region prediction }
+  - { id: "14.30", name: region residual sum of squares }
+  - { id: "14.31", name: cost-complexity criterion }
+  - { id: "14.32", name: cross-entropy impurity }
+  - { id: "14.33", name: Gini impurity }
+widgets: [DecisionTreeGrowth]
+difficulty: 3
+---
+
+import DecisionTreeGrowth from '@widgets/ch14/DecisionTreeGrowth';
+import AxisAlignedLimitation from '@widgets/ch14/figures/AxisAlignedLimitation';
+import ImpurityComparison from '@widgets/ch14/figures/ImpurityComparison';
+import PruningTradeoff from '@widgets/ch14/figures/PruningTradeoff';
+
+## Intuition
+
+A committee lets every member vote on every point. A decision tree refuses to: it asks a
+sequence of yes/no questions about the input and hands the prediction to whichever single,
+usually trivial, model sits at the end of that path. Combination taken to a hard extreme,
+one region and one model responsible for any given point.
+
+The questions are thresholds on one input variable at a time, chosen greedily, so the tree
+this builds only ever carves input space into boxes with sides parallel to the axes.
+
+<Figure caption="A boundary running at 45 degrees needs many axis-aligned steps to approximate; a tree pays for that in tree depth, where one oblique split would have been free." source="14.5">
+  <AxisAlignedLimitation client:visible />
+</Figure>
+
+That is also the honest trade being made: what a tree buys back for the axis-aligned
+restriction is a model a person can actually read, one threshold at a time, all the way
+down.
+
+## The math
+
+Within a fixed region $R_\tau$, sum-of-squares error is minimized by the region's own mean:
+
+<MathBlock id="14.29" name="optimal region prediction">
+
+$$y_\tau = \frac{1}{N_\tau}\sum_{\mathbf{x}_n\in R_\tau}t_n$$
+
+</MathBlock>
+
+<MathBlock id="14.30" name="region residual sum of squares">
+
+$$Q_\tau(T) = \sum_{\mathbf{x}_n\in R_\tau}\{t_n - y_\tau\}^2$$
+
+</MathBlock>
+
+Growing greedily overshoots on purpose, then a penalty on leaf count prunes it back:
+
+<MathBlock id="14.31" name="cost-complexity criterion">
+
+$$C(T) = \sum_{\tau=1}^{|T|}Q_\tau(T) + \lambda|T|$$
+
+</MathBlock>
+
+For classification, growing uses an impurity sensitive to class proportions rather than
+sum-of-squares, most commonly cross-entropy or the Gini index:
+
+<MathBlock id="14.32" name="cross-entropy impurity">
+
+$$Q_\tau(T) = -\sum_{k=1}^{K}p_{\tau k}\ln p_{\tau k}$$
+
+</MathBlock>
+
+<MathBlock id="14.33" name="Gini impurity">
+
+$$Q_\tau(T) = \sum_{k=1}^{K}p_{\tau k}(1-p_{\tau k})$$
+
+</MathBlock>
+
+<Figure caption="Both impurities vanish at a pure region and peak at an even split, which is exactly why either drives splitting toward purer children; raw misclassification rate is flatter and less sensitive near the extremes." width="wide">
+  <ImpurityComparison client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="One more level, one more pair of leaves"
+  figure="14.6"
+  caption="Step through increasing depth. The left panel is the partition this tree draws in input space; the right is the same tree as a diagram, each square a threshold test and each circle a leaf's prediction."
+>
+  <DecisionTreeGrowth client:visible />
+</Widget>
+
+Depth 2 already recovers the four true regions in this dataset. Depth 3 and 4 still split,
+because the greedy search always finds *some* improvement, even one worth nothing on new
+data.
+
+## Worked example
+
+<Figure caption="Computed by pruning one fully grown tree at nine values of lambda: total residual error against the leaf count each one keeps." width="wide">
+  <PruningTradeoff client:visible />
+</Figure>
+
+A tree grown to depth 6 on this dataset reaches its lowest training error at the most
+leaves, unsurprisingly: more regions can only fit training data better. Cost-complexity
+pruning at $\lambda = 0$ keeps every leaf, since nothing is charged for them; by
+$\lambda \approx 1.5$ the penalty outweighs almost every split's benefit and the tree
+collapses toward a handful of leaves. The useful $\lambda$ sits where the curve above
+bends, trading a small rise in error for a much smaller tree.
+
+## Recall
+
+<Recall question="Why does growing a decision tree greedily require pruning it back afterward, rather than just stopping early?" concepts={["cost-complexity-pruning"]}>
+A split that looks worthless on its own can enable a much better split beneath it. Stopping
+early would never see that split; growing past the useful point and pruning back does.
+</Recall>
+
+<Recall question="What does the penalty term lambda|T| in 14.31 trade off against?" concepts={["cost-complexity-pruning"]}>
+Total residual error against the number of leaves. Raising lambda collapses more of the
+tree; lambda = 0 keeps every leaf the greedy search grew.
+</Recall>
+
+<Recall question="Why does growing a classification tree use cross-entropy or Gini rather than the misclassification rate?" concepts={["decision-tree"]}>
+Both are more sensitive to changes in class proportion near the extremes and are
+differentiable, which makes them better guides for a greedy search; misclassification
+rate is used afterward, for pruning.
+</Recall>
+
+<Recall question="What single property of a decision tree makes it 'model combination taken to a hard extreme'?" concepts={["decision-tree"]}>
+Exactly one leaf, and so exactly one simple model, is responsible for predicting at any
+given input. No blending across regions the way a committee or a mixture allows.
+</Recall>
+
+## Connections
+
+- **Sharpens [14.2](/sections/14-2)**'s combination idea into a hard partition instead of
+  an average.
+- **[14.5](/sections/14-5)** softens exactly this section's hard, axis-aligned split into a
+  probabilistic, input-dependent one.
+- The `@prml/viz` `NetworkDiagram` used above is chapter 8's tool for a different job,
+  factor graphs, borrowed here because a tree is a graph too.
+

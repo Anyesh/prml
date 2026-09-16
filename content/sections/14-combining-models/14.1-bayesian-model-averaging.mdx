@@ -1,0 +1,162 @@
+---
+chapter: 14
+section: "14.1"
+title: Bayesian Model Averaging
+bookPages: [654, 654]
+summary: A posterior over which single model made the data collapses onto one model as data grows; a mixture never does, because it never claimed one model made all of it.
+concepts:
+  - bayesian-model-averaging
+  - model-combination
+prereqs: ["9.2"]
+equations:
+  - { id: "14.2", name: joint over an observation and its latent }
+  - { id: "14.3", name: marginal by summing out the latent }
+  - { id: "14.4", name: Gaussian mixture density }
+  - { id: "14.5", name: dataset marginal with one latent per point }
+  - { id: "14.6", name: Bayesian model averaging }
+widgets: [BmaVsMixture]
+difficulty: 3
+---
+
+import BmaVsMixture from '@widgets/ch14/BmaVsMixture';
+import CandidateDensities from '@widgets/ch14/figures/CandidateDensities';
+import PosteriorOverModels from '@widgets/ch14/figures/PosteriorOverModels';
+import ResponsibilitySpread from '@widgets/ch14/figures/ResponsibilitySpread';
+import ResponsibilityStability from '@widgets/ch14/figures/ResponsibilityStability';
+
+## Intuition
+
+Two rival explanations could fit a dataset, say a mixture of Gaussians against a mixture
+of Cauchy distributions. There are two structurally different ways to hedge between them,
+and both get called "combining models," which is exactly why the distinction below keeps
+getting lost.
+
+<Figure caption="Two candidate shapes and a handful of points. Nothing here says yet whether one shape produced all of them or each point picked its own." source="14.1">
+  <CandidateDensities client:visible />
+</Figure>
+
+One way assumes a single explanation generated everything, and stays uncertain only about
+which. Every point then answers the same question, so points accumulate into a verdict:
+given enough data, one explanation wins outright and the other's share vanishes. That is
+Bayesian model averaging.
+
+The other way assumes different points came from different components inside one model,
+the same idea already used to build a mixture of Gaussians. No point ever settles anything
+for the whole dataset, because there was never a single dataset-wide question to settle.
+More data sharpens the estimate of the mix. It does not sharpen the mix itself.
+
+## The math
+
+Start from a mixture with a latent indicator $z$ choosing which component made a point:
+
+<MathBlock id="14.2" name="joint over an observation and its latent">
+
+$$p(\mathbf{x}, z)$$
+
+</MathBlock>
+
+<MathBlock id="14.3" name="marginal by summing out the latent">
+
+$$p(\mathbf{x}) = \sum_{z}p(\mathbf{x}, z)$$
+
+</MathBlock>
+
+which for a Gaussian mixture is the familiar
+
+<MathBlock id="14.4" name="Gaussian mixture density">
+
+$$p(\mathbf{x}) = \sum_{k=1}^{K}\pi_k\mathcal{N}(\mathbf{x}\mid\boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)$$
+
+</MathBlock>
+
+Every data point $\mathbf{x}_n$ carries its own latent $z_n$, so a whole dataset's
+probability keeps one summation per point:
+
+<MathBlock id="14.5" name="dataset marginal with one latent per point">
+
+$$p(\mathbf{X}) = \prod_{n=1}^{N}p(\mathbf{x}_n) = \prod_{n=1}^{N}\left(\sum_{z_n}p(\mathbf{x}_n, z_n)\right)$$
+
+</MathBlock>
+
+Now index whole *models* by $h$, each with its own parameters, and put a prior over $h$
+instead of over each point's component:
+
+<MathBlock id="14.6" name="Bayesian model averaging">
+
+$$p(\mathbf{X}) = \sum_{h=1}^{H}p(\mathbf{X}\mid h)p(h)$$
+
+</MathBlock>
+
+<Figure caption="The same prior, turned into a posterior by 20 points. One bar keeps essentially all the mass; equation 14.6 has already picked a winner." width="wide">
+  <PosteriorOverModels client:visible />
+</Figure>
+
+There is exactly one sum over $z_n$ per data point in 14.5, but exactly one sum over $h$
+for the *entire* dataset in 14.6. That single sum, shared by every point, is the whole
+difference: it is why $h$'s posterior can concentrate while $z_n$'s cannot.
+
+<Figure caption="The same two candidate shapes as mixture components instead of rival models. Mean responsibility of component 0 barely moves between 5 and 20 points, unlike the posterior above." width="wide">
+  <ResponsibilityStability client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Same two shapes, two different claims about where the data came from"
+  figure="14.1"
+  caption="Drag the slider to reveal points one at a time, drawn once and fixed. The left curve is a posterior over which single model wrote the whole dataset; the right curve is the same two candidate shapes used as mixture components instead."
+>
+  <BmaVsMixture client:visible />
+</Widget>
+
+Watch the right panel refuse to move toward either edge no matter how far the slider goes.
+That refusal is not a failure to converge. It is the correct answer to a question that was
+never being asked on that side.
+
+## Worked example
+
+<Figure caption="Twenty points from a genuine 50/50 mixture. Colour marks which component actually wrote each point; height is that component's computed responsibility for it." width="wide">
+  <ResponsibilitySpread client:visible />
+</Figure>
+
+With equal priors and the two unit-variance Gaussians centred at $-1.2$ and $1.2$, a single
+point at $x = 0$ splits its responsibility exactly $0.5$ / $0.5$, since both densities agree
+there by symmetry. Averaged over 20 draws from the true mixture, the mean responsibility of
+component 0 computed here is close to the true $0.5$ mixing weight, and it stays that close
+whether 5 points are used or all 20.
+
+Contrast the posterior over models from the math block: with 20 points drawn from a single
+true generator, that posterior is no longer close to the $0.5$ prior it started from. One
+quantity moved off its starting value under more data; the other did not, because it was
+never trying to.
+
+## Recall
+
+<Recall question="What does Bayesian model averaging assume about who generated the dataset?" concepts={["bayesian-model-averaging"]}>
+That one model, unknown but fixed, generated every point. The sum in 14.6 is over that
+uncertainty, not over per-point origin.
+</Recall>
+
+<Recall question="Why does a mixture's inferred proportions not sharpen toward one component as data grows, the way a model posterior does?" concepts={["model-combination"]}>
+Because a mixture never claimed a single component produced the dataset. Each point keeps
+its own responsibility, computed from where it sits, not from how many other points exist.
+</Recall>
+
+<Recall question="In equations 14.5 and 14.6, which sum is per point and which is shared across the whole dataset?" concepts={["bayesian-model-averaging", "model-combination"]}>
+14.5's sum over $z_n$ is repeated once per point. 14.6's sum over $h$ appears exactly once,
+covering every point at once, and that single shared sum is what lets it concentrate.
+</Recall>
+
+<Recall question="A mixture of Gaussians and Bayesian model averaging over {Gaussian mixture, Cauchy mixture} both fit the description 'weighted combination of densities.' What structural fact tells them apart?" concepts={["model-combination", "bayesian-model-averaging"]}>
+Where the latent variable lives. One latent per data point marks a mixture; one latent for
+the entire dataset, chosen once, marks Bayesian model averaging.
+</Recall>
+
+## Connections
+
+- **Builds on [9.2](/sections/9-2)**, reusing its Gaussian mixture as the running example.
+- **[14.2](/sections/14-2)** to **[14.5](/sections/14-5)** are all model combination: no
+  component there ever speaks for the whole dataset either.
+- Chapter 3's **model evidence** ([3.4](/sections/3-4)) is 14.6's $p(\mathbf{X}\mid h)$ for
+  one $h$; averaging is what happens once several evidences get compared, not just ranked.
+
