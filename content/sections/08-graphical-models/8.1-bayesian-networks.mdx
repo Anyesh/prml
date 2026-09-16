@@ -1,0 +1,180 @@
+---
+chapter: 8
+section: "8.1"
+title: Bayesian Networks
+bookPages: [360, 371]
+summary: A directed acyclic graph is a joint distribution's factorization drawn as a picture, and the missing arrows are the actual content, each one a claim the model is willing to make.
+concepts:
+  - bayesian-network
+  - ancestral-sampling
+  - plate-notation
+  - linear-gaussian-model
+prereqs: ["1.2", "3.1"]
+equations:
+  - { id: "8.1", name: arbitrary joint factorization }
+  - { id: "8.5", name: general directed factorization }
+  - { id: "8.9", name: fully connected discrete joint }
+  - { id: "8.11", name: linear-Gaussian conditional }
+widgets: [AncestralSampling]
+difficulty: 2
+---
+
+import AncestralSampling from '@widgets/ch08/AncestralSampling';
+import GeneralFactorization from '@widgets/ch08/figures/GeneralFactorization';
+import ParameterCountBars from '@widgets/ch08/figures/ParameterCountBars';
+import LinearGaussianChain from '@widgets/ch08/figures/LinearGaussianChain';
+import DiscreteCPTHeatmap from '@widgets/ch08/figures/DiscreteCPTHeatmap';
+import SprinklerNetworkDiagram from '@widgets/ch08/figures/SprinklerNetworkDiagram';
+
+## Intuition
+
+A joint distribution over many variables is, on paper, one long product. Written as
+algebra, that product hides which variables actually drive which others. Draw the same
+product as a graph instead, one node per variable and an arrow for every direct
+dependence, and the shape of the problem is visible before any number is computed.
+
+A Bayesian network is that picture: a directed graph with no cycles, where each node
+depends only on its own parents. The graph is not decoration, it is the factorization
+itself, and it doubles as a recipe: sample every node parents-first and the result is a
+draw from the whole joint at once.
+
+Missing arrows are the real content. Fewer edges than the fully connected graph is a
+genuine claim about the world, and every dropped edge is one fewer number the model must
+be told. The next section turns "which arrows are missing" into a precise rule for
+reading independence straight off the picture.
+
+## The math
+
+Any joint distribution can be written exactly as a product of conditionals by repeated
+application of the product rule, in any order of the variables:
+
+<MathBlock id="8.1" name="arbitrary joint factorization">
+
+$$p(a, b, c) = p(c \mid a, b)\, p(b \mid a)\, p(a)$$
+
+</MathBlock>
+
+That holds for every ordering and says nothing yet. A Bayesian network's claim is that
+each factor only needs *some* of the variables before it, its parents, rather than all of
+them:
+
+<MathBlock id="8.5" name="general directed factorization">
+
+$$p(\mathbf{x}) = \prod_{k=1}^{K} p(x_k \mid \mathrm{pa}_k)$$
+
+</MathBlock>
+
+<Figure caption="A graph making four specific independence claims: x4 depends on x3 alone, not on x1 or x2 directly." source="8.2">
+  <GeneralFactorization client:visible />
+</Figure>
+
+For discrete variables the naive table needed to store one conditional grows with the
+number of parent states:
+
+<MathBlock id="8.9" name="fully connected discrete joint">
+
+$$p(\mathbf{x}) = p(x_1) \prod_{k=2}^{K} p(x_k \mid x_1, \ldots, x_{k-1})$$
+
+</MathBlock>
+
+<Figure caption="Free parameters for K binary variables: K if independent, 2^K - 1 if fully connected. The gap is what every missing arrow buys back." source="8.10" width="wide">
+  <ParameterCountBars client:visible />
+</Figure>
+
+<Figure caption="A conditional table is just numbers once the graph fixes which variables it depends on." source="8.12">
+  <DiscreteCPTHeatmap client:visible />
+</Figure>
+
+Continuous variables get the same treatment with Gaussians: each node's mean linear in
+its parents' values,
+
+<MathBlock id="8.11" name="linear-Gaussian conditional">
+
+$$p(x_i \mid \mathrm{pa}_i) = \mathcal{N}\Big(x_i \,\Big|\, \sum_{j \in \mathrm{pa}_i} w_{ij} x_j + b_i,\ v_i\Big)$$
+
+</MathBlock>
+
+<Figure caption="A chain of linear-Gaussian nodes. The joint over all four is itself Gaussian, by induction on this one rule." source="8.14">
+  <LinearGaussianChain client:visible />
+</Figure>
+
+which is exactly the pattern behind Bayesian linear regression's posterior, now chained
+across a graph rather than used once.
+
+Repeated identical structure, N observations sharing one conditional, is drawn once
+inside a labelled box rather than as N separate copies of the same node: plate notation,
+a shorthand this chapter uses whenever a subgraph repeats.
+
+## Interactive
+
+<Widget
+  title="Ancestral sampling"
+  figure="8.9"
+  caption="Step through a draw from the sprinkler network. Each click samples one node from its conditional and multiplies it into the running joint."
+>
+  <AncestralSampling client:visible />
+</Widget>
+
+Watch the joint probability accumulate one factor at a time, in an order that always
+places a node after its parents. Reset for a new draw and see different branches taken,
+always consistent with the same four conditionals.
+
+## Worked example
+
+<Figure caption="Cloudy has no parents, so it is the only node every valid sampling order must draw first.">
+  <SprinklerNetworkDiagram client:visible />
+</Figure>
+
+The sprinkler network has four binary nodes: Cloudy, Sprinkler, Rain, Wet grass, with
+$p(\text{Cloudy}=1)=0.5$, $p(\text{Sprinkler}=1\mid C)$ equal to $0.5$ or $0.1$, $p(\text{Rain}=1\mid
+C)$ equal to $0.2$ or $0.8$, and $p(\text{Wet}=1\mid S,R)$ ranging from $0.01$ to $0.99$.
+
+One ancestral draw: Cloudy comes out 1 from a coin of $0.5$. Given Cloudy, Sprinkler is
+drawn from $0.1$ and Rain from $0.8$. Given both, Wet grass is drawn from its table entry
+for the resulting $(S,R)$ pair. Multiplying the four sampled conditionals together, in
+that order, gives one exact sample from the sixteen-outcome joint, never touching the
+other twelve entries the table does not need.
+
+Fully connected, four binary variables would need $2^4-1=15$ free parameters. This graph
+needs only $1+2+2+4=9$: one for Cloudy, two each for Sprinkler and Rain's single-parent
+tables, four for Wet grass's two-parent table. The six missing edges among these four
+nodes are six numbers this model never has to store.
+
+## Recall
+
+<Recall question="What does an arrow missing from a Bayesian network actually claim?" concepts={["bayesian-network"]}>
+That the child's distribution does not depend on the missing parent directly. It is a
+testable claim about the world, not a drawing convenience, and it is what shrinks the
+parameter count in 8.9.
+</Recall>
+
+<Recall question="Why must the graph have no cycles?" concepts={["bayesian-network"]}>
+Because 8.5 conditions each node on its parents; a cycle would make some node its own
+ancestor, and there would be no order left in which to sample or to factor the joint.
+</Recall>
+
+<Recall question="Why does ancestral sampling need a topological order?" concepts={["ancestral-sampling"]}>
+Each node's conditional needs its parents' values already drawn. Sampling parents before
+children is not a convenience, it is the only order the conditionals in 8.5 support.
+</Recall>
+
+<Recall question="What does the linear-Gaussian construction buy over a generic continuous graph?" concepts={["bayesian-network"]}>
+Every node stays Gaussian and the whole joint over the graph is one large multivariate
+Gaussian, so anything closed-form for a single Gaussian regression carries over chained
+across the graph.
+</Recall>
+
+<Recall question="Why draw a plate instead of N separate copies of the same node?" concepts={["plate-notation"]}>
+Because the N copies are identical in every conditional, only their values differ. A
+labelled box says "this structure, repeated" without redrawing a subgraph N times.
+</Recall>
+
+## Connections
+
+- **Builds on** [1.2](/sections/1-2) for the product rule that 8.1 is just an instance
+  of, and [3.1](/sections/3-1) for the linear-Gaussian pattern generalised in 8.11.
+- **Leads to** [8.2](/sections/8-2), which turns "missing arrow" into a precise
+  independence test.
+- **The plate-notation shorthand** for repeated identical structure, used throughout the
+  rest of this chapter, is introduced here.
+

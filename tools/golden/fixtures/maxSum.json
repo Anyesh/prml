@@ -1,0 +1,218 @@
+{
+  "cases": [
+    {
+      "fn": "maxSumMap",
+      "graph": {
+        "variables": [
+          {
+            "id": "x1",
+            "states": 2
+          },
+          {
+            "id": "x2",
+            "states": 3
+          },
+          {
+            "id": "x3",
+            "states": 2
+          },
+          {
+            "id": "x4",
+            "states": 2
+          }
+        ],
+        "factors": [
+          {
+            "id": "fa",
+            "scope": [
+              "x1",
+              "x2"
+            ],
+            "table": [
+              1.0,
+              2.0,
+              0.5,
+              1.5,
+              3.0,
+              0.2
+            ]
+          },
+          {
+            "id": "fb",
+            "scope": [
+              "x2",
+              "x3"
+            ],
+            "table": [
+              0.7,
+              1.3,
+              2.0,
+              0.4,
+              1.1,
+              0.9
+            ]
+          },
+          {
+            "id": "fc",
+            "scope": [
+              "x3",
+              "x4"
+            ],
+            "table": [
+              1.0,
+              0.6,
+              0.3,
+              2.2
+            ]
+          }
+        ]
+      },
+      "root": "x1",
+      "expectedAssignment": {
+        "x1": 1,
+        "x2": 1,
+        "x3": 0,
+        "x4": 0
+      },
+      "expectedMaxLogValue": 1.791759469228055
+    },
+    {
+      "fn": "maxSumMap",
+      "graph": {
+        "variables": [
+          {
+            "id": "x1",
+            "states": 2
+          },
+          {
+            "id": "x2",
+            "states": 3
+          },
+          {
+            "id": "x3",
+            "states": 2
+          },
+          {
+            "id": "x4",
+            "states": 2
+          }
+        ],
+        "factors": [
+          {
+            "id": "fa",
+            "scope": [
+              "x1",
+              "x3"
+            ],
+            "table": [
+              1.0,
+              0.4,
+              0.9,
+              1.7
+            ]
+          },
+          {
+            "id": "fb",
+            "scope": [
+              "x2",
+              "x3"
+            ],
+            "table": [
+              0.5,
+              1.2,
+              1.0,
+              0.3,
+              2.1,
+              0.8
+            ]
+          },
+          {
+            "id": "fc",
+            "scope": [
+              "x3",
+              "x4"
+            ],
+            "table": [
+              1.4,
+              0.6,
+              0.2,
+              1.1
+            ]
+          }
+        ]
+      },
+      "root": "x3",
+      "expectedAssignment": {
+        "x1": 0,
+        "x2": 2,
+        "x3": 0,
+        "x4": 0
+      },
+      "expectedMaxLogValue": 1.0784095813505903
+    },
+    {
+      "fn": "maxSumMap",
+      "graph": {
+        "variables": [
+          {
+            "id": "y1",
+            "states": 2
+          },
+          {
+            "id": "y2",
+            "states": 2
+          },
+          {
+            "id": "y3",
+            "states": 2
+          },
+          {
+            "id": "y4",
+            "states": 2
+          }
+        ],
+        "factors": [
+          {
+            "id": "g",
+            "scope": [
+              "y1",
+              "y2",
+              "y3"
+            ],
+            "table": [
+              1.0,
+              1.8,
+              0.6,
+              0.3,
+              0.9,
+              1.4,
+              2.0,
+              0.5
+            ]
+          },
+          {
+            "id": "h",
+            "scope": [
+              "y3",
+              "y4"
+            ],
+            "table": [
+              1.1,
+              0.4,
+              0.7,
+              1.6
+            ]
+          }
+        ]
+      },
+      "root": "y3",
+      "expectedAssignment": {
+        "y1": 0,
+        "y2": 0,
+        "y3": 1,
+        "y4": 1
+      },
+      "expectedMaxLogValue": 1.0577902941478547
+    }
+  ]
+}

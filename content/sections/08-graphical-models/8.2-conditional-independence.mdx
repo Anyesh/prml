@@ -1,0 +1,166 @@
+---
+chapter: 8
+section: "8.2"
+title: Conditional Independence
+bookPages: [372, 382]
+summary: Whether an arrow can carry information from one node to another along a path depends only on the local shape at every node it passes through, and one shape reverses when you condition on it.
+concepts:
+  - d-separation
+  - collider
+  - explaining-away
+  - markov-blanket
+prereqs: ["8.1"]
+equations:
+  - { id: "8.19", name: conditional independence notation }
+  - { id: "8.23", name: tail-to-tail factorization }
+  - { id: "8.26", name: head-to-tail factorization }
+  - { id: "8.28", name: head-to-head factorization }
+widgets: [DSeparationExplorer]
+difficulty: 3
+---
+
+import DSeparationExplorer from '@widgets/ch08/DSeparationExplorer';
+import CanonicalGraphsGrid from '@widgets/ch08/figures/CanonicalGraphsGrid';
+import MarkovBlanketDiagram from '@widgets/ch08/figures/MarkovBlanketDiagram';
+import ExplainingAwayNumbers from '@widgets/ch08/figures/ExplainingAwayNumbers';
+import ColliderDescendantDiagram from '@widgets/ch08/figures/ColliderDescendantDiagram';
+
+## Intuition
+
+Two variables connected by a path can still be independent, because independence is
+about whether information can actually travel that path, not whether a path exists.
+Every node a path passes through either lets information through or stops it, decided
+only by the local shape of the two edges meeting there.
+
+Three shapes cover every node: a shared cause, a relay, and a shared effect. The first two
+block the path exactly when you condition on the middle node. The third does the
+opposite: it blocks when you know nothing, and unblocks the moment you condition on it,
+or on anything downstream of it.
+
+That reversal is the one genuinely surprising fact here. Learning about a shared effect
+makes its causes dependent, because ruling one cause in makes the others less needed to
+explain what you saw. A path is independent only if every node along it blocks, so one
+collider cuts it, and one observed collider opens it back up.
+
+## The math
+
+Independence of $a$ and $b$ given $c$, meaning knowing $c$ leaves $a$ silent about $b$, is
+written
+
+<MathBlock id="8.19" name="conditional independence notation">
+
+$$a \perp\!\!\!\perp b \mid c$$
+
+</MathBlock>
+
+<Figure caption="The three local shapes a path can pass through. Only the third reverses under conditioning." source="8.15" width="wide">
+  <CanonicalGraphsGrid client:visible />
+</Figure>
+
+At a shared cause, $c \to a$ and $c \to b$, the joint factorizes so that conditioning on
+$c$ makes $a$ and $b$ independent:
+
+<MathBlock id="8.23" name="tail-to-tail factorization">
+
+$$p(a, b \mid c) = p(a \mid c)\, p(b \mid c)$$
+
+</MathBlock>
+
+A relay, $a \to c \to b$, gives the same conclusion by the same argument applied to a
+chain instead of a fork:
+
+<MathBlock id="8.26" name="head-to-tail factorization">
+
+$$p(a, b \mid c) = p(a \mid c)\, p(b \mid c)$$
+
+</MathBlock>
+
+A shared effect, $a \to c \leftarrow b$, is different. Marginalising $c$ out with nothing
+observed leaves $a$ and $b$ independent, but the joint conditioned on $c$ does not
+factorize:
+
+<MathBlock id="8.28" name="head-to-head factorization">
+
+$$p(a, b \mid c) = \frac{p(c \mid a, b)\, p(a)\, p(b)}{p(c)} \neq p(a \mid c)\, p(b \mid c)$$
+
+</MathBlock>
+
+D-separation packages all three rules into one test: $a$ and $b$ are independent given
+$Z$ if every path between them is blocked, where a shared-cause or relay node blocks iff
+observed, and a shared-effect node blocks iff neither it nor any descendant is observed.
+
+<Figure caption="C is the collider; D only inherits information about it. Observing D still unblocks the path through C.">
+  <ColliderDescendantDiagram client:visible />
+</Figure>
+
+A node's Markov blanket, its parents, children, and children's other parents, is exactly
+the set that must be conditioned on to make it independent of everything else.
+
+<Figure caption="x's Markov blanket. Conditioning on this shaded set screens x off from the unrelated node on the right.">
+  <MarkovBlanketDiagram client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="D-separation explorer"
+  figure="8.19"
+  caption="Pick a graph, click nodes to observe them, and watch the path between the two ends flip between blocked and unblocked."
+>
+  <DSeparationExplorer client:visible />
+</Widget>
+
+Start on head-to-head and observe nothing: the path is blocked. Observe the collider and
+watch it unblock. Switch to explaining away and observe the collider's descendant
+instead: the far path unblocks too, with nothing downstream of it touched directly.
+
+## Worked example
+
+Cloudy, Sprinkler, Rain, Wet grass from 8.1, asking whether Rain and Sprinkler are
+dependent once Wet grass is observed. The only path between them is a head-to-head
+collider at Wet grass, so unobserved it is blocked and $P(\text{Rain}=1)=0.5$ exactly its
+prior.
+
+<Figure caption="Observing wet grass raises rain's probability; also learning the sprinkler was on pulls it back down, below even the prior." source="8.29">
+  <ExplainingAwayNumbers client:visible />
+</Figure>
+
+Observing Wet grass unblocks the collider: $P(\text{Rain}=1 \mid \text{Wet}=1)=0.705$,
+up from $0.5$, since a wet lawn is evidence for whatever caused it. Adding Sprinkler$=1$
+explains the wet grass without rain's help, so $P(\text{Rain}=1 \mid \text{Wet}=1,
+\text{Sprinkler}=1)=0.320$, below even the unconditional prior. All three numbers come
+from the same sixteen-row joint enumerated exactly, not estimated.
+
+## Recall
+
+<Recall question="Why does observing a collider create dependence instead of removing it?" concepts={["collider"]}>
+Because ruling in one explanation for the observed effect makes the other explanations
+less necessary, so they move together. Nothing about a shared effect on its own creates
+this; only conditioning on it does.
+</Recall>
+
+<Recall question="What determines whether a non-collider node blocks a path?" concepts={["d-separation"]}>
+Whether it is observed. A shared cause or a relay passes information through exactly when
+it is unobserved, and stops it exactly when observed, per 8.23 and 8.26.
+</Recall>
+
+<Recall question="Why does observing a collider's descendant also unblock the path?" concepts={["explaining-away"]}>
+A descendant carries information about its collider ancestor, so learning the descendant
+is partial evidence about the collider itself, enough to reopen the same explaining-away
+argument.
+</Recall>
+
+<Recall question="What is a node's Markov blanket?" concepts={["markov-blanket"]}>
+Its parents, children, and its children's other parents. Conditioning on exactly this set
+makes the node independent of every other node in the graph.
+</Recall>
+
+## Connections
+
+- **Builds on** [8.1](/sections/8-1): the same graph, now read for what it forbids rather
+  than what it generates.
+- **Leads to** [8.3](/sections/8-3), where the collider's asymmetry disappears entirely
+  because undirected graphs have no colliders to reverse.
+- **Feeds** [8.4](/sections/8-4)'s exact inference, which only works cleanly because
+  d-separation already tells you which computations are independent of which.
+

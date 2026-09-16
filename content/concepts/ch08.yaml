@@ -1,0 +1,135 @@
+- id: bayesian-network
+  name: "Bayesian network"
+  definition: "A directed acyclic graph whose joint distribution factorizes as the product of each node's conditional given its parents. Missing edges are the content: each one is a specific independence claim the model makes about the world."
+  introducedIn: "8.1"
+  usedIn: ["8.2", "8.3", "8.4"]
+  requires: []
+  aliases: ["directed graphical model"]
+
+- id: ancestral-sampling
+  name: "Ancestral sampling"
+  definition: "Drawing a joint sample by visiting a Bayesian network's nodes in an order that respects every arrow, parents before children, and sampling each node's conditional given the values already drawn for its parents."
+  introducedIn: "8.1"
+  usedIn: []
+  requires: ["bayesian-network"]
+  aliases: []
+
+- id: plate-notation
+  name: "Plate notation"
+  definition: "Drawing a repeated identical subgraph once, inside a labelled box, instead of redrawing it once per repetition. A shorthand for structure, not a different kind of node."
+  introducedIn: "8.1"
+  usedIn: []
+  requires: ["bayesian-network"]
+  aliases: []
+
+- id: d-separation
+  name: "D-separation"
+  definition: "A graph test for conditional independence: two variables are independent given an observed set if every path between them is blocked, where a shared-cause or relay node blocks when observed and a shared-effect node blocks when neither it nor a descendant is observed."
+  introducedIn: "8.2"
+  usedIn: ["8.3", "8.4"]
+  requires: ["bayesian-network"]
+  aliases: []
+
+- id: collider
+  name: "Collider"
+  definition: "A node where two arrows meet head to head, both parents pointing into it. The one local shape whose blocking behaviour reverses under conditioning: blocking by default, unblocking once it or a descendant is observed."
+  introducedIn: "8.2"
+  usedIn: []
+  requires: ["d-separation"]
+  aliases: ["head-to-head node", "v-structure"]
+
+- id: explaining-away
+  name: "Explaining away"
+  definition: "Observing a shared effect makes its causes dependent, because confirming one cause makes the others less needed to account for what was observed. The consequence of conditioning on a collider, and the reason two unconditionally independent causes become coupled once their effect is known."
+  introducedIn: "8.2"
+  usedIn: []
+  requires: ["collider"]
+  aliases: []
+
+- id: markov-blanket
+  name: "Markov blanket"
+  definition: "A node's parents, children, and its children's other parents: the exact set that, once conditioned on, makes the node independent of every other node in the graph."
+  introducedIn: "8.2"
+  usedIn: []
+  requires: ["d-separation"]
+  aliases: []
+
+- id: markov-random-field
+  name: "Markov random field"
+  definition: "An undirected graphical model whose joint factorizes as a product of clique potentials, normalised by a partition function. A node is independent of the rest of the graph given only its neighbours, with no collider exception."
+  introducedIn: "8.3"
+  usedIn: ["8.4"]
+  requires: []
+  aliases: ["undirected graphical model", "Markov network"]
+
+- id: clique-potential
+  name: "Clique potential"
+  definition: "An arbitrary non-negative function over the variables in one clique of an undirected graph, one factor of the unnormalised joint. Written as exp(-E) for an energy E, which guarantees positivity and turns the product of potentials into a sum of energies."
+  introducedIn: "8.3"
+  usedIn: []
+  requires: ["markov-random-field"]
+  aliases: ["clique function"]
+
+- id: ising-model
+  name: "Ising model"
+  definition: "A Markov random field over binary variables coupling each neighbouring pair and each variable to its own noisy observation, used here for image de-noising: the energy trades off agreement with neighbours against agreement with what was actually observed."
+  introducedIn: "8.3"
+  usedIn: []
+  requires: ["clique-potential"]
+  aliases: []
+
+- id: iterated-conditional-modes
+  name: "Iterated conditional modes"
+  definition: "A coordinate-descent search for a low-energy configuration: visit each variable in turn and set it to whichever state minimises the total energy with every other variable held fixed. Never increases the energy, so it always terminates, not necessarily at the global minimum."
+  introducedIn: "8.3"
+  usedIn: []
+  requires: ["ising-model"]
+  aliases: ["ICM"]
+
+- id: moralization
+  name: "Moralization"
+  definition: "Converting a directed graph into an undirected one by adding an edge between every pair of co-parents before dropping all arrowheads, so the clique containing a conditional's full parent set is never split by a missing edge."
+  introducedIn: "8.3"
+  usedIn: []
+  requires: ["bayesian-network", "markov-random-field"]
+  aliases: []
+
+- id: factor-graph
+  name: "Factor graph"
+  definition: "A bipartite graph of variable nodes and factor nodes, with an edge wherever a factor depends on a variable, subsuming both directed and undirected factorizations into one representation that the sum-product and max-sum algorithms operate on directly."
+  introducedIn: "8.4"
+  usedIn: []
+  requires: ["bayesian-network", "markov-random-field"]
+  aliases: []
+
+- id: sum-product-algorithm
+  name: "Sum-product algorithm"
+  definition: "Exact marginal inference on a tree-structured factor graph by passing one message along each edge in each direction, factor-to-variable messages summing over every other variable in the factor's scope, variable-to-factor messages multiplying every other incoming message."
+  introducedIn: "8.4"
+  usedIn: []
+  requires: ["factor-graph"]
+  aliases: ["belief propagation"]
+
+- id: max-sum-algorithm
+  name: "Max-sum algorithm"
+  definition: "The same message-passing recursion as sum-product with max replacing sum and logs replacing products, computing the single most probable joint configuration rather than every marginal, recovered by backtracking through argmax tables recorded during the forward pass."
+  introducedIn: "8.4"
+  usedIn: []
+  requires: ["sum-product-algorithm"]
+  aliases: []
+
+- id: loopy-belief-propagation
+  name: "Loopy belief propagation"
+  definition: "Running sum-product's local message updates on a factor graph with cycles, iterating until they stop changing rather than following an exact leaf-to-root schedule. Often close to the true marginals in practice, with no guarantee of convergence or exactness."
+  introducedIn: "8.4"
+  usedIn: []
+  requires: ["sum-product-algorithm"]
+  aliases: []
+
+- id: junction-tree
+  name: "Junction tree"
+  definition: "A tree of overlapping variable clusters built from a graph with cycles, large enough that every original clique fits inside some cluster, on which exact sum-product-style message-passing runs unchanged. Exact, at the cost of clusters that can grow large enough to erase sparsity's savings."
+  introducedIn: "8.4"
+  usedIn: []
+  requires: ["factor-graph"]
+  aliases: []

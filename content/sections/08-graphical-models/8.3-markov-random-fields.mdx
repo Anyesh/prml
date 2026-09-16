@@ -1,0 +1,174 @@
+---
+chapter: 8
+section: "8.3"
+title: Markov Random Fields
+bookPages: [383, 392]
+summary: Dropping arrow direction trades away the collider's asymmetry but buys a factorization over undirected cliques, and turning that factorization into an energy makes de-noising a search for a low-energy image.
+concepts:
+  - markov-random-field
+  - clique-potential
+  - ising-model
+  - iterated-conditional-modes
+  - moralization
+prereqs: ["8.2"]
+equations:
+  - { id: "8.37", name: undirected local independence }
+  - { id: "8.38", name: clique factorization }
+  - { id: "8.39", name: partition function }
+  - { id: "8.41", name: Boltzmann energy form }
+  - { id: "8.42", name: Ising de-noising energy }
+  - { id: "8.49", name: moralization construction }
+widgets: [ImageDenoisingICM]
+difficulty: 3
+---
+
+import ImageDenoisingICM from '@widgets/ch08/ImageDenoisingICM';
+import MRFLatticeDiagram from '@widgets/ch08/figures/MRFLatticeDiagram';
+import MoralizationDiagram from '@widgets/ch08/figures/MoralizationDiagram';
+import EnergyVsCouplingCurve from '@widgets/ch08/figures/EnergyVsCouplingCurve';
+import LocalEnergyBars from '@widgets/ch08/figures/LocalEnergyBars';
+
+## Intuition
+
+An arrow encodes something an undirected edge cannot: which variable is the cause. Some
+relationships have no natural direction at all, neighbouring pixels in an image, say,
+where each constrains the other symmetrically rather than one generating the other.
+Undirected graphs are built for exactly that case.
+
+The price is the collider's asymmetry. Every local independence rule becomes the single
+plain statement it always secretly was: a node is independent of the rest of the graph
+given its immediate neighbours, full stop, no reversal waiting to happen under
+conditioning.
+
+What replaces directed factorization is a product over cliques, small fully-connected
+clusters of nodes, of an arbitrary positive function each. Nothing forces those functions
+to be probabilities of anything, so the whole product needs to be renormalised at the
+end. That single global normaliser is the one number a directed graph never had to
+compute and an undirected one always does.
+
+## The math
+
+A node is independent of every other node given its neighbours alone:
+
+<MathBlock id="8.37" name="undirected local independence">
+
+$$p(x_i \mid x_{\mathcal{V}\setminus i}) = p(x_i \mid x_{\mathcal{N}_i})$$
+
+</MathBlock>
+
+<Figure caption="A lattice: every edge is a clique of size two, and every node's Markov blanket is just its drawn neighbours." source="8.30">
+  <MRFLatticeDiagram client:visible />
+</Figure>
+
+The joint factorizes over cliques $C$, each with its own potential $\psi_C \geq 0$:
+
+<MathBlock id="8.38" name="clique factorization">
+
+$$p(\mathbf{x}) = \frac{1}{Z} \prod_{C} \psi_C(\mathbf{x}_C)$$
+
+</MathBlock>
+
+<MathBlock id="8.39" name="partition function">
+
+$$Z = \sum_{\mathbf{x}} \prod_{C} \psi_C(\mathbf{x}_C)$$
+
+</MathBlock>
+
+Writing potentials as exponentials keeps them positive automatically and turns the
+product into a sum of energies:
+
+<MathBlock id="8.41" name="Boltzmann energy form">
+
+$$\psi_C(\mathbf{x}_C) = \exp\big(-E(\mathbf{x}_C)\big)$$
+
+</MathBlock>
+
+For binary image de-noising, latent pixels $x_i$ and noisy observed pixels $y_i$ in
+$\{-1,+1\}$, coupling neighbours together and each pixel to its own observation:
+
+<MathBlock id="8.42" name="Ising de-noising energy">
+
+$$E(\mathbf{x}, \mathbf{y}) = h \sum_i x_i - \beta \sum_{\{i,j\}} x_i x_j - \eta \sum_i x_i y_i$$
+
+</MathBlock>
+
+<Figure caption="One pixel's total energy with everything else fixed, at -1 versus +1. Four agreeing neighbours and a matching observation make +1 far cheaper.">
+  <LocalEnergyBars client:visible />
+</Figure>
+
+<Figure caption="Final energy after five ICM sweeps as coupling strength beta rises, on a fixed noisy pattern. Energy falls, then the curve flattens once smoothing has nothing more to gain." width="wide">
+  <EnergyVsCouplingCurve client:visible />
+</Figure>
+
+Every directed graph can be converted to this form by moralizing: connect every pair of
+co-parents, then drop all arrowheads.
+
+<MathBlock id="8.49" name="moralization construction">
+
+$$\psi_{\mathrm{pa}_k \cup \{k\}}(\mathbf{x}) = p(x_k \mid \mathrm{pa}_k)$$
+
+</MathBlock>
+
+<Figure caption="A collider moralized: the missing edge between its two causes is added before the arrows are dropped, so the undirected version keeps exactly the same independence structure.">
+  <MoralizationDiagram client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Image de-noising by ICM"
+  figure="8.31"
+  caption="Step through sweeps and watch noise clear. Raise beta until neighbouring pixels agree so strongly the shape itself starts to blur away."
+>
+  <ImageDenoisingICM client:visible />
+</Widget>
+
+Iterated conditional modes flips one pixel at a time to whichever state lowers 8.42,
+holding every other pixel fixed. It only ever decreases the energy, so it always settles,
+just not always on the cleanest image.
+
+## Worked example
+
+A 20x20 plus-sign image, 8% of pixels flipped, $\eta=2.1$, $h=0$. At $\beta=1.0$, one
+sweep already drops the mismatch against the noisy input from 32 flipped pixels to a
+handful, and the energy computed from 8.42 falls every single sweep, never once rising,
+exactly as ICM's coordinate-descent guarantee requires.
+
+Pushed to $\beta=3.0$ on the same image, the energy after five sweeps is lower still, but
+the extra drop comes from flattening genuine edges of the plus sign, not from removing
+more noise: the neighbour term now dominates the data term enough that agreeing with a
+neighbour outweighs agreeing with the actual observation.
+
+## Recall
+
+<Recall question="What single fact replaces every directed independence rule in an undirected graph?" concepts={["markov-random-field"]}>
+A node is independent of the rest of the graph given its neighbours, with no collider
+exception. Undirected graphs have no head-to-head nodes to reverse the rule.
+</Recall>
+
+<Recall question="Why must clique potentials be exponentiated into an energy rather than left as arbitrary positive numbers?" concepts={["clique-potential"]}>
+They do not have to be, but writing them as exp(-E) guarantees positivity for free and
+turns the product in 8.38 into a sum, which is far easier to optimise and to reason about
+term by term.
+</Recall>
+
+<Recall question="Why does ICM always terminate?" concepts={["iterated-conditional-modes"]}>
+Each flip is chosen to not increase 8.42, and the energy is bounded below by the finite
+sum over a finite image, so a non-increasing bounded sequence must stop moving.
+</Recall>
+
+<Recall question="Why does moralizing a directed graph add edges between co-parents specifically?" concepts={["moralization"]}>
+Because a conditional p(x_k | parents) genuinely couples all of those parents together
+inside one clique; dropping the arrows without connecting them would silently claim an
+independence the directed graph never asserted.
+</Recall>
+
+## Connections
+
+- **Builds on** [8.2](/sections/8-2)'s local independence, stripped of the collider case
+  that only directed graphs have.
+- **Contrasts with** [8.1](/sections/8-1): the same de-noising problem could not be posed
+  as a Bayesian network without an arbitrary, unjustified pixel ordering.
+- **Leads to** [8.4](/sections/8-4), where factor graphs subsume both directed and
+  undirected cases into one representation for inference.
+

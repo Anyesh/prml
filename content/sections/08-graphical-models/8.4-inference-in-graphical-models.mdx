@@ -1,0 +1,217 @@
+---
+chapter: 8
+section: "8.4"
+title: Inference in Graphical Models
+bookPages: [393, 422]
+summary: The same picture that shows a distribution's structure is also an exact inference algorithm on any tree, one message per edge, and the identical recursion in the log domain recovers the single best configuration instead of every marginal.
+concepts:
+  - factor-graph
+  - sum-product-algorithm
+  - max-sum-algorithm
+  - loopy-belief-propagation
+  - junction-tree
+prereqs: ["8.2", "8.3"]
+equations:
+  - { id: "8.62", name: factor graph joint }
+  - { id: "8.66", name: factor-to-variable message }
+  - { id: "8.69", name: variable-to-factor message }
+  - { id: "8.70", name: leaf variable message }
+  - { id: "8.72", name: marginal from messages }
+  - { id: "8.93", name: max-sum recursion }
+  - { id: "8.95", name: back-tracking recursion }
+widgets: [FactorGraphInference]
+difficulty: 4
+---
+
+import FactorGraphInference from '@widgets/ch08/FactorGraphInference';
+import ChainFactorGraph from '@widgets/ch08/figures/ChainFactorGraph';
+import TreeFactorGraph from '@widgets/ch08/figures/TreeFactorGraph';
+import ComplexityCurve from '@widgets/ch08/figures/ComplexityCurve';
+import LoopyGraphDiagram from '@widgets/ch08/figures/LoopyGraphDiagram';
+import JunctionTreeDiagram from '@widgets/ch08/figures/JunctionTreeDiagram';
+import MessageCountBars from '@widgets/ch08/figures/MessageCountBars';
+
+## Intuition
+
+A marginal of a joint over many variables is, by definition, a sum over every other
+variable's every state. Written out naively that sum is exponential in the number of
+variables, and it stays exponential no matter how sparse the graph looks.
+
+The graph's sparsity rescues this, once directed and undirected cases are redrawn in one
+shared form: a factor graph, a bipartite picture of variable and factor nodes, an edge
+wherever a factor depends on a variable. On a tree-shaped factor graph the sum factors
+along the tree, and one message per edge in each direction computes every marginal
+exactly. No exponential sum ever runs.
+
+The same recursion computes something different if you swap sum for max: not what every
+variable's marginal is, but which single joint configuration is most probable overall,
+recovered by tracing back through the messages after they arrive. One algorithm, two
+readings, because both are the same distributive law applied to a different pair of
+operations.
+
+## The math
+
+Both directed and undirected joints rewrite as one product of factors over subsets of
+variables:
+
+<MathBlock id="8.62" name="factor graph joint">
+
+$$p(\mathbf{x}) = \prod_{s} f_s(\mathbf{x}_s)$$
+
+</MathBlock>
+
+<Figure caption="A chain redrawn as a factor graph. Circles are variables, squares are the factors joining them." source="8.51">
+  <ChainFactorGraph client:visible />
+</Figure>
+
+<Figure caption="x3 joined to three separate factors: still a tree, so the same algorithm applies unchanged." source="8.54" width="wide">
+  <TreeFactorGraph client:visible />
+</Figure>
+
+On a tree, a message from a factor to one of its variables sums the factor times every
+other incoming message over every other variable in its scope:
+
+<MathBlock id="8.66" name="factor-to-variable message">
+
+$$\mu_{f_s \to x}(x) = \sum_{\mathbf{x}_s \setminus x} f_s(\mathbf{x}_s) \prod_{m \in \mathrm{ne}(f_s) \setminus x} \mu_{x_m \to f_s}(x_m)$$
+
+</MathBlock>
+
+and a message from a variable to a factor is just the product of everything else that
+variable has heard:
+
+<MathBlock id="8.69" name="variable-to-factor message">
+
+$$\mu_{x \to f_s}(x) = \prod_{l \in \mathrm{ne}(x) \setminus f_s} \mu_{f_l \to x}(x)$$
+
+</MathBlock>
+
+<MathBlock id="8.70" name="leaf variable message">
+
+$$\mu_{x \to f_s}(x) = 1$$
+
+</MathBlock>
+
+Once every message has arrived, a node's exact marginal is the product of everything it
+received:
+
+<MathBlock id="8.72" name="marginal from messages">
+
+$$p(x) \propto \prod_{s \in \mathrm{ne}(x)} \mu_{f_s \to x}(x)$$
+
+</MathBlock>
+
+<Figure caption="Enumerating every joint state costs exponentially more with chain length than sending one message per edge does." source="8.53" width="wide">
+  <ComplexityCurve client:visible />
+</Figure>
+
+Replacing the sum in 8.66 with a max and working in logs turns the identical recursion
+into the max-sum algorithm:
+
+<MathBlock id="8.93" name="max-sum recursion">
+
+$$\mu_{f_s \to x}(x) = \max_{\mathbf{x}_s \setminus x} \Big[\ln f_s(\mathbf{x}_s) + \sum_{m} \mu_{x_m \to f_s}(x_m)\Big]$$
+
+</MathBlock>
+
+Each maximisation in 8.93 records which values of the other variables achieved it; a
+backward pass reads the best full configuration off those records, one edge at a time
+outward from the root:
+
+<MathBlock id="8.95" name="back-tracking recursion">
+
+$$x_m^{\star} = \phi_{f_s \to x_m}\big(x^{\star}\big)$$
+
+</MathBlock>
+
+with $\phi_{f_s \to x_m}$ the argmax table 8.93 stored while computing that message, now
+looked up at the already-decided value one step closer to the root.
+
+## Interactive
+
+<Widget
+  title="Sum-product and max-sum on a factor graph"
+  figure="8.51"
+  caption="Send messages one click at a time and watch the marginal at x3 update. Switch to max-sum and watch the backtrack recover a full configuration instead."
+>
+  <FactorGraphInference client:visible />
+</Widget>
+
+In sum-product mode the marginal shown is exact only once every message has arrived. In
+max-sum mode, notice the backtrack needs no new messages: everything it uses was already
+recorded on the way in.
+
+## Worked example
+
+On the three-factor tree above, rooted at $x_3$, twelve messages complete sum-product:
+six inward, six outward. The resulting marginal for $x_3$ sums to 1 by construction, and
+is identical whichever leaf had been chosen as root instead, since a tree's marginals
+cannot depend on where message-passing started.
+
+Max-sum on the same graph needs only the six inward messages plus a backtrack, no
+outward pass, since recovering one configuration only unwinds decisions already made. It
+returns a specific joint assignment with its log-probability, exactly the number the
+root's final maximisation produced, not an estimate.
+
+<Figure caption="Fewer total steps for max-sum on this graph: it skips the outward pass sum-product needs to make every marginal, not just the root's, exact.">
+  <MessageCountBars client:visible />
+</Figure>
+
+On a four-cycle instead, this argument breaks entirely: no leaf to start from, no acyclic
+order to finish in.
+
+<Figure caption="A four-cycle has no leaf and no node whose removal disconnects it, so sum-product's exact schedule has nowhere to begin.">
+  <LoopyGraphDiagram client:visible />
+</Figure>
+
+Running the same updates anyway, looping until they stop changing, is loopy belief
+propagation: often close to the true marginals, with no guarantee it settles at all. The
+junction tree algorithm avoids the gamble, clustering the four variables into two
+overlapping groups joined into an actual tree.
+
+<Figure caption="The same four-cycle regrouped into two overlapping clusters sharing separator AC: no longer a cycle, so the exact algorithm applies again.">
+  <JunctionTreeDiagram client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="Why does a tree-structured factor graph let exact inference avoid an exponential sum?" concepts={["sum-product-algorithm"]}>
+The joint factorizes along the tree's edges, so the distributive law splits one
+exponential sum into a sequence of small local sums, each reused as a message rather than
+recomputed.
+</Recall>
+
+<Recall question="Why do sum-product and max-sum share the same message-passing schedule?" concepts={["max-sum-algorithm"]}>
+Both are the distributive law applied to the same factorization, sum-times or
+max-plus-in-logs. Only the operation at each node changes; which messages depend on which
+others does not.
+</Recall>
+
+<Recall question="Why does max-sum need a backward pass but sum-product's marginal does not?" concepts={["max-sum-algorithm"]}>
+A marginal only needs every message to have arrived once. Recovering the argmax
+configuration additionally needs to know which value of each variable achieved every
+maximisation, and only a backward pass unwinds that chain of choices.
+</Recall>
+
+<Recall question="Why does loopy belief propagation carry no exactness guarantee?" concepts={["loopy-belief-propagation"]}>
+The sum-product schedule relies on a leaf-to-root order that a cycle does not have.
+Iterating the same local updates on a cycle can still converge in practice, but nothing
+forces it to, or forces the result to be exact if it does.
+</Recall>
+
+<Recall question="What does the junction tree algorithm buy over running sum-product on a graph with loops?" concepts={["junction-tree"]}>
+It clusters variables into a new tree of cliques large enough to absorb every cycle, then
+runs the same exact message-passing on that tree, at the cost of clusters that can grow
+large enough to erase the savings sparsity was supposed to provide.
+</Recall>
+
+## Connections
+
+- **Builds on** [8.2](/sections/8-2) and [8.3](/sections/8-3): the factor graph absorbs
+  both the directed and undirected factorizations into one representation.
+- **Generalises to** chapter 13's hidden Markov model: its forward-backward recursion is
+  this exact sum-product algorithm run on the chain factor graph a chain reduces to, and
+  its Viterbi algorithm is this same max-sum.
+- **Loopy belief propagation** is the bridge to chapter 10's variational methods, which
+  justify approximate message-passing on graphs with cycles more carefully.
+
