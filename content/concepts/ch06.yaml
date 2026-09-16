@@ -1,0 +1,87 @@
+- id: kernel-function
+  name: "Kernel function"
+  definition: "A symmetric function of two inputs equal to an inner product in some feature space, k(x, x') = phi(x)^T phi(x'). Lets an algorithm see only inner products rather than the feature vectors themselves, which is what makes an unconstructed feature space usable."
+  introducedIn: "6.1"
+  usedIn: ["6.2", "6.3", "6.4"]
+  requires: ["basis-function"]
+  aliases: ["Mercer kernel"]
+
+- id: dual-representation
+  name: "Dual representation"
+  definition: "Rewriting a linear model's solution as a linear combination of the training points themselves rather than of basis functions, so every quantity needed is a kernel evaluated between two inputs. Trades an M by M inversion for an N by N one."
+  introducedIn: "6.1"
+  usedIn: ["6.4"]
+  requires: ["kernel-function"]
+  aliases: []
+
+- id: gram-matrix
+  name: "Gram matrix"
+  definition: "The N by N matrix of a kernel evaluated at every pair of training points. Positive semi-definiteness of this matrix for every possible finite set of points is the exact condition for a function to be a valid kernel."
+  introducedIn: "6.1"
+  usedIn: ["6.2", "6.4"]
+  requires: ["kernel-function"]
+  aliases: ["kernel matrix"]
+
+- id: kernel-trick
+  name: "Kernel trick"
+  definition: "Replacing every inner product an algorithm computes with a kernel evaluation, substituting an implicit, possibly infinite-dimensional feature space for the algorithm's original one without ever constructing it."
+  introducedIn: "6.2"
+  usedIn: ["6.4"]
+  requires: ["kernel-function"]
+  aliases: ["kernel substitution"]
+
+- id: valid-kernel
+  name: "Valid kernel construction"
+  definition: "A small set of closed operations, among them sum, product and positive scaling, under which combining valid kernels always yields another valid one, so new kernels can be built without checking positive semi-definiteness by hand each time."
+  introducedIn: "6.2"
+  usedIn: ["6.4"]
+  requires: ["gram-matrix"]
+  aliases: []
+
+- id: radial-basis-function
+  name: "Radial basis function"
+  definition: "A basis function that depends on its input only through the distance to a fixed centre, phi(x) = h(||x - mu||). Originally introduced for exact interpolation, and the natural basis to place directly on the data rather than on a fixed grid."
+  introducedIn: "6.3"
+  usedIn: ["6.4"]
+  requires: ["basis-function"]
+  aliases: ["RBF"]
+
+- id: nadaraya-watson-model
+  name: "Nadaraya-Watson model"
+  definition: "Kernel regression derived from a Parzen estimate of the joint density of inputs and targets: the conditional mean collapses to a normalised sum of training targets, weighted by a kernel centred on each one."
+  introducedIn: "6.3"
+  usedIn: []
+  requires: ["kernel-density-estimation", "radial-basis-function"]
+  aliases: ["kernel regression"]
+
+- id: gaussian-process
+  name: "Gaussian process"
+  definition: "A probability distribution over functions, defined so that its values at any finite set of points are jointly Gaussian. Specified completely by a mean function, usually zero, and a covariance function, which is a kernel."
+  introducedIn: "6.4"
+  usedIn: []
+  requires: ["kernel-function", "multivariate-gaussian"]
+  aliases: ["GP"]
+
+- id: gp-marginal-likelihood
+  name: "GP marginal likelihood"
+  definition: "The probability of the observed targets under a Gaussian process, with the latent function values integrated out analytically. Maximising it over the kernel's hyperparameters plays the role type-2 maximum likelihood plays for a parametric model."
+  introducedIn: "6.4"
+  usedIn: []
+  requires: ["gaussian-process", "model-evidence"]
+  aliases: ["evidence (Gaussian process)"]
+
+- id: automatic-relevance-determination
+  name: "Automatic relevance determination"
+  definition: "Giving a Gaussian process kernel a separate length-scale hyperparameter per input dimension, then fitting all of them by maximum likelihood. A dimension the data does not need drives its own length scale until that input is effectively ignored."
+  introducedIn: "6.4"
+  usedIn: []
+  requires: ["gp-marginal-likelihood"]
+  aliases: ["ARD"]
+
+- id: gp-classification
+  name: "GP classification"
+  definition: "Passing a Gaussian process latent function through a sigmoid to define a prior over classification probabilities, then approximating the resulting intractable posterior, most often with a Laplace approximation, to predict on new inputs."
+  introducedIn: "6.4"
+  usedIn: []
+  requires: ["gaussian-process", "laplace-approximation"]
+  aliases: []

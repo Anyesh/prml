@@ -1,0 +1,247 @@
+---
+chapter: 6
+section: "6.4"
+title: Gaussian Processes
+bookPages: [303, 324]
+summary: Dispensing with weights and placing a distribution directly over functions turns the kernel from a computational shortcut into the entire specification of a Bayesian model.
+concepts:
+  - gaussian-process
+  - gp-marginal-likelihood
+  - automatic-relevance-determination
+  - gp-classification
+prereqs: ["3.3", "2.3", "6.1"]
+equations:
+  - { id: "6.49", name: linear model in the weights }
+  - { id: "6.54", name: covariance induced by the weight prior }
+  - { id: "6.62", name: covariance with observation noise }
+  - { id: "6.63", name: composite covariance function }
+  - { id: "6.66", name: GP predictive mean }
+  - { id: "6.67", name: GP predictive variance }
+  - { id: "6.69", name: log marginal likelihood }
+  - { id: "6.70", name: log marginal likelihood gradient }
+  - { id: "6.71", name: ARD covariance function }
+  - { id: "6.73", name: Bernoulli likelihood from a sigmoid }
+  - { id: "6.87", name: classification predictive mean }
+  - { id: "6.88", name: classification predictive variance }
+widgets: [GaussianProcessExplorer]
+difficulty: 4
+---
+
+import GaussianProcessExplorer from '@widgets/ch06/GaussianProcessExplorer';
+import WeightSpaceEquivalence from '@widgets/ch06/figures/WeightSpaceEquivalence';
+import KernelHyperparameterEffects from '@widgets/ch06/figures/KernelHyperparameterEffects';
+import CovarianceHeatmapAndSamples from '@widgets/ch06/figures/CovarianceHeatmapAndSamples';
+import ARDLengthScales from '@widgets/ch06/figures/ARDLengthScales';
+import JitterNecessity from '@widgets/ch06/figures/JitterNecessity';
+import LogMarginalLikelihoodSurface from '@widgets/ch06/figures/LogMarginalLikelihoodSurface';
+import PredictiveVarianceGrowsAway from '@widgets/ch06/figures/PredictiveVarianceGrowsAway';
+import GPClassificationSquash from '@widgets/ch06/figures/GPClassificationSquash';
+import ClassificationDecisionBoundary from '@widgets/ch06/figures/ClassificationDecisionBoundary';
+import GPRegressionWorkedNumbers from '@widgets/ch06/figures/GPRegressionWorkedNumbers';
+
+## Intuition
+
+3.3 put a prior over weights and asked what that implies about predictions. Read the same
+setup the other way: the prior over weights already induces a distribution over the function
+values themselves, and that distribution is Gaussian regardless of what the weights mean.
+
+Once that is the object of interest, the weights can be dropped entirely. Describe the
+function values directly, as a joint Gaussian whose covariance is a kernel, and every result
+chapter 3 derived by way of a prior over weights reappears, without ever naming a weight.
+
+The payoff is not smaller equations. It is that a covariance function can encode structure no
+finite basis could, and fitting it means adjusting a handful of interpretable knobs rather
+than choosing a basis before seeing a single point.
+
+## The math
+
+A weight-space model already fixes the distribution over function values at any inputs:
+
+<MathBlock id="6.49" name="linear model in the weights">
+
+$$y(\mathbf{x}) = \mathbf{w}^{\mathrm{T}}\boldsymbol{\phi}(\mathbf{x})$$
+
+</MathBlock>
+
+<MathBlock id="6.54" name="covariance induced by the weight prior">
+
+$$K_{nm} = k(\mathbf{x}_n, \mathbf{x}_m) = \frac{1}{\alpha}\boldsymbol{\phi}(\mathbf{x}_n)^{\mathrm{T}}\boldsymbol{\phi}(\mathbf{x}_m)$$
+
+</MathBlock>
+
+<Figure caption="Weights drawn from the prior and evaluated, against functions drawn straight from the kernel that same prior implies: the same distribution, generated two ways." width="wide">
+  <WeightSpaceEquivalence client:visible />
+</Figure>
+
+A Gaussian process makes this primary: any kernel, not only one built from a finite
+$\boldsymbol{\phi}$, specifies a valid distribution over functions directly.
+
+<Figure caption="theta1 sets how fast sampled functions wiggle; theta0 sets how tall they get." width="wide">
+  <KernelHyperparameterEffects client:visible />
+</Figure>
+
+<Figure caption="Correlation between two points fades with distance at a rate theta1 controls; every sampled function stays smooth over exactly that width." width="wide">
+  <CovarianceHeatmapAndSamples client:visible />
+</Figure>
+
+Observation noise adds directly to the covariance, and a composite kernel gives four
+independent knobs to fit:
+
+<MathBlock id="6.62" name="covariance with observation noise">
+
+$$C(\mathbf{x}_n, \mathbf{x}_m) = k(\mathbf{x}_n, \mathbf{x}_m) + \beta^{-1}\delta_{nm}$$
+
+</MathBlock>
+
+<MathBlock id="6.63" name="composite covariance function">
+
+$$k(\mathbf{x}_n, \mathbf{x}_m) = \theta_0\exp\!\left(-\frac{\theta_1}{2}\|\mathbf{x}_n - \mathbf{x}_m\|^2\right) + \theta_2 + \theta_3\mathbf{x}_n^{\mathrm{T}}\mathbf{x}_m$$
+
+</MathBlock>
+
+Two points closer than the kernel's own length scale make this near-singular; Cholesky
+needs a jittered diagonal to factor it at all.
+
+<Figure caption="A tenth point sliding toward an existing one: condition number climbs, and unjittered Cholesky eventually throws." width="wide">
+  <JitterNecessity client:visible />
+</Figure>
+
+Conditioning the joint Gaussian on training targets gives the predictive distribution:
+
+<MathBlock id="6.66" name="GP predictive mean">
+
+$$m(\mathbf{x}_{N+1}) = \mathbf{k}^{\mathrm{T}}\mathbf{C}_N^{-1}\mathbf{t}$$
+
+</MathBlock>
+
+<MathBlock id="6.67" name="GP predictive variance">
+
+$$\sigma^2(\mathbf{x}_{N+1}) = c - \mathbf{k}^{\mathrm{T}}\mathbf{C}_N^{-1}\mathbf{k}$$
+
+</MathBlock>
+
+<Figure caption="Variance sits near the noise floor between training points and climbs toward the prior variance past either edge." width="wide">
+  <PredictiveVarianceGrowsAway client:visible />
+</Figure>
+
+Fitting $\theta_0 \ldots \theta_3$ maximises the marginal likelihood directly, using its
+gradient:
+
+<MathBlock id="6.69" name="log marginal likelihood">
+
+$$\ln p(\mathbf{t}\mid\boldsymbol{\theta}) = -\tfrac{1}{2}\ln|\mathbf{C}_N| - \tfrac{1}{2}\mathbf{t}^{\mathrm{T}}\mathbf{C}_N^{-1}\mathbf{t} - \tfrac{N}{2}\ln(2\pi)$$
+
+</MathBlock>
+
+<MathBlock id="6.70" name="log marginal likelihood gradient">
+
+$$\frac{\partial}{\partial\theta_i}\ln p(\mathbf{t}\mid\boldsymbol{\theta}) = -\tfrac{1}{2}\mathrm{Tr}\!\left(\mathbf{C}_N^{-1}\frac{\partial\mathbf{C}_N}{\partial\theta_i}\right) + \tfrac{1}{2}\mathbf{t}^{\mathrm{T}}\mathbf{C}_N^{-1}\frac{\partial\mathbf{C}_N}{\partial\theta_i}\mathbf{C}_N^{-1}\mathbf{t}$$
+
+</MathBlock>
+
+<Figure caption="The surface 6.70's gradient climbs, grid-searched here, optimum marked." width="wide">
+  <LogMarginalLikelihoodSurface client:visible />
+</Figure>
+
+Giving every input dimension its own length scale and fitting them the same way is automatic
+relevance determination: an input the data does not need gets driven toward irrelevance.
+
+<MathBlock id="6.71" name="ARD covariance function">
+
+$$k(\mathbf{x}, \mathbf{x}') = \theta_0\exp\!\left(-\tfrac{1}{2}\sum_{i}\eta_i(x_i - x_i')^2\right)$$
+
+</MathBlock>
+
+<Figure caption="One informative input, one pure-noise input: the marginal likelihood pushes the noise input's length scale to the edge of the search grid." width="wide">
+  <ARDLengthScales client:visible />
+</Figure>
+
+Squashing a latent Gaussian process through a sigmoid turns it into a distribution over
+class probabilities:
+
+<MathBlock id="6.73" name="Bernoulli likelihood from a sigmoid">
+
+$$p(t\mid a) = \sigma(a)^{t}(1-\sigma(a))^{1-t}$$
+
+</MathBlock>
+
+<Figure caption="A latent sample above, the same sample after the sigmoid below: every zero crossing becomes a 0.5 crossing." width="wide">
+  <GPClassificationSquash client:visible />
+</Figure>
+
+A Laplace approximation to the posterior over the latent function gives a predictive mean
+and variance in the same shape as regression's:
+
+<MathBlock id="6.87" name="classification predictive mean">
+
+$$\mathbb{E}[a_{N+1}\mid \mathbf{t}_N] = \mathbf{k}^{\mathrm{T}}(\mathbf{t}_N - \boldsymbol{\sigma}_N)$$
+
+</MathBlock>
+
+<MathBlock id="6.88" name="classification predictive variance">
+
+$$\mathrm{var}[a_{N+1}\mid \mathbf{t}_N] = c - \mathbf{k}^{\mathrm{T}}(\mathbf{W}_N^{-1} + \mathbf{C}_N)^{-1}\mathbf{k}$$
+
+</MathBlock>
+
+<Figure caption="Two classes, an RBF kernel, the resulting predictive-probability field and its 0.5 boundary." source="6.12" width="wide">
+  <ClassificationDecisionBoundary client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Gaussian process regression"
+  figure="6.8"
+  caption="Click to add points and watch the band contract around them. Drag the four theta sliders, PRML's own (6.63), and compare their effect on the empty-canvas prior against their effect once points are in."
+>
+  <GaussianProcessExplorer client:visible />
+</Widget>
+
+Clear the points, push theta1 high, and read the prior samples: high-frequency wiggle with
+no data yet to constrain it, exactly what 3.6 said a fixed basis could never place in advance.
+
+## Worked example
+
+Five points, $\theta_0 = 1$, $\theta_1 = 4$, PRML's own Figure 6.5 setting, $\beta = 25$.
+
+<Figure caption="The posterior mean and band this setting produces, with the two queried points marked." source="6.8">
+  <GPRegressionWorkedNumbers client:visible />
+</Figure>
+
+At $x = 0.5$, inside the training range, the predictive variance is $0.058$; at $x = 1.2$,
+past every training point, it is $0.270$, nearly five times as large, entirely from 6.67's
+second term growing once no observation is nearby to shrink it.
+
+## Recall
+
+<Recall question="What does a Gaussian process specify that a weight-space model does not need to?" concepts={["gaussian-process"]}>
+Nothing extra: 6.54 shows a weight prior already induces one. A Gaussian process just makes
+the covariance function primary and drops the weights, which lets the kernel be anything
+positive semi-definite, not only one built from a finite basis.
+</Recall>
+
+<Recall question="Why does a Gaussian kernel on closely spaced points need a jitter term?" concepts={["gaussian-process"]}>
+Two nearly identical inputs make two rows of the Gram matrix nearly identical too, so the
+matrix approaches singular. Adding a small constant to the diagonal keeps it factorisable.
+</Recall>
+
+<Recall question="What does automatic relevance determination actually optimise?" concepts={["automatic-relevance-determination"]}>
+A separate length scale per input dimension, fit by maximising the marginal likelihood.
+An input the data does not need gets a length scale the likelihood keeps growing.
+</Recall>
+
+<Recall question="How does GP classification turn a real-valued process into class probabilities?" concepts={["gp-classification"]}>
+By squashing a latent Gaussian process through a sigmoid (6.73), then approximating the
+resulting non-Gaussian posterior, most simply with a Laplace approximation.
+</Recall>
+
+## Connections
+
+- **Builds on** [3.3](/sections/3-3), whose equivalent kernel is exactly 6.54, and
+  [2.3](/sections/2-3) for the Gaussian conditioning behind 6.66-6.67.
+- **Uses** [6.1](/sections/6-1)'s kernel machinery and [6.2](/sections/6-2)'s construction
+  rules to build valid covariance functions.
+- **Answers** [3.6](/sections/3-6): a kernel replaces choosing a basis in advance with fitting
+  a handful of hyperparameters after seeing the data.
+

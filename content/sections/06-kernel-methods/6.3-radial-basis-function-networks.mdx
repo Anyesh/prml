@@ -1,0 +1,135 @@
+---
+chapter: 6
+section: "6.3"
+title: Radial Basis Function Networks
+bookPages: [299, 302]
+summary: A basis function centred on every training point turns 3.6's coverage problem inside out, and taking that idea to its conditional-density root gives the Nadaraya-Watson kernel regression model.
+concepts:
+  - radial-basis-function
+  - nadaraya-watson-model
+prereqs: ["3.6", "6.2"]
+equations:
+  - { id: "6.38", name: exact radial basis interpolation }
+  - { id: "6.41", name: basis functions from noisy inputs }
+  - { id: "6.45", name: Nadaraya-Watson prediction }
+  - { id: "6.46", name: Nadaraya-Watson weights }
+widgets: [NadarayaWatsonExplorer]
+difficulty: 2
+---
+
+import NadarayaWatsonExplorer from '@widgets/ch06/NadarayaWatsonExplorer';
+import CentresOnDataVsGrid from '@widgets/ch06/figures/CentresOnDataVsGrid';
+import NormalisedBasisFunctions from '@widgets/ch06/figures/NormalisedBasisFunctions';
+import BandwidthUnderOverSmoothing from '@widgets/ch06/figures/BandwidthUnderOverSmoothing';
+
+## Intuition
+
+3.6 raised the coverage problem as fatal for a fixed basis: tiling space before seeing the
+data costs a count that explodes with dimension, and the tiles cannot move once placed.
+
+A radial basis function sidesteps the placement question entirely by not choosing centres
+ahead of time at all. Put one bump on every training point instead. Coverage stops being a
+guess, because the basis literally sits wherever the data landed.
+
+This costs something too. A basis with one function per point grows with the dataset rather
+than staying fixed, and evaluating it gets slower as more data arrives. What looked like the
+fatal flaw of a fixed basis becomes, from this side, the price of not needing to guess.
+
+## The math
+
+Centring a basis function on every point and solving by least squares interpolates the
+data exactly:
+
+<MathBlock id="6.38" name="exact radial basis interpolation">
+
+$$f(\mathbf{x}) = \sum_{n=1}^{N} w_n h(\|\mathbf{x} - \mathbf{x}_n\|)$$
+
+</MathBlock>
+
+Treating the *inputs* as noisy rather than the targets, and optimising by the calculus of
+variations, gives the same shape of model with a different, self-normalising basis:
+
+<MathBlock id="6.41" name="basis functions from noisy inputs">
+
+$$h(\mathbf{x} - \mathbf{x}_n) = \frac{\nu(\mathbf{x} - \mathbf{x}_n)}{\sum_{m} \nu(\mathbf{x} - \mathbf{x}_m)}$$
+
+</MathBlock>
+
+<Figure caption="Raw Gaussian bumps fade outside their centres; dividing each by the row total keeps every point covered." source="6.2" width="wide">
+  <NormalisedBasisFunctions client:visible />
+</Figure>
+
+Starting instead from a Parzen estimate of the joint density of inputs and targets and
+taking the conditional mean gives the identical form from a second, independent route:
+
+<MathBlock id="6.45" name="Nadaraya-Watson prediction">
+
+$$y(\mathbf{x}) = \sum_{n} k(\mathbf{x}, \mathbf{x}_n)t_n$$
+
+</MathBlock>
+
+<MathBlock id="6.46" name="Nadaraya-Watson weights">
+
+$$k(\mathbf{x}, \mathbf{x}_n) = \frac{g(\mathbf{x} - \mathbf{x}_n)}{\sum_{m} g(\mathbf{x} - \mathbf{x}_m)}$$
+
+</MathBlock>
+
+<Figure caption="Centred on the data, eighteen bumps sit exactly where points are; spread over a fixed grid, most of the middle goes uncovered." width="wide">
+  <CentresOnDataVsGrid client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Nadaraya-Watson kernel regression"
+  figure="6.3"
+  caption="Drag the bandwidth and watch the weight bars redistribute across the fourteen points; drag the red query marker and watch which bars light up."
+>
+  <NadarayaWatsonExplorer client:visible />
+</Widget>
+
+Push the bandwidth to its smallest setting and the prediction starts interpolating single
+points; push it to the largest and the curve flattens toward the data's overall mean.
+
+## Worked example
+
+Fourteen points from the same sinusoidal set-up as chapter 3, one narrow bandwidth and one
+wide one.
+
+<Figure caption="A bandwidth an order of magnitude apart either way, against the true curve." source="6.3">
+  <BandwidthUnderOverSmoothing client:visible />
+</Figure>
+
+Against the true sine, $h = 0.015$ scores a mean squared error of $0.071$ and $h = 0.5$
+scores $0.342$: both worse than the $0.053$ a bandwidth of $0.08$ reaches on this same
+dataset, but oversmoothing here costs far more than undersmoothing does.
+
+## Recall
+
+<Recall question="Why does 3.6's coverage argument stop being fatal for a radial basis?" concepts={["radial-basis-function"]}>
+Because the centres are the training points themselves, chosen after seeing the data
+rather than laid out in advance. Coverage follows automatically; cost per prediction rises.
+</Recall>
+
+<Recall question="What guarantees the Nadaraya-Watson weights sum to one at every x?" concepts={["nadaraya-watson-model"]}>
+Dividing by the sum in the denominator of (6.46) directly, so whatever the numerator's
+shape, the weights it produces always add to exactly one.
+</Recall>
+
+<Recall question="What derivation gives the Nadaraya-Watson model besides noisy inputs?" concepts={["nadaraya-watson-model"]}>
+A Parzen density estimate of the joint distribution of inputs and targets, with the
+conditional mean read off directly. Two routes, one formula.
+</Recall>
+
+<Recall question="What happens to the prediction at the extremes of the bandwidth?" concepts={["nadaraya-watson-model"]}>
+Too small, and the curve interpolates whichever point is nearest, chasing noise between
+points; too large, and every point contributes almost equally, flattening the curve.
+</Recall>
+
+## Connections
+
+- **Answers** [3.6](/sections/3-6): a basis placed on the data rather than fixed in advance.
+- **Uses** [6.2](/sections/6-2)'s kernel machinery to write the weights compactly.
+- **Leads to** [6.4](/sections/6-4), where the same idea of a kernel-weighted sum over
+  targets reappears as the mean of a Gaussian process posterior.
+

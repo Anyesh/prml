@@ -1,0 +1,157 @@
+---
+chapter: 6
+section: "6.1"
+title: Dual Representations
+bookPages: [293, 293]
+summary: Every linear model with a fixed feature map has a second, equivalent form written entirely in kernel evaluations between training points rather than in weights.
+concepts:
+  - kernel-function
+  - dual-representation
+  - gram-matrix
+prereqs: ["3.1"]
+equations:
+  - { id: "6.1", name: kernel function }
+  - { id: "6.3", name: weights as a combination of the data }
+  - { id: "6.6", name: Gram matrix }
+  - { id: "6.8", name: dual solution }
+  - { id: "6.9", name: dual prediction }
+widgets: [DualVsPrimalRidge]
+difficulty: 3
+---
+
+import DualVsPrimalRidge from '@widgets/ch06/DualVsPrimalRidge';
+import MemoryFootprint from '@widgets/ch06/figures/MemoryFootprint';
+import GramMatrixSmallExample from '@widgets/ch06/figures/GramMatrixSmallExample';
+import MatrixSizeCrossover from '@widgets/ch06/figures/MatrixSizeCrossover';
+import DualVsPrimalWorkedNumbers from '@widgets/ch06/figures/DualVsPrimalWorkedNumbers';
+
+## Intuition
+
+Ridge regression from chapter 3 solves for a handful of weights, one per basis function.
+There is a second way to solve the exact same problem: instead of one coefficient per
+feature, keep one coefficient per training point, and write the prediction as a weighted
+sum over the data itself. Nothing about the fit changes; the same curve comes out.
+
+What changes is what the solution touches. In this second form, every training point enters
+only through a comparison with another point, never as a raw feature vector. That single
+shift is the seed of the whole chapter: once an algorithm only needs comparisons between
+inputs, those comparisons can be defined directly, in a feature space nobody ever builds.
+
+<Figure caption="A parametric fit keeps a fixed number of weights. A model built from comparisons between points keeps one number per point instead, and that count grows with the data.">
+  <MemoryFootprint client:visible />
+</Figure>
+
+## The math
+
+A kernel is a symmetric comparison standing in for an inner product in some feature space:
+
+<MathBlock id="6.1" name="kernel function">
+
+$$k(\mathbf{x}, \mathbf{x}') = \boldsymbol{\phi}(\mathbf{x})^{\mathrm{T}}\boldsymbol{\phi}(\mathbf{x}')$$
+
+</MathBlock>
+
+<Figure caption="Four points, one RBF kernel, sixteen numbers: every entry is k(xₙ, xₘ) for a pair of training points." source="6.1">
+  <GramMatrixSmallExample client:visible />
+</Figure>
+
+Setting the gradient of the ridge objective $J(\mathbf{w})$ to zero shows $\mathbf{w}$ is
+already a combination of the data:
+
+<MathBlock id="6.3" name="weights as a combination of the data">
+
+$$\mathbf{w} = \sum_{n=1}^{N} a_n\boldsymbol{\phi}(\mathbf{x}_n) = \boldsymbol{\Phi}^{\mathrm{T}}\mathbf{a}$$
+
+</MathBlock>
+
+Substituting this back and collecting every $\boldsymbol{\phi}(\mathbf{x}_n)^{\mathrm{T}}\boldsymbol{\phi}(\mathbf{x}_m)$
+into the Gram matrix,
+
+<MathBlock id="6.6" name="Gram matrix">
+
+$$K_{nm} = \boldsymbol{\phi}(\mathbf{x}_n)^{\mathrm{T}}\boldsymbol{\phi}(\mathbf{x}_m) = k(\mathbf{x}_n, \mathbf{x}_m)$$
+
+</MathBlock>
+
+gives a solution and a prediction in kernel evaluations alone:
+
+<MathBlock id="6.8" name="dual solution">
+
+$$\mathbf{a} = (\mathbf{K} + \lambda\mathbf{I}_N)^{-1}\mathbf{t}$$
+
+</MathBlock>
+
+<MathBlock id="6.9" name="dual prediction">
+
+$$y(\mathbf{x}) = \mathbf{k}(\mathbf{x})^{\mathrm{T}}(\mathbf{K} + \lambda\mathbf{I}_N)^{-1}\mathbf{t}$$
+
+</MathBlock>
+
+6.8 inverts $N \times N$; the weight-space route inverts $M \times M$. With $M \ll N$,
+weight space is cheaper, which is why this looks like a bad trade until $\boldsymbol{\phi}$
+stops being something you can afford to write down.
+
+<Figure caption="Fixing the data size and growing the feature count: the two costs cross exactly where M passes N." width="wide">
+  <MatrixSizeCrossover client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="The same ridge solution, two matrices"
+  figure="6.1"
+  caption="Drag the degree and lambda sliders. Both panels solve the identical problem; watch the matrix on the right stay fixed at N by N while the one on the left grows with the degree."
+>
+  <DualVsPrimalRidge client:visible />
+</Widget>
+
+Push the degree up until the left matrix visibly outgrows the right one, then drop lambda
+toward zero and note how little the two predicted curves ever disagree.
+
+## Worked example
+
+Six points, a degree-2 polynomial basis ($M = 3$), $\lambda = 0.05$. Weight space gives
+$\mathbf{w} \approx (-0.013, -0.811, 1.740)$; dual space gives six coefficients $a_n$, the
+largest $9.39$ in magnitude, the rest a mix of positive and negative.
+
+<Figure caption="Six coefficients, one per training point, computed from the same fit the curve above plots." source="6.1">
+  <DualVsPrimalWorkedNumbers client:visible />
+</Figure>
+
+At $x = 0.3$, both routes give $y \approx -0.1000$; at $x = 0.85$, both give
+$y \approx 0.5544$. They agree to numerical precision because 6.8 is not an approximation
+to the weight-space solution, it is the same stationary point of the same $J(\mathbf{w})$,
+reached from the other side.
+
+## Recall
+
+<Recall question="Why does the dual formulation invert an N by N matrix instead of an M by M one?" concepts={["dual-representation"]}>
+Because 6.8 solves for one coefficient per training point, $\mathbf{a}$, rather than one
+per basis function. The size of the matrix follows whichever quantity you solve for.
+</Recall>
+
+<Recall question="Does the dual solution ever predict a different curve from the weight-space one?" concepts={["dual-representation"]}>
+No. Both are the same stationary point of the same regularised error, reached by
+substituting 6.3 into $J(\mathbf{w})$ rather than by any approximation.
+</Recall>
+
+<Recall question="What does the Gram matrix actually collect?" concepts={["gram-matrix"]}>
+Every pairwise kernel evaluation between training points, $K_{nm} = k(\mathbf{x}_n,
+\mathbf{x}_m)$: a symmetric $N \times N$ table built once and reused by 6.8 and 6.9.
+</Recall>
+
+<Recall question="When is the dual formulation actually cheaper to compute?" concepts={["dual-representation"]}>
+Only once the feature count $M$ exceeds the data count $N$. Below that crossing, weight
+space wins on cost alone; the real payoff is not needing to construct $\boldsymbol{\phi}$.
+</Recall>
+
+## Connections
+
+- **Builds on** [3.1](/sections/3-1) for the design matrix and the ridge objective being
+  re-solved here.
+- **Generalises** [3.3](/sections/3-3)'s equivalent kernel: any linear model, not only the
+  Bayesian one, has this second life.
+- **Leads to** [6.2](/sections/6-2), which asks which functions can play the role of
+  $k(\mathbf{x}, \mathbf{x}')$ once $\boldsymbol{\phi}$ is never built, and
+  [6.4](/sections/6-4), which makes the dual view Bayesian.
+

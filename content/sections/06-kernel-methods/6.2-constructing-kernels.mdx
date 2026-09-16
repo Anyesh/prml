@@ -1,0 +1,165 @@
+---
+chapter: 6
+section: "6.2"
+title: Constructing Kernels
+bookPages: [294, 298]
+summary: A function is a valid kernel exactly when its Gram matrix is positive semi-definite on every possible set of points, and a short list of closed operations builds new valid kernels from old ones.
+concepts:
+  - kernel-trick
+  - valid-kernel
+prereqs: ["6.1"]
+equations:
+  - { id: "6.11", name: homogeneous quadratic kernel }
+  - { id: "6.12", name: quadratic kernel expanded }
+  - { id: "6.17", name: sum of kernels }
+  - { id: "6.18", name: product of kernels }
+  - { id: "6.23", name: Gaussian kernel }
+  - { id: "6.37", name: sigmoidal kernel }
+widgets: [KernelConstructionPlayground]
+difficulty: 3
+---
+
+import KernelConstructionPlayground from '@widgets/ch06/KernelConstructionPlayground';
+import BasisToKernel from '@widgets/ch06/figures/BasisToKernel';
+import PolynomialKernelMonomialGrowth from '@widgets/ch06/figures/PolynomialKernelMonomialGrowth';
+import InvalidKernelEigenvalue from '@widgets/ch06/figures/InvalidKernelEigenvalue';
+import PolynomialFeatureMapEquivalence from '@widgets/ch06/figures/PolynomialFeatureMapEquivalence';
+
+## Intuition
+
+6.1 showed that a linear model's dual form never touches the feature map directly, only a
+comparison between two inputs. That raises the obvious question the other way round: which
+comparisons are even allowed to stand in for one?
+
+Building the feature map first and reading off its inner product always works, but it is
+exactly the step the dual form was trying to avoid. What is needed is a way to write down a
+comparison directly and know, without ever constructing a feature space, that some feature
+space would have produced it.
+
+A short list of operations answers this. Combine known-good kernels by adding them,
+multiplying them, or scaling one by a positive number, and the result is guaranteed good
+too. That list is what turns "pick a kernel" from guesswork into engineering.
+
+## The math
+
+The simplest route to a kernel is still to pick $\boldsymbol{\phi}$ and read off the inner
+product, as here for two dimensions:
+
+<MathBlock id="6.11" name="homogeneous quadratic kernel">
+
+$$k(\mathbf{x}, \mathbf{z}) = (\mathbf{x}^{\mathrm{T}}\mathbf{z})^2$$
+
+</MathBlock>
+
+<MathBlock id="6.12" name="quadratic kernel expanded">
+
+$$k(\mathbf{x}, \mathbf{z}) = (x_1^2, \sqrt{2}x_1x_2, x_2^2)(z_1^2, \sqrt{2}z_1z_2, z_2^2)^{\mathrm{T}} = \boldsymbol{\phi}(\mathbf{x})^{\mathrm{T}}\boldsymbol{\phi}(\mathbf{z})$$
+
+</MathBlock>
+
+<Figure caption="Five Gaussian basis functions above, the single kernel curve their sum of products induces below." source="6.1" width="wide">
+  <BasisToKernel client:visible />
+</Figure>
+
+The other direction needs a test that never mentions $\boldsymbol{\phi}$: $k$ is a valid
+kernel exactly when its Gram matrix is positive semi-definite for every possible finite set
+of points, a condition on $k$ alone. From it come closed construction rules; the ones this
+section uses are
+
+<MathBlock id="6.17" name="sum of kernels">
+
+$$k(\mathbf{x}, \mathbf{x}') = k_1(\mathbf{x}, \mathbf{x}') + k_2(\mathbf{x}, \mathbf{x}')$$
+
+</MathBlock>
+
+<MathBlock id="6.18" name="product of kernels">
+
+$$k(\mathbf{x}, \mathbf{x}') = k_1(\mathbf{x}, \mathbf{x}')k_2(\mathbf{x}, \mathbf{x}')$$
+
+</MathBlock>
+
+and two named kernels built from them: the Gaussian,
+
+<MathBlock id="6.23" name="Gaussian kernel">
+
+$$k(\mathbf{x}, \mathbf{x}') = \exp\!\left(-\|\mathbf{x} - \mathbf{x}'\|^2 / 2\sigma^2\right)$$
+
+</MathBlock>
+
+whose feature space has infinite dimension, and the sigmoidal kernel, which the rules above
+do not cover and which is generally not valid at all:
+
+<MathBlock id="6.37" name="sigmoidal kernel">
+
+$$k(\mathbf{x}, \mathbf{x}') = \tanh(a\mathbf{x}^{\mathrm{T}}\mathbf{x}' + b)$$
+
+</MathBlock>
+
+<Figure caption="Ten fixed points, one sigmoidal kernel, its slope swept: the smallest Gram-matrix eigenvalue crosses zero and keeps falling." width="wide">
+  <InvalidKernelEigenvalue client:visible />
+</Figure>
+
+A degree-$M$ polynomial kernel is one dot product, however large its implied feature space:
+
+<Figure caption="What a polynomial kernel's feature space would cost to build directly, against input dimension, for three degrees." width="wide">
+  <PolynomialKernelMonomialGrowth client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Kernel construction playground"
+  figure="6.1"
+  caption="Pick two kernels and a way to combine them. Watch the Gram matrix and the readout below it; set the combiner to subtraction and find a setting where the smallest eigenvalue goes negative."
+>
+  <KernelConstructionPlayground client:visible />
+</Widget>
+
+Sum and product never produce a negative eigenvalue here, whatever the two base kernels are.
+Subtraction is not one of the book's rules, and it is easy to break.
+
+## Worked example
+
+Take $\mathbf{x} = (1.5, -0.8)$ and $\mathbf{z} = (0.6, 1.2)$. Direct evaluation gives
+$(\mathbf{x}^{\mathrm{T}}\mathbf{z})^2 = (-0.06)^2 = 0.0036$.
+
+<Figure caption="The three feature-map components for x and for z; their dot product matches the direct kernel value above." source="6.1">
+  <PolynomialFeatureMapEquivalence client:visible />
+</Figure>
+
+Building $\boldsymbol{\phi}$ from 6.12 and taking $\boldsymbol{\phi}(\mathbf{x})^{\mathrm{T}}\boldsymbol{\phi}(\mathbf{z})$
+gives $0.0036$ again, to four decimal places. Nothing about either route is an
+approximation of the other; they compute the same number by construction.
+
+## Recall
+
+<Recall question="What is the actual test for whether a function is a valid kernel?" concepts={["valid-kernel"]}>
+Its Gram matrix must be positive semi-definite for every possible finite set of points.
+That is a condition on the function alone, with no feature map required.
+</Recall>
+
+<Recall question="Why is sum, product and scaling by a positive constant safe, but subtraction is not?" concepts={["valid-kernel"]}>
+The construction rules are proved from properties positive semi-definite matrices keep
+under addition, multiplication and positive scaling. Subtracting can produce a matrix with
+a negative eigenvalue, so nothing guarantees the result stays valid.
+</Recall>
+
+<Recall question="What does the kernel trick actually substitute for what?" concepts={["kernel-trick"]}>
+Every inner product an algorithm computes gets replaced by a kernel evaluation, which
+stands for an inner product in a feature space that is never built, sometimes because it
+is infinite-dimensional.
+</Recall>
+
+<Recall question="Does a bigger implied feature space cost more to evaluate a polynomial kernel?" concepts={["kernel-trick"]}>
+No. $(\mathbf{x}^{\mathrm{T}}\mathbf{x}' + c)^M$ is one dot product and one power, regardless
+of how many monomials that feature space would contain if written out.
+</Recall>
+
+## Connections
+
+- **Builds on** [6.1](/sections/6-1) for the definition of a kernel and the Gram matrix.
+- **Answers** [3.6](/sections/3-6)'s complaint about fixed bases: a kernel can use a feature
+  space no one ever constructs, including an infinite one.
+- **Leads to** [6.3](/sections/6-3), which places kernels at the data as a regression model,
+  and [6.4](/sections/6-4), which puts a distribution over the functions a kernel allows.
+
