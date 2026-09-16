@@ -1,0 +1,18 @@
+{
+  "source": "Bishop, Pattern Recognition and Machine Learning (2006)",
+  "reason": "PDF pages 581-620 (book pages 561-600, all inside chapter 12) carry a HiddenHorzOCR font instead of the vector Times-Roman used everywhere else in the document, so that range is a scanned OCR overlay rather than a real text layer. Flush-right equation numbers there are unrecoverable by any detector. Every other chapter's numbering is a perfectly contiguous 1..N run, which is what establishes that these ten ids exist rather than being genuine skips in the book's numbering.",
+  "provenance": "ids derived from per-chapter numbering contiguity; bookPage bracketed by the nearest recovered neighbours and therefore approximate to within one page",
+  "count": 10,
+  "equations": [
+    { "id": "12.22", "chapter": 12, "pdfPage": 587, "bookPage": 567, "approximate": true },
+    { "id": "12.34", "chapter": 12, "pdfPage": 592, "bookPage": 572, "approximate": true },
+    { "id": "12.35", "chapter": 12, "pdfPage": 593, "bookPage": 573, "approximate": true },
+    { "id": "12.53", "chapter": 12, "pdfPage": 598, "bookPage": 578, "approximate": true },
+    { "id": "12.65", "chapter": 12, "pdfPage": 604, "bookPage": 584, "approximate": true },
+    { "id": "12.66", "chapter": 12, "pdfPage": 605, "bookPage": 585, "approximate": true },
+    { "id": "12.67", "chapter": 12, "pdfPage": 605, "bookPage": 585, "approximate": true },
+    { "id": "12.68", "chapter": 12, "pdfPage": 606, "bookPage": 586, "approximate": true },
+    { "id": "12.74", "chapter": 12, "pdfPage": 607, "bookPage": 587, "approximate": true },
+    { "id": "12.75", "chapter": 12, "pdfPage": 607, "bookPage": 587, "approximate": true }
+  ]
+}
