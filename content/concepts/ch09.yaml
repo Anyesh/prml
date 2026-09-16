@@ -1,0 +1,87 @@
+- id: k-means-clustering
+  name: "K-means clustering"
+  definition: "Partitioning unlabelled points into K groups by alternating a hard nearest-centre assignment with recentring each group's mean, until neither step changes anything. Guaranteed to terminate, not to find the best partition."
+  introducedIn: "9.1"
+  usedIn: ["9.2", "9.3"]
+  requires: []
+  aliases: ["K-means", "Lloyd's algorithm"]
+
+- id: distortion-measure
+  name: "Distortion measure"
+  definition: "The sum of squared distances from every point to the centre of its assigned cluster. K-means minimises it by coordinate descent, decreasing or holding it at every single step."
+  introducedIn: "9.1"
+  usedIn: ["9.3"]
+  requires: []
+  aliases: ["J"]
+
+- id: vector-quantization
+  name: "Vector quantization"
+  definition: "Replacing each point by the mean of its cluster and storing only the K means plus one label per point. A direct reading of K-means as lossy compression, at a ratio set by K against the number of points."
+  introducedIn: "9.1"
+  usedIn: []
+  requires: ["k-means-clustering"]
+  aliases: ["codebook compression"]
+
+- id: gaussian-mixture-model
+  name: "Gaussian mixture model"
+  definition: "A density built as a weighted sum of Gaussian components, each with its own mean and covariance. Flexible enough to fit multimodal data that a single Gaussian cannot, at the cost of a likelihood with no closed-form maximiser."
+  introducedIn: "9.2"
+  usedIn: ["9.3", "9.4"]
+  requires: []
+  aliases: ["GMM", "mixture of Gaussians"]
+
+- id: responsibility
+  name: "Responsibility"
+  definition: "The posterior probability that a given mixture component generated a given point, given the current parameters. A soft, graded version of the all-or-nothing cluster membership K-means assigns."
+  introducedIn: "9.2"
+  usedIn: ["9.3", "9.4"]
+  requires: ["gaussian-mixture-model"]
+  aliases: ["gamma"]
+
+- id: likelihood-singularity
+  name: "Likelihood singularity"
+  definition: "A genuine divergence of the mixture likelihood to infinity when one component's mean lands on a single data point and its covariance shrinks towards zero. Not a numerical bug; a real property of the maximum-likelihood objective that EM must be kept from chasing."
+  introducedIn: "9.2"
+  usedIn: []
+  requires: ["gaussian-mixture-model"]
+  aliases: ["mixture collapse"]
+
+- id: expectation-maximisation
+  name: "Expectation-maximisation"
+  definition: "An iterative fit for models with unobserved structure: an E-step computes responsibilities under the current parameters, an M-step re-fits the parameters against those responsibilities, and the incomplete-data likelihood never decreases across the pair."
+  introducedIn: "9.2"
+  usedIn: ["9.3", "9.4"]
+  requires: ["responsibility"]
+  aliases: ["EM"]
+
+- id: complete-data-log-likelihood
+  name: "Expected complete-data log-likelihood"
+  definition: "The log-likelihood a fully-labelled dataset would have, averaged over the current responsibilities rather than over the true unknown labels. The quantity the M-step actually maximises; equal to the incomplete-data log-likelihood only once the entropy of the responsibilities is added back."
+  introducedIn: "9.3"
+  usedIn: ["9.4"]
+  requires: ["expectation-maximisation"]
+  aliases: ["Q function"]
+
+- id: k-means-as-em-limit
+  name: "K-means as an EM limit"
+  definition: "Sharing one covariance epsilon*I across every component and letting epsilon shrink to zero turns soft responsibilities into K-means's hard indicator, and the expected complete-data log-likelihood into the K-means distortion measure. K-means is the zero-variance limit of EM for a Gaussian mixture, not a separate algorithm."
+  introducedIn: "9.3"
+  usedIn: []
+  requires: ["expectation-maximisation", "k-means-clustering"]
+  aliases: []
+
+- id: em-lower-bound
+  name: "EM lower bound"
+  definition: "A functional of a distribution q over the unobserved variables and the parameters, always at or below the true log-likelihood for any q. The E-step maximises it over q with parameters fixed; the M-step maximises it over parameters with q fixed. This is what EM actually optimises."
+  introducedIn: "9.4"
+  usedIn: []
+  requires: ["complete-data-log-likelihood"]
+  aliases: ["L(q,theta)"]
+
+- id: kl-gap
+  name: "KL gap"
+  definition: "The KL divergence between q and the true posterior over the unobserved variables, exactly the distance between the EM lower bound and the true log-likelihood. Zero right after an E-step and generally positive again after the following M-step."
+  introducedIn: "9.4"
+  usedIn: []
+  requires: ["em-lower-bound"]
+  aliases: ["KL(q||p)"]

@@ -1,0 +1,152 @@
+---
+chapter: 9
+section: "9.3"
+title: An Alternative View of EM
+bookPages: [439, 449]
+summary: Rebuild the same E-step and M-step from a general argument about missing data, then watch K-means fall out of it as a limiting case.
+concepts:
+  - complete-data-log-likelihood
+  - k-means-as-em-limit
+  - responsibility
+  - expectation-maximisation
+prereqs: ["9.2"]
+equations:
+  - { id: "9.30", name: expected complete-data log-likelihood functional }
+  - { id: "9.39", name: responsibility as an expectation }
+  - { id: "9.40", name: Q function for a Gaussian mixture }
+  - { id: "9.42", name: responsibility under a shared shrinking variance }
+  - { id: "9.43", name: K-means as the zero-variance limit }
+widgets: [ResponsibilityTemperature]
+difficulty: 4
+---
+
+import ResponsibilityTemperature from '@widgets/ch09/ResponsibilityTemperature';
+import SoftIndicatorBars from '@widgets/ch09/figures3/SoftIndicatorBars';
+import KMeansAsLimit from '@widgets/ch09/figures3/KMeansAsLimit';
+import CompleteVsIncompleteLL from '@widgets/ch09/figures3/CompleteVsIncompleteLL';
+import WorkedTemperatureTrace from '@widgets/ch09/figures3/WorkedTemperatureTrace';
+
+## Intuition
+
+The previous section derived the E-step and M-step by differentiating the mixture
+log-likelihood directly. That derivation worked, but it is a coincidence-looking pile of
+algebra unless you can see why it had to come out that way. This section supplies the why.
+
+Imagine someone secretly told you which component generated every point. Fitting the
+mixture would then be easy: split the data by its labels and fit each Gaussian separately.
+Nobody tells you the labels, so instead you use your current best guess about them, in the
+form of a probability over labels for every point, and fit against that guess on average.
+That is the entire idea. It also explains a fact from last section that otherwise looks like
+a happy accident: fixing every component to share one variance and shrinking that variance
+to nothing turns this soft guessing back into K-means's flat commitment.
+
+## The math
+
+Treat every $\gamma(z_{nk})$ as coming from a posterior over an unobserved label, rather
+than as something calculus happened to produce:
+
+<MathBlock id="9.39" name="responsibility as an expectation">
+
+$$\mathbb{E}[z_{nk}] = \gamma(z_{nk})$$
+
+</MathBlock>
+
+Plugging that into the log of the complete-data likelihood and taking its expectation gives
+the quantity EM actually maximises at each M-step, a stand-in for the log-likelihood you
+cannot maximise directly because the labels are unknown:
+
+<MathBlock id="9.30" name="expected complete-data log-likelihood functional">
+
+$$Q(\boldsymbol\theta,\boldsymbol\theta^{\text{old}}) = \mathbb{E}_{Z}\big[\ln p(\mathbf{X},\mathbf{Z}\mid\boldsymbol\theta)\big]$$
+
+</MathBlock>
+
+<MathBlock id="9.40" name="Q function for a Gaussian mixture">
+
+$$Q = \sum_{n}\sum_{k}\gamma(z_{nk})\big\{\ln \pi_k + \ln\mathcal{N}(\mathbf{x}_n\mid\boldsymbol\mu_k,\boldsymbol\Sigma_k)\big\}$$
+
+</MathBlock>
+
+Maximising 9.40 over $\boldsymbol\mu_k,\boldsymbol\Sigma_k,\pi_k$ reproduces last section's
+update equations exactly, which is the point: two routes, one answer.
+
+<Figure caption="The incomplete-data log-likelihood against the Q function it is built from, on the same EM run. Q sits below by exactly the entropy of the responsibilities.">
+  <CompleteVsIncompleteLL client:visible />
+</Figure>
+
+Now share one covariance $\varepsilon\mathbf{I}$ across every component:
+
+<MathBlock id="9.42" name="responsibility under a shared shrinking variance">
+
+$$\gamma(z_{nk}) = \frac{\pi_k \exp\{-\lVert\mathbf{x}_n-\boldsymbol\mu_k\rVert^2/2\varepsilon\}}{\sum_j \pi_j \exp\{-\lVert\mathbf{x}_n-\boldsymbol\mu_j\rVert^2/2\varepsilon\}}$$
+
+</MathBlock>
+
+As $\varepsilon\to0$ the responsibility for the nearest mean is driven to 1 and every other
+one to 0, and $Q$ itself converges to the negative of the K-means distortion measure:
+
+<MathBlock id="9.43" name="K-means as the zero-variance limit">
+
+$$Q \to -\tfrac{1}{2}\sum_n\sum_k r_{nk}\lVert\mathbf{x}_n-\boldsymbol\mu_k\rVert^2 + \text{const}$$
+
+</MathBlock>
+
+<Figure caption="The responsibility-weighted squared distance, as epsilon shrinks, closing in on the K-means distortion J from the same means." source="9.3.2">
+  <KMeansAsLimit client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="From soft responsibility to hard indicator"
+  figure="9.3.2"
+  caption="Drag epsilon down and watch the blended colours snap to the K-means split, with no other change to the model."
+>
+  <ResponsibilityTemperature client:visible />
+</Widget>
+
+## Worked example
+
+Fix two means from the previous section's data. At a point near their boundary, the
+responsibility to the farther mean is $0.00106$ at $\varepsilon=1.2$, falls to $4.0\times
+10^{-72}$ at $\varepsilon=0.05$, and underflows to exactly $0$ in double precision by
+$\varepsilon=0.001$: a soft indicator becoming a hard one is not a metaphor here, it is a
+number hitting the floor of floating point.
+
+<Figure caption="That one point's responsibility to the farther component, tracked continuously as epsilon shrinks.">
+  <SoftIndicatorBars client:visible />
+</Figure>
+
+<Figure caption="The same trace, plotted continuously over epsilon rather than at two values.">
+  <WorkedTemperatureTrace client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="What does the Q function stand in for, and why is it needed?" concepts={["complete-data-log-likelihood"]}>
+It stands in for the log-likelihood of the fully-labelled data, which cannot be computed
+because the labels are unknown. Replacing each label by its expectation under the current
+responsibilities gives something that can be maximised, and maximising it is exactly what
+the M-step does.
+</Recall>
+
+<Recall question="How does K-means emerge from EM for a Gaussian mixture, precisely?" concepts={["k-means-as-em-limit"]}>
+Fix every component's covariance to a shared, non-re-estimated epsilon*I. As epsilon shrinks
+to zero, every responsibility becomes a hard 0/1 indicator for the nearest mean, and the
+mean-only M-step and the Q function reduce exactly to K-means's update and its distortion
+measure.
+</Recall>
+
+<Recall question="Is the equivalence between Q's maximisation and last section's update equations a coincidence?" concepts={["expectation-maximisation"]}>
+No. Both routes maximise the same underlying quantity; one reaches it by differentiating the
+mixture log-likelihood directly, the other by first replacing the unknown labels with their
+expectations. Agreement between them is a consistency check, not a coincidence.
+</Recall>
+
+## Connections
+
+- **[9.2](/sections/9-2)** supplied the E-step and M-step this section re-derives from a
+  general principle.
+- **[9.1](/sections/9-1)** is recovered exactly as the zero-variance limit shown above.
+- **[9.4](/sections/9-4)** generalises this Q-function argument to any model with
+  unobserved structure, via a lower bound rather than an expectation.

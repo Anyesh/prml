@@ -1,0 +1,174 @@
+---
+chapter: 9
+section: "9.2"
+title: Mixtures of Gaussians
+bookPages: [430, 438]
+summary: Replace K-means's all-or-nothing cluster membership with a probability, and the two-phase update becomes expectation-maximisation for a Gaussian mixture.
+concepts:
+  - gaussian-mixture-model
+  - responsibility
+  - likelihood-singularity
+  - expectation-maximisation
+  - k-means-clustering
+prereqs: ["9.1", "2.3"]
+equations:
+  - { id: "9.7", name: mixture density }
+  - { id: "9.13", name: responsibility }
+  - { id: "9.14", name: mixture log-likelihood }
+  - { id: "9.15", name: singular likelihood term }
+  - { id: "9.17", name: mean update }
+  - { id: "9.19", name: covariance update }
+  - { id: "9.22", name: mixing coefficient update }
+widgets: [KMeansVsEM]
+difficulty: 3
+---
+
+import KMeansVsEM from '@widgets/ch09/KMeansVsEM';
+import MixtureDensitySurface from '@widgets/ch09/figures2/MixtureDensitySurface';
+import LogLikelihoodClimb from '@widgets/ch09/figures2/LogLikelihoodClimb';
+import CovarianceSingularity from '@widgets/ch09/figures2/CovarianceSingularity';
+import ResponsibilityWorked from '@widgets/ch09/figures2/ResponsibilityWorked';
+
+## Intuition
+
+K-means forces every point to fully belong to one cluster, which is a strange thing to
+demand of a point sitting almost exactly between two of them. A Gaussian mixture model
+keeps the idea of several clusters but replaces the demand with a question: given several
+bell-shaped groups, each with its own centre and spread, how likely is it that each one
+produced this particular point?
+
+That question has a graded answer instead of a yes-or-no one, and the answer is what this
+section calls a responsibility. A point squarely inside one group is almost entirely that
+group's responsibility. A point on the boundary is shared. Fitting the mixture then means
+choosing every group's centre, spread, and share of the data so that the observed points,
+taken together, were as likely as possible under the model. The catch is that there is no
+formula for the best answer, only a way to improve any current guess.
+
+## The math
+
+A mixture places weight $\pi_k$ on each Gaussian component:
+
+<MathBlock id="9.7" name="mixture density">
+
+$$p(\mathbf{x}) = \sum_{k=1}^{K} \pi_k\, \mathcal{N}(\mathbf{x} \mid \boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)$$
+
+</MathBlock>
+
+The responsibility is the posterior probability that component $k$ produced $\mathbf{x}$:
+
+<MathBlock id="9.13" name="responsibility">
+
+$$\gamma(z_k) = \frac{\pi_k\, \mathcal{N}(\mathbf{x}\mid \boldsymbol{\mu}_k,\boldsymbol{\Sigma}_k)}{\sum_j \pi_j\, \mathcal{N}(\mathbf{x}\mid \boldsymbol{\mu}_j,\boldsymbol{\Sigma}_j)}$$
+
+</MathBlock>
+
+Maximising the log-likelihood over the whole dataset has no closed form, because a sum sits
+inside the log:
+
+<MathBlock id="9.14" name="mixture log-likelihood">
+
+$$\ln p(\mathbf{X}\mid\boldsymbol\pi,\boldsymbol\mu,\boldsymbol\Sigma) = \sum_{n=1}^{N} \ln\Big[\sum_{k=1}^{K}\pi_k\,\mathcal{N}(\mathbf{x}_n\mid\boldsymbol\mu_k,\boldsymbol\Sigma_k)\Big]$$
+
+</MathBlock>
+
+It also has a genuine singularity: if $\boldsymbol\mu_k$ lands exactly on a point and that
+component's variance shrinks towards zero, that one term diverges:
+
+<MathBlock id="9.15" name="singular likelihood term">
+
+$$\mathcal{N}(\mathbf{x}_n \mid \mathbf{x}_n, \sigma_j^2\mathbf{I}) = \frac{1}{(2\pi)^{1/2}\sigma_j} \to \infty \text{ as } \sigma_j \to 0$$
+
+</MathBlock>
+
+<Figure caption="Log density at one point as a second, small-weight component's variance shrinks onto it. Nothing else about the model changes; the divergence is real." source="9.7">
+  <CovarianceSingularity client:visible />
+</Figure>
+
+EM sidesteps direct maximisation: an E-step computes every $\gamma(z_{nk})$ from the current
+parameters, then an M-step re-fits each parameter as a responsibility-weighted statistic,
+holding $\gamma$ fixed:
+
+<MathBlock id="9.17" name="mean update">
+
+$$\boldsymbol\mu_k = \frac{1}{N_k}\sum_n \gamma(z_{nk})\,\mathbf{x}_n$$
+
+</MathBlock>
+
+<MathBlock id="9.19" name="covariance update">
+
+$$\boldsymbol\Sigma_k = \frac{1}{N_k}\sum_n \gamma(z_{nk})(\mathbf{x}_n-\boldsymbol\mu_k)(\mathbf{x}_n-\boldsymbol\mu_k)^{\mathrm{T}}$$
+
+</MathBlock>
+
+<MathBlock id="9.22" name="mixing coefficient update">
+
+$$\pi_k = \frac{N_k}{N}, \qquad N_k = \sum_n \gamma(z_{nk})$$
+
+</MathBlock>
+
+<Figure caption="Two components, weights 0.6 and 0.4, drawn as a density field." source="9.6">
+  <MixtureDensitySurface client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Hard versus soft: K-means and EM side by side"
+  figure="9.5"
+  caption="Step both panels through the same rounds. Watch a boundary point stay blended on the right while the left forces it to one colour."
+>
+  <KMeansVsEM client:visible />
+</Widget>
+
+<Figure caption="The incomplete-data log-likelihood from the run above, rising at every EM iteration and never falling.">
+  <LogLikelihoodClimb client:visible />
+</Figure>
+
+## Worked example
+
+Take a two-component mixture with weights $0.6$ and $0.4$, means $(0,0)$ and $(3,3)$, and
+the covariances plotted above. At $\mathbf{x}=(1.5,1.5)$, exactly between the two means, the
+log density is $-3.94$ and the responsibilities are $\gamma_1 = 0.913$, $\gamma_2 = 0.087$:
+closer in Euclidean distance to neither mean, but far more probable under the first
+component once each component's own spread and weight are accounted for.
+
+<Figure caption="The two responsibilities at (1.5, 1.5), sized by their value.">
+  <ResponsibilityWorked client:visible />
+</Figure>
+
+K-means at the same means would give this point entirely to whichever mean is nearer,
+losing the fact that the two components disagree far less evenly than a coin flip.
+
+## Recall
+
+<Recall question="What does a responsibility gamma(z_k) actually mean?" concepts={["responsibility"]}>
+It is the posterior probability, under the current parameters, that component $k$
+generated a given point, computed from Bayes' theorem with $\pi_k$ as the prior. It
+replaces K-means's 0/1 indicator with a number between 0 and 1.
+</Recall>
+
+<Recall question="Why can the mixture log-likelihood not be maximised in closed form?" concepts={["gaussian-mixture-model"]}>
+The log of a sum over components does not simplify the way the log of a single Gaussian
+does; each term in the log-likelihood mixes all $K$ components together, coupling every
+parameter to every other.
+</Recall>
+
+<Recall question="Is the mixture likelihood's singularity a bug in the fitting procedure?" concepts={["likelihood-singularity"]}>
+No. It is a genuine unboundedness of the likelihood function itself: a component that
+collapses onto one point with vanishing variance drives that one density term, and hence
+the whole likelihood, to infinity. Good implementations detect and avoid it; they cannot
+define it away.
+</Recall>
+
+<Recall question="In one sentence, what do the E-step and M-step each hold fixed?" concepts={["expectation-maximisation"]}>
+The E-step fixes the parameters and updates the responsibilities; the M-step fixes the
+responsibilities and updates the parameters against them, as a weighted statistic.
+</Recall>
+
+## Connections
+
+- **[9.1](/sections/9-1)** is the hard-assignment special case this section generalises.
+- **2.3**, the multivariate Gaussian, supplies every component density used here.
+- **[9.3](/sections/9-3)** rebuilds this same E-step and M-step from a general argument
+  about incomplete data, rather than from calculus on 9.14 directly.
+- **[9.4](/sections/9-4)** proves the log-likelihood cannot decrease across an EM iteration.

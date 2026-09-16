@@ -1,0 +1,148 @@
+---
+chapter: 9
+section: "9.1"
+title: K-means Clustering
+bookPages: [424, 429]
+summary: Split unlabelled data into groups by alternating two simple moves, each of which can only make the fit better, until neither one changes anything.
+concepts:
+  - k-means-clustering
+  - distortion-measure
+  - vector-quantization
+prereqs: []
+equations:
+  - { id: "9.1", name: distortion measure }
+  - { id: "9.2", name: hard assignment }
+  - { id: "9.4", name: mean update }
+widgets: [KMeansStepThrough]
+difficulty: 2
+---
+
+import KMeansStepThrough from '@widgets/ch09/KMeansStepThrough';
+import DistortionEM from '@widgets/ch09/figures/DistortionEM';
+import LocalMinimaSeeds from '@widgets/ch09/figures/LocalMinimaSeeds';
+import WorkedExampleTrace from '@widgets/ch09/figures/WorkedExampleTrace';
+import CompressionCost from '@widgets/ch09/figures/CompressionCost';
+
+## Intuition
+
+Sometimes nobody hands you labels. You have a pile of points and a hunch that they fall
+into groups, and the task is to find the groups from the points alone. K-means is the
+plainest way to try: guess a handful of representative locations, hand every point to
+whichever representative it is closest to, then move each representative to sit in the
+middle of the points now claiming it. Repeat.
+
+Neither move can make things worse, which is why the procedure is trustworthy enough to
+reach for first. It is also why it is not the whole story. Every point must fully commit to
+one group the moment it is closer to that group's centre, even by a hair, and a point sitting
+exactly between two groups gets no say in the matter. That all-or-nothing commitment is the
+one thing the rest of this chapter exists to soften.
+
+## The math
+
+Write $r_{nk}=1$ if point $n$ is currently assigned to cluster $k$, else $0$. The quantity
+being minimised is the total squared distance from every point to its own cluster's centre:
+
+<MathBlock id="9.1" name="distortion measure">
+
+$$J = \sum_{n=1}^{N}\sum_{k=1}^{K} r_{nk} \lVert \mathbf{x}_n - \boldsymbol{\mu}_k \rVert^2$$
+
+</MathBlock>
+
+$J$ is linear in $\{r_{nk}\}$ for fixed $\{\boldsymbol{\mu}_k\}$, and quadratic in
+$\{\boldsymbol{\mu}_k\}$ for fixed $\{r_{nk}\}$, so minimising each in turn is closed-form
+both times. Fixing the means, the best assignment sends each point to its nearest one:
+
+<MathBlock id="9.2" name="hard assignment">
+
+$$r_{nk} = \begin{cases} 1 & k = \arg\min_j \lVert \mathbf{x}_n - \boldsymbol{\mu}_j \rVert^2 \\ 0 & \text{otherwise} \end{cases}$$
+
+</MathBlock>
+
+Fixing the assignment, the best mean is the average of its members:
+
+<MathBlock id="9.4" name="mean update">
+
+$$\boldsymbol{\mu}_k = \frac{\sum_n r_{nk}\,\mathbf{x}_n}{\sum_n r_{nk}}$$
+
+</MathBlock>
+
+Each phase can only lower $J$ or leave it unchanged, and there are only finitely many ways
+to partition $N$ points into $K$ groups, so the alternation must stop. It stops at *a*
+minimum, not necessarily *the* minimum.
+
+<Figure caption="Distortion measured right after each E-step and right after the M-step that follows it. Both curves fall or flatten, never rise; once a round changes nothing, the algorithm has converged." source="9.2">
+  <DistortionEM client:visible />
+</Figure>
+
+<Figure caption="The same data and the same K, run from six different random starting means. Five of the six land above the best found, by margins from about 13 to 38: the guarantee's limit is termination, not optimality.">
+  <LocalMinimaSeeds client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Stepping K-means"
+  figure="9.1"
+  caption="Press forward through E-steps and M-steps one at a time. Watch the Voronoi regions redraw at each M-step and J on the right fall at every step, never rise."
+>
+  <KMeansStepThrough client:visible />
+</Widget>
+
+Try the reset button for a fresh random start on the same points, then step through again.
+Some starts settle in noticeably more steps than others, and not all of them settle onto the
+same partition.
+
+## Worked example
+
+Seven points, two clusters, means started at $(0,0)$ and $(5,5)$: after one E-step and
+M-step, the means move to $(0.875, 0.875)$ and $(5.33, 5.33)$, and $J$ falls from $16.5$ to
+$9.708$. A second round changes nothing, so it has converged.
+
+<Figure caption="The worked example: seven points, their converged assignment, the starting means (rings) and the converged means (crosses).">
+  <WorkedExampleTrace client:visible />
+</Figure>
+
+Treat each pixel of an image as a point in colour space and K-means gives lossy
+compression: store $K$ colours plus one label per pixel instead of a full colour per pixel.
+For an $80\times60$ image at 24 bits per pixel, $K=2$ colours cost only $4.2\%$ of the raw
+size; $K=8$ costs $12.7\%$. More colours, better fidelity, worse ratio.
+
+<Figure caption="Compressed size as a percentage of the raw image, against the number of colours K, for the 80x60 example above.">
+  <CompressionCost client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="Why does K-means always terminate?" concepts={["distortion-measure"]}>
+Each phase minimises $J$ exactly given the other set of variables fixed, so $J$ never
+increases. There are only finitely many ways to partition $N$ points into $K$ groups, so a
+non-increasing sequence over a finite set of values must eventually repeat, at which point
+neither phase changes anything.
+</Recall>
+
+<Recall question="Does K-means terminating mean it found the best clustering?" concepts={["k-means-clustering"]}>
+No. It guarantees a local minimum of $J$, not the global one. Different random starting
+means can converge to different final partitions with different final distortions, which is
+why running it from several starts and keeping the best is standard practice.
+</Recall>
+
+<Recall question="What single commitment does the assignment step (9.2) force on every point?" concepts={["k-means-clustering"]}>
+Every point belongs entirely to exactly one cluster, decided solely by which mean is
+nearest, even for a point almost exactly between two means. There is no notion of a point
+partly belonging to two clusters.
+</Recall>
+
+<Recall question="How does K-means turn into lossy image compression?" concepts={["vector-quantization"]}>
+Cluster the pixels' colours, then replace every pixel by its cluster's mean colour. Storage
+only needs the $K$ mean colours plus one label per pixel, rather than a full colour per
+pixel, at the cost of every pixel in a cluster now sharing one approximate colour.
+</Recall>
+
+## Connections
+
+- **Starting point.** Nothing earlier in the book is required; K-means only needs points
+  and a distance.
+- **[9.2](/sections/9-2)** replaces hard assignment with a probability of membership,
+  softening exactly the commitment flagged above.
+- **[9.3](/sections/9-3)** shows K-means is the limit of that softer version as the
+  uncertainty is squeezed to zero.

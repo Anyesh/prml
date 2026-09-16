@@ -1,0 +1,152 @@
+---
+chapter: 9
+section: "9.4"
+title: The EM Algorithm in General
+bookPages: [450, 460]
+summary: One picture explains why EM never makes the log-likelihood worse, for any model with unobserved structure, not only Gaussian mixtures.
+concepts:
+  - em-lower-bound
+  - kl-gap
+  - expectation-maximisation
+  - complete-data-log-likelihood
+prereqs: ["9.3"]
+equations:
+  - { id: "9.70", name: exact decomposition of the log-likelihood }
+  - { id: "9.71", name: the lower bound functional }
+  - { id: "9.72", name: the KL divergence term }
+  - { id: "9.74", name: the bound after an E-step equals Q }
+widgets: [LowerBoundClimb]
+difficulty: 4
+---
+
+import LowerBoundClimb from '@widgets/ch09/LowerBoundClimb';
+import BoundTouchesCurve from '@widgets/ch09/figures4/BoundTouchesCurve';
+import KlGapPlot from '@widgets/ch09/figures4/KlGapPlot';
+import LogLikelihoodTrace from '@widgets/ch09/figures4/LogLikelihoodTrace';
+import GapComparison from '@widgets/ch09/figures4/GapComparison';
+
+## Intuition
+
+Every earlier claim in this chapter, that EM's log-likelihood never falls, that K-means is
+a limit of it, rested on inspecting specific formulas for a Gaussian mixture. None of that
+proves anything about a different model with its own unobserved structure: a hidden Markov
+model, a mixture of Bernoullis, a Bayesian linear regression with the weights treated as
+missing. This section proves the general claim once, for any such model, with a single
+picture: a curve, a bound that touches it, and the bound's own peak climbing the curve one
+step at a time.
+
+The reason a stand-in bound can be trusted at all is that it is never above the true curve.
+Improving the stand-in, which is easy, therefore never overstates how much the real thing
+improved. It can only understate it.
+
+## The math
+
+For any distribution $q$ over the unobserved variables $\mathbf{Z}$, the log-likelihood
+splits exactly into two pieces:
+
+<MathBlock id="9.70" name="exact decomposition of the log-likelihood">
+
+$$\ln p(\mathbf{X}\mid\boldsymbol\theta) = L(q,\boldsymbol\theta) + \mathrm{KL}(q\,\|\,p)$$
+
+</MathBlock>
+
+<MathBlock id="9.71" name="the lower bound functional">
+
+$$L(q,\boldsymbol\theta) = \sum_{\mathbf{Z}} q(\mathbf{Z})\,\ln\frac{p(\mathbf{X},\mathbf{Z}\mid\boldsymbol\theta)}{q(\mathbf{Z})}$$
+
+</MathBlock>
+
+<MathBlock id="9.72" name="the KL divergence term">
+
+$$\mathrm{KL}(q\,\|\,p) = -\sum_{\mathbf{Z}} q(\mathbf{Z})\,\ln\frac{p(\mathbf{Z}\mid\mathbf{X},\boldsymbol\theta)}{q(\mathbf{Z})}$$
+
+</MathBlock>
+
+Because a KL divergence is never negative, $L$ never exceeds the true log-likelihood, for
+any $q$ at all. The E-step picks $q=p(\mathbf{Z}\mid\mathbf{X},\boldsymbol\theta^{\text{old}})$,
+the one choice that zeroes the KL term and makes $L$ touch the curve exactly. Substituting
+that choice back in shows $L$ reduces to last section's $Q$ function plus a $q$-only
+constant:
+
+<Figure caption="The true log-likelihood curve and the bound built from one E-step, touching at exactly the theta that E-step used." source="9.12">
+  <BoundTouchesCurve client:visible />
+</Figure>
+
+<MathBlock id="9.74" name="the bound after an E-step equals Q">
+
+$$L(q,\boldsymbol\theta) = Q(\boldsymbol\theta,\boldsymbol\theta^{\text{old}}) + \text{const}$$
+
+</MathBlock>
+
+The M-step then maximises $L$ over $\boldsymbol\theta$ with $q$ held fixed. Because $L$
+still cannot exceed the curve, and the curve at the new $\boldsymbol\theta$ is at least as
+high as $L$ there, the log-likelihood's increase is at least as large as the bound's.
+
+<Figure caption="The KL gap between the bound and the curve, as a function of theta, for the q fixed at one particular point. Zero exactly where q was computed, positive everywhere else." source="9.11">
+  <KlGapPlot client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="The lower bound, stepping up the curve"
+  figure="9.14"
+  caption="Step forward. The E-step redraws the bound to touch the curve; the M-step slides to that bound's peak."
+>
+  <LowerBoundClimb client:visible />
+</Widget>
+
+## Worked example
+
+One parameter, two fixed-variance Gaussians, one free mean: starting the free mean far from
+either cluster gives a log-likelihood of $-26.31$. One EM round moves it to $-21.54$, a
+second to $-21.30$, and a third leaves it unchanged, having converged. At the exact E-step
+distribution the gap between bound and curve is $3.6\times10^{-15}$, numerically zero; pull
+that same distribution 60% of the way towards a uniform split instead and the gap opens to
+$12.82$ nats at the same parameters.
+
+<Figure caption="The log-likelihood at theta after each M-step of the widget above: -26.31, -21.54, -21.30, -21.30.">
+  <LogLikelihoodTrace client:visible />
+</Figure>
+
+<Figure caption="The KL gap at the same parameters, comparing the exact E-step distribution against a deliberately worse one.">
+  <GapComparison client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="Why does maximising a lower bound guarantee the true log-likelihood does not decrease?" concepts={["em-lower-bound"]}>
+Because the bound never exceeds the true log-likelihood for any q, at the new parameters
+the log-likelihood is at least as large as the bound there, and the M-step chose those
+parameters specifically to raise the bound above its value at the old parameters, which
+equalled the old log-likelihood exactly.
+</Recall>
+
+<Recall question="What does the KL gap measure, and when is it exactly zero?" concepts={["kl-gap"]}>
+It measures how far q is from the true posterior over the unobserved variables at the
+current parameters. It is exactly zero right after an E-step, because the E-step's whole
+job is choosing q to equal that posterior, and generally becomes positive again once the
+M-step moves the parameters without updating q.
+</Recall>
+
+<Recall question="What single fact makes the general EM argument apply to models far from Gaussian mixtures?" concepts={["expectation-maximisation"]}>
+The decomposition ln p(X|theta) = L(q,theta) + KL(q||p) holds for any joint distribution
+over observed and unobserved variables, with no assumption about what form that
+distribution takes. Everything downstream, the bound property and the monotonic increase,
+follows from that one identity alone.
+</Recall>
+
+<Recall question="How does the E-step's optimal q connect back to the Q function from 9.3?" concepts={["complete-data-log-likelihood"]}>
+Substituting the E-step's optimal q into L(q,theta) leaves exactly Q(theta,theta_old) plus a
+term that does not depend on theta, so maximising L over theta at that q is the same
+optimisation as maximising Q, tying the general argument back to the concrete update rule.
+</Recall>
+
+## Connections
+
+- **[9.3](/sections/9-3)** supplied the Q function this section's bound reduces to after an
+  E-step.
+- **[9.2](/sections/9-2)** and **[9.1](/sections/9-1)** are both instances this general
+  argument now covers rigorously, not just by example.
+- The bound-and-tangent picture reappears for variational inference in Chapter 10, with $q$
+  restricted to a tractable family instead of chosen exactly.
