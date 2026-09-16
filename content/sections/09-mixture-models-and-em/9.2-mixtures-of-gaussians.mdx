@@ -5,7 +5,7 @@ title: Mixtures of Gaussians
 bookPages: [430, 438]
 summary: Replace K-means's all-or-nothing cluster membership with a probability, and the two-phase update becomes expectation-maximisation for a Gaussian mixture.
 concepts:
-  - gaussian-mixture-model
+  - gaussian-mixture
   - responsibility
   - likelihood-singularity
   - expectation-maximisation
@@ -147,7 +147,7 @@ generated a given point, computed from Bayes' theorem with $\pi_k$ as the prior.
 replaces K-means's 0/1 indicator with a number between 0 and 1.
 </Recall>
 
-<Recall question="Why can the mixture log-likelihood not be maximised in closed form?" concepts={["gaussian-mixture-model"]}>
+<Recall question="Why can the mixture log-likelihood not be maximised in closed form?" concepts={["gaussian-mixture"]}>
 The log of a sum over components does not simplify the way the log of a single Gaussian
 does; each term in the log-likelihood mixes all $K$ components together, coupling every
 parameter to every other.

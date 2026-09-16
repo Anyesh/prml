@@ -1,0 +1,111 @@
+- id: linear-discriminant
+  name: "Linear discriminant"
+  definition: "A discriminant function whose decision surfaces are hyperplanes: y(x) = wᵀx + w0. Restricting to this family is what makes every method in this chapter's first section tractable, at the cost of only ever drawing straight boundaries."
+  introducedIn: "4.1"
+  usedIn: ["4.2", "4.3"]
+  requires: ["discriminant-function"]
+  aliases: ["linear classifier"]
+
+- id: linearly-separable
+  name: "Linearly separable"
+  definition: "A dataset for which some hyperplane classifies every training point correctly. The perceptron's convergence guarantee holds only here, and maximum likelihood for logistic regression breaks down here too, in the opposite direction: it finds too many perfect answers rather than none."
+  introducedIn: "4.1"
+  usedIn: ["4.3"]
+  requires: ["linear-discriminant"]
+  aliases: []
+
+- id: least-squares-classification
+  name: "Least squares for classification"
+  definition: "Fitting a linear discriminant by minimising squared error against 1-of-K target vectors, exactly as in regression. Inherits every property of a sum-of-squares fit, including sensitivity to points that are already correctly and confidently classified, which is precisely what makes it a poor classifier."
+  introducedIn: "4.1"
+  usedIn: []
+  requires: ["linear-discriminant", "sum-of-squares-error"]
+  aliases: []
+
+- id: fishers-linear-discriminant
+  name: "Fisher's linear discriminant"
+  definition: "The projection direction w ∝ S_W⁻¹(m2 − m1) that maximises between-class separation relative to within-class spread after projecting onto a line. Recovers the mean-difference direction only when the within-class covariance is isotropic."
+  introducedIn: "4.1"
+  usedIn: []
+  requires: ["linear-discriminant"]
+  aliases: ["Fisher LDA", "Fisher criterion"]
+
+- id: perceptron-algorithm
+  name: "Perceptron algorithm"
+  definition: "An error-driven update rule that nudges the weight vector toward a misclassified pattern one point at a time. Guaranteed to find a separating hyperplane in a finite number of steps if one exists, and to never terminate if one does not."
+  introducedIn: "4.1"
+  usedIn: []
+  requires: ["linear-discriminant", "linearly-separable"]
+  aliases: ["perceptron"]
+
+- id: multiclass-decomposition-ambiguity
+  name: "Multiclass decomposition ambiguity"
+  definition: "The regions left undecided when a K-class problem is built from binary classifiers taken pairwise (one-versus-one) or class-versus-rest (one-versus-rest): some inputs are claimed by none of the binary rules, or by more than one. A single K-output discriminant avoids the problem by construction."
+  introducedIn: "4.1"
+  usedIn: []
+  requires: ["discriminant-function"]
+  aliases: ["one-versus-rest", "one-versus-one"]
+
+- id: class-conditional-density
+  name: "Class-conditional density"
+  definition: "The density p(x | Ck) a generative classifier fits per class, combined with the class priors through Bayes' theorem to give the posterior. Choosing a shared covariance across classes cancels the quadratic term in the resulting posterior and leaves a linear boundary; separate covariances leave a quadratic one."
+  introducedIn: "4.2"
+  usedIn: ["4.3"]
+  requires: ["generative-model", "multivariate-gaussian"]
+  aliases: []
+
+- id: softmax-function
+  name: "Softmax function"
+  definition: "The normalised exponential exp(ak) / Σⱼ exp(aj) that turns K real-valued activations into a posterior over K classes, smoothly approaching a one-hot vector as the largest activation pulls away from the rest."
+  introducedIn: "4.2"
+  usedIn: ["4.3"]
+  requires: []
+  aliases: ["normalised exponential"]
+
+- id: logistic-regression
+  name: "Logistic regression"
+  definition: "A discriminative model that fits the posterior p(C1 | φ) = σ(wᵀφ) directly, with far fewer parameters than a generative Gaussian classifier over the same feature space, since it never models the class-conditional densities that produced that sigmoid in the first place."
+  introducedIn: "4.3"
+  usedIn: ["4.4", "4.5"]
+  requires: ["discriminative-model", "class-conditional-density"]
+  aliases: []
+
+- id: cross-entropy-error
+  name: "Cross-entropy error"
+  definition: "The negative log likelihood of a logistic or softmax model, −Σ{tₙ ln yₙ + (1 − tₙ) ln(1 − yₙ)}. Concave in the weights, so it has one minimum, but no longer quadratic, so that minimum has no closed form."
+  introducedIn: "4.3"
+  usedIn: ["4.4"]
+  requires: ["logistic-regression"]
+  aliases: []
+
+- id: iterative-reweighted-least-squares
+  name: "Iterative reweighted least squares"
+  definition: "Newton-Raphson applied to the cross-entropy error, which reduces to solving a weighted least-squares problem whose weighting matrix depends on the current fit, so the normal equations are re-solved every iteration with an updated weighting."
+  introducedIn: "4.3"
+  usedIn: ["4.5"]
+  requires: ["cross-entropy-error"]
+  aliases: ["IRLS", "Newton-Raphson"]
+
+- id: probit-regression
+  name: "Probit regression"
+  definition: "A discriminative model built on the standard normal CDF, Φ(a), in place of the logistic sigmoid. Nearly indistinguishable from logistic regression in fit quality, but its Gaussian tails make it noticeably more sensitive to outliers, and its convolution with a Gaussian stays inside the same family, which logistic regression's does not."
+  introducedIn: "4.3"
+  usedIn: ["4.5"]
+  requires: ["logistic-regression"]
+  aliases: ["probit function", "probit link"]
+
+- id: laplace-approximation
+  name: "Laplace approximation"
+  definition: "A Gaussian fit to an arbitrary density, centred at the mode with precision equal to the negative Hessian of the log density there. Cheap and always available, but blind to anything about the true distribution beyond that one point's local curvature."
+  introducedIn: "4.4"
+  usedIn: ["4.5"]
+  requires: ["maximum-a-posteriori"]
+  aliases: []
+
+- id: bayesian-logistic-regression
+  name: "Bayesian logistic regression"
+  definition: "Placing a prior over the logistic regression weights and approximating the resulting posterior, since the sigmoid likelihood is not conjugate to any convenient prior. The Laplace approximation is the standard way in: find the mode by the same Newton-Raphson iteration as plain IRLS, then read off a Gaussian from its Hessian."
+  introducedIn: "4.5"
+  usedIn: []
+  requires: ["laplace-approximation", "logistic-regression", "posterior-distribution"]
+  aliases: []

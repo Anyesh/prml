@@ -205,3 +205,59 @@
   usedIn: []
   requires: ["entropy"]
   aliases: []
+
+- id: maximum-likelihood
+  name: "Maximum likelihood"
+  definition: "Choosing parameters that make the observed data most probable. Under Gaussian noise it is exactly least squares, which is why sum-of-squares error is a consequence of a noise model rather than an arbitrary choice."
+  introducedIn: "1.2"
+  usedIn: ["2.1", "2.2", "2.3", "2.4", "3.1", "3.2"]
+  requires: ["design-matrix"]
+  aliases: ["ML", "least squares"]
+
+- id: regularisation
+  name: "Regularisation"
+  definition: "Adding a penalty on large weights to the error function. It shrinks the fit towards simplicity and, as a side effect, lifts the eigenvalues of the design matrix away from zero, removing the ill-conditioning of the unregularised solution."
+  introducedIn: "1.1"
+  usedIn: ["3.1", "3.2", "3.5"]
+  requires: ["maximum-likelihood"]
+  aliases: ["weight decay", "ridge", "lambda"]
+
+- id: overfitting
+  name: "Over-fitting"
+  definition: "Fitting the noise in a particular dataset rather than the structure behind it. The training error keeps improving while predictions get worse, so the error being minimised cannot detect it."
+  introducedIn: "1.1"
+  usedIn: ["3.2", "3.4"]
+  requires: ["maximum-likelihood"]
+  aliases: []
+
+- id: posterior-distribution
+  name: "Posterior distribution"
+  definition: "The distribution over parameters after observing data, proportional to the likelihood times the prior. Replaces the single best-fit estimate with a statement of how much the data pins each direction down."
+  introducedIn: "1.2"
+  usedIn: ["2.1", "3.3", "3.4", "3.5"]
+  requires: ["conjugate-prior"]
+  aliases: []
+
+- id: predictive-distribution
+  name: "Predictive distribution"
+  definition: "The distribution over a new target with the parameters marginalised out. Its variance separates noise on the measurement from uncertainty about the function, so error bars widen away from the data but never fall below the noise floor."
+  introducedIn: "1.2"
+  usedIn: ["3.3", "4.5"]
+  requires: ["posterior-distribution"]
+  aliases: ["predictive variance"]
+
+- id: curse-of-dimensionality
+  name: "Curse of dimensionality"
+  definition: "Covering a space with local functions costs a count that is exponential in its dimension, because the per-axis requirement multiplies across axes. It is what makes a fixed basis unusable beyond a few input dimensions."
+  introducedIn: "1.4"
+  usedIn: ["2.5", "3.6"]
+  requires: ["basis-function"]
+  aliases: []
+
+- id: data-manifold
+  name: "Data manifold"
+  definition: "The lower-dimensional surface real data clusters near, because input variables are correlated rather than independent. Exploiting it requires knowing where the data went, which is precisely what a fixed basis cannot wait for."
+  introducedIn: "1.4"
+  usedIn: ["3.6"]
+  requires: ["curse-of-dimensionality"]
+  aliases: ["intrinsic dimensionality"]

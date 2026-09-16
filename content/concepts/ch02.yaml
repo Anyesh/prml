@@ -90,7 +90,7 @@
   name: "Mixture of Gaussians"
   definition: "A weighted sum of several Gaussian components, capable of shapes no single Gaussian can reach, most visibly more than one mode. The weight on each component doubles as the prior probability of a discrete label that says which component generated a given point."
   introducedIn: "2.3"
-  usedIn: []
+  usedIn: ["9.2", "9.3", "9.4"]
   requires: ["multivariate-gaussian"]
   aliases: ["Gaussian mixture model"]
 
@@ -133,3 +133,19 @@
   usedIn: []
   requires: ["nonparametric-density-estimation"]
   aliases: ["KNN"]
+
+- id: conjugate-prior
+  name: "Conjugate prior"
+  definition: "A prior whose family is closed under the likelihood, so the posterior has the same form as the prior with updated parameters. This is what keeps a Bayesian treatment in closed form rather than requiring integration, and what makes learning one observation at a time exact."
+  introducedIn: "2.1"
+  usedIn: ["2.2", "2.4", "3.3"]
+  requires: []
+  aliases: ["conjugacy"]
+
+- id: sequential-learning
+  name: "Sequential learning"
+  definition: "Updating beliefs one observation at a time, with the posterior after each point serving as the prior for the next. Conjugacy makes this exact rather than approximate, so it lands where a batch fit lands."
+  introducedIn: "2.3"
+  usedIn: ["3.3"]
+  requires: ["conjugate-prior"]
+  aliases: ["online learning"]
