@@ -1,0 +1,38 @@
+{
+  "name": "prml-interactive",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.29.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @prml/web dev",
+    "build": "pnpm --filter @prml/web build",
+    "preview": "pnpm --filter @prml/web preview",
+    "typecheck": "tsc --noEmit -p packages/math && tsc --noEmit -p packages/ui && tsc --noEmit -p packages/viz",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:visual": "playwright test",
+    "lint": "eslint .",
+    "lint:content": "node scripts/gates/run-content-gates.mjs",
+    "gate:frontmatter": "node scripts/gates/frontmatter.mjs",
+    "gate:structure": "node scripts/gates/mdx-structure.mjs",
+    "gate:equations": "node scripts/gates/equations.mjs",
+    "gate:graph": "node scripts/gates/graph.mjs",
+    "gate:search": "node scripts/gates/search-coverage.mjs",
+    "gate:bundle": "node scripts/gates/bundle-budget.mjs",
+    "golden": "node tools/golden/generate.mjs",
+    "tokens:build": "node scripts/tokens-build.mjs",
+    "tokens:check": "node scripts/tokens-build.mjs --check"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.15.0",
+    "eslint": "^10.10.0",
+    "typescript": "^7.0.2",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^5.0.1",
+    "yaml": "^2.8.1"
+  }
+}

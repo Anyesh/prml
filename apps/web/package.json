@@ -1,0 +1,35 @@
+{
+  "name": "@prml/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build && pnpm run index",
+    "index": "pagefind --site dist",
+    "preview": "wrangler dev",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^8.0.1",
+    "@astrojs/react": "^6.0.5",
+    "@prml/math": "workspace:*",
+    "@prml/ui": "workspace:*",
+    "@prml/viz": "workspace:*",
+    "astro": "^7.3.2",
+    "katex": "^0.18.7",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@leeoniya/ufuzzy": "^1.0.19",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "pagefind": "^1.5.2",
+    "wrangler": "^4.132.0",
+    "yaml": "^2.8.1"
+  }
+}

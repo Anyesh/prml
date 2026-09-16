@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.astro/
+.wrangler/
+.venv/
+__pycache__/
+*.tsbuildinfo
+test-results/
+playwright-report/
+screenshots/
+.DS_Store
+.env
+.env.*
+!.env.example

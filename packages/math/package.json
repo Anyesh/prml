@@ -1,0 +1,14 @@
+{
+  "name": "@prml/math",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./linalg": "./src/linalg/index.ts",
+    "./distributions": "./src/distributions/index.ts"
+  },
+  "dependencies": {
+    "ml-matrix": "^6.15.0"
+  }
+}
