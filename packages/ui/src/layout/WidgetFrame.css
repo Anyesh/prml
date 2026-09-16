@@ -1,0 +1,99 @@
+/* Caps at the widget-width token and centers within whatever column it lands in. Escaping past
+   the surrounding prose column's own edges needs a wider track from the page-level layout grid;
+   this component cannot see or assume that grid, so it stops at "as wide as its container allows,
+   up to the token", and the page layout must supply the extra room for a true breakout. */
+.prml-widget-frame {
+  width: 100%;
+  max-width: var(--prml-layout-widget-width);
+  margin-inline: auto;
+  margin-block: var(--prml-space-6) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--prml-space-4);
+  padding: var(--prml-space-5);
+  background: var(--prml-color-surface);
+  border: 1px solid var(--prml-color-border);
+  border-radius: var(--prml-radius-lg);
+  box-shadow: var(--prml-shadow-sm);
+}
+
+.prml-widget-frame-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--prml-space-3);
+}
+
+.prml-widget-frame-heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--prml-space-1);
+}
+
+.prml-widget-frame-title {
+  margin: 0;
+  font-family: var(--prml-font-sans);
+  font-size: var(--prml-text-lg);
+  font-weight: var(--prml-weight-semibold);
+  color: var(--prml-color-ink);
+}
+
+.prml-widget-frame-provenance {
+  margin: 0;
+  font-family: var(--prml-font-mono);
+  font-size: var(--prml-text-xs);
+  color: var(--prml-color-ink-faint);
+}
+
+.prml-widget-frame-reset {
+  flex-shrink: 0;
+  padding: var(--prml-space-1) var(--prml-space-3);
+  border: 1px solid var(--prml-color-border);
+  border-radius: var(--prml-radius-md);
+  background: var(--prml-color-surface);
+  color: var(--prml-color-ink-muted);
+  font-family: var(--prml-font-sans);
+  font-size: var(--prml-text-sm);
+  cursor: pointer;
+  transition: border-color var(--prml-motion-fast) var(--prml-motion-ease);
+}
+
+.prml-widget-frame-reset:hover {
+  border-color: var(--prml-color-border-strong);
+  color: var(--prml-color-ink);
+}
+
+.prml-widget-frame-reset:focus-visible {
+  outline: 2px solid var(--prml-color-accent);
+  outline-offset: 2px;
+}
+
+.prml-widget-frame-caption {
+  margin: 0;
+  font-family: var(--prml-font-sans);
+  font-size: var(--prml-text-base);
+  color: var(--prml-color-ink-muted);
+}
+
+.prml-widget-frame-noscript {
+  margin: 0;
+  padding: var(--prml-space-3);
+  border-radius: var(--prml-radius-md);
+  background: var(--prml-color-sunken);
+  color: var(--prml-color-ink-muted);
+  font-family: var(--prml-font-sans);
+  font-size: var(--prml-text-sm);
+}
+
+.prml-widget-frame-stage {
+  background: var(--prml-color-plot-bg);
+  border: 1px solid var(--prml-color-border);
+  border-radius: var(--prml-radius-md);
+  padding: var(--prml-space-4);
+}
+
+.prml-widget-frame-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--prml-space-3);
+}

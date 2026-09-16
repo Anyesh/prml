@@ -1,0 +1,86 @@
+.prml-toggle {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--prml-space-3);
+  font-family: var(--prml-font-sans);
+  cursor: pointer;
+}
+
+.prml-toggle--disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Standard visually-hidden pattern: keeps the real checkbox focusable and in the a11y tree
+   while the track/thumb below carries the visible state. */
+.prml-toggle-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.prml-toggle-track {
+  flex-shrink: 0;
+  width: calc(var(--prml-space-6) + var(--prml-space-2));
+  height: var(--prml-space-5);
+  border-radius: var(--prml-radius-pill);
+  background: var(--prml-color-border);
+  transition: background var(--prml-motion-fast) var(--prml-motion-ease);
+  position: relative;
+  margin-top: 1px;
+}
+
+.prml-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(var(--prml-space-5) - 4px);
+  height: calc(var(--prml-space-5) - 4px);
+  border-radius: var(--prml-radius-pill);
+  background: var(--prml-color-surface);
+  box-shadow: var(--prml-shadow-sm);
+  transition: transform var(--prml-motion-fast) var(--prml-motion-ease);
+}
+
+.prml-toggle-input:checked + .prml-toggle-track {
+  background: var(--prml-color-accent);
+}
+
+.prml-toggle-input:checked + .prml-toggle-track .prml-toggle-thumb {
+  transform: translateX(calc(var(--prml-space-6) - var(--prml-space-1)));
+}
+
+.prml-toggle-input:focus-visible + .prml-toggle-track {
+  outline: 2px solid var(--prml-color-accent);
+  outline-offset: 2px;
+}
+
+.prml-toggle-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--prml-space-1);
+}
+
+.prml-toggle-label {
+  font-size: var(--prml-text-sm);
+  font-weight: var(--prml-weight-medium);
+  color: var(--prml-color-ink);
+}
+
+.prml-toggle-hint {
+  font-size: var(--prml-text-xs);
+  color: var(--prml-color-ink-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prml-toggle-track,
+  .prml-toggle-thumb {
+    transition: none;
+  }
+}

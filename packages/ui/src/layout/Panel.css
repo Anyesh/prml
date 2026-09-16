@@ -1,0 +1,50 @@
+.prml-panel {
+  /* Establishes an inline-size container so the grid below can respond to the space this
+     panel actually has (a widget stage, a phone, a 68ch column) rather than the viewport. */
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--prml-space-3);
+  padding: var(--prml-space-4);
+  background: var(--prml-color-sunken);
+  border: 1px solid var(--prml-color-border);
+  border-radius: var(--prml-radius-md);
+}
+
+.prml-panel--dense {
+  padding: var(--prml-space-3);
+  gap: var(--prml-space-2);
+}
+
+.prml-panel-title {
+  margin: 0;
+  font-size: var(--prml-text-sm);
+  font-weight: var(--prml-weight-semibold);
+  color: var(--prml-color-ink);
+}
+
+.prml-panel-grid--1 {
+  display: flex;
+  flex-direction: column;
+  gap: var(--prml-space-4);
+}
+
+.prml-panel-grid--2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--prml-space-4);
+}
+
+.prml-panel--dense .prml-panel-grid--1,
+.prml-panel--dense .prml-panel-grid--2 {
+  gap: var(--prml-space-2);
+}
+
+/* Container queries cannot read a custom property in their condition, so this threshold is a
+   literal duplicate of the point at which two controls stop fitting comfortably side by side;
+   it does not track a token and must be kept in sync by hand if that assumption changes. */
+@container (max-width: 30rem) {
+  .prml-panel-grid--2 {
+    grid-template-columns: 1fr;
+  }
+}

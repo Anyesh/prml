@@ -1,0 +1,84 @@
+.prml-math-block--display {
+  /* Its own container, so the tag can drop below the equation on any narrow host (a phone, a
+     panel-width host inside a widget) instead of overlapping wide equation content, regardless
+     of what surrounds this component. */
+  container-type: inline-size;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--prml-space-3);
+  margin-block: var(--prml-space-4);
+  padding-inline-end: var(--prml-space-8);
+  overflow-x: auto;
+}
+
+.prml-math-block--inline {
+  display: inline;
+}
+
+.prml-math-block-content {
+  min-width: 0;
+}
+
+.prml-math-block-tag-group {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--prml-space-1);
+  color: var(--prml-color-ink-faint);
+}
+
+.prml-math-block-tag {
+  font-family: var(--prml-font-mono);
+  font-size: var(--prml-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* See the container-type note above: this literal duplicates the collision threshold below
+   which the tag no longer fits beside a display equation without overlap; @container cannot
+   read a custom property, so it can't be expressed as a token reference. */
+@container (max-width: 24rem) {
+  .prml-math-block--display {
+    flex-direction: column;
+    align-items: stretch;
+    padding-inline-end: 0;
+  }
+
+  .prml-math-block-tag-group {
+    position: static;
+    transform: none;
+    justify-content: flex-end;
+  }
+}
+
+.prml-math-block-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--prml-space-5);
+  height: var(--prml-space-5);
+  padding: 0;
+  border: none;
+  border-radius: var(--prml-radius-sm);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.prml-math-block-copy svg {
+  width: var(--prml-space-4);
+  height: var(--prml-space-4);
+}
+
+.prml-math-block-copy:hover {
+  color: var(--prml-color-accent);
+}
+
+.prml-math-block-copy:focus-visible {
+  outline: 2px solid var(--prml-color-accent);
+  outline-offset: 2px;
+}
