@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { evalGrid, kmeansAssign, kmeansDistortion, kmeansFit, kmeansInit, linspace, pcg32, type Mat } from '@prml/math';
-import { Axes, ContourField, Curve, Heatmap, Plot, ScatterField, useResolvedTokens } from '@prml/viz';
+import { Axes, categoricalScale, ContourField, Curve, Heatmap, Plot, ScatterField, useResolvedTokens } from '@prml/viz';
 import { StepThrough } from '@prml/ui';
 import { kmeansDemoData } from './data.js';
-import { categoricalInterpolator } from './colors.js';
+
 import '../widgets.css';
 
 export const title = 'Stepping K-means';
@@ -56,7 +56,7 @@ export default function KMeansStepThrough() {
     () => evalGrid(GRID_AXIS, GRID_AXIS, (x, y) => kmeansAssign([[x, y]], frame.means)[0]!),
     [frame.means],
   );
-  const colorAt = useMemo(() => categoricalInterpolator(tokens.series), [tokens.series]);
+  const colorAt = useMemo(() => categoricalScale(tokens.series), [tokens.series]);
 
   const maxDistortion = Math.max(...frames.map((f) => f.distortion ?? 0));
   const distortionPoints = frames

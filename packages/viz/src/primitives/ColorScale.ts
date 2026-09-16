@@ -266,3 +266,57 @@ export function withAlpha(color: string, alpha: number): string {
   const parsed = parseCssColor(color);
   return formatRgba(parsed, alpha);
 }
+
+/**
+ * Mixes `colors` by non-negative `weights`, in linear light rather than in the gamma-encoded
+ * channels, because mixing encoded sRGB darkens the midpoint of two saturated colours
+ * visibly. A point half-owned by two mixture components must read as between their two
+ * series colours, which is what makes a soft assignment legible as soft.
+ */
+export function blendColors(weights: readonly number[], colors: readonly string[]): string {
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let total = 0;
+
+  weights.forEach((w, i) => {
+    if (!(w > 0)) return;
+    const source = colors[i] ?? colors[0];
+    if (source === undefined) return;
+    const parsed = parseCssColor(source);
+    r += w * srgbChannelToLinear(parsed.r);
+    g += w * srgbChannelToLinear(parsed.g);
+    b += w * srgbChannelToLinear(parsed.b);
+    total += w;
+  });
+
+  const fallback = colors[0];
+  if (total === 0) {
+    if (fallback === undefined) throw new Error('@prml/viz: blendColors needs at least one colour');
+    return fallback;
+  }
+
+  return formatRgba(
+    {
+      r: linearChannelToSrgb(r / total),
+      g: linearChannelToSrgb(g / total),
+      b: linearChannelToSrgb(b / total),
+      a: 1,
+    },
+    1,
+  );
+}
+
+/**
+ * Snaps a value to the nearest entry of a fixed palette instead of interpolating between
+ * them. Cluster labels carry no order, so a `Heatmap` of nearest-label index must read as
+ * flat regions with hard edges rather than as a gradient between two arbitrary integers.
+ */
+export function categoricalScale(colors: readonly string[]): Interpolator {
+  if (colors.length === 0) throw new Error('@prml/viz: categoricalScale needs at least one colour');
+  const last = colors.length - 1;
+  return (value: number) => {
+    if (!Number.isFinite(value)) return colors[0]!;
+    return colors[Math.round(Math.min(Math.max(value, 0), last))]!;
+  };
+}

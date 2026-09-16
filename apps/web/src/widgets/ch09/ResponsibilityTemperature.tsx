@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { gmmEStep, kmeansFit, kmeansInit, pcg32, type GmmParams } from '@prml/math';
-import { Axes, Plot, ScatterField, useResolvedTokens } from '@prml/viz';
+import { Axes, blendColors, Plot, ScatterField, useResolvedTokens } from '@prml/viz';
 import { Slider } from '@prml/ui';
 import { faithfulLikeData } from './data.js';
-import { blendByResponsibility } from './colors.js';
+
 import '../widgets.css';
 
 export const title = 'From soft responsibility to hard indicator';
@@ -46,7 +46,7 @@ export default function ResponsibilityTemperature() {
       <Plot width={480} height={480} xDomain={DOMAIN} yDomain={DOMAIN} equalAspect label="Points coloured by responsibility under a shrinking shared variance">
         <Axes x={{ label: 'x1' }} y={{ label: 'x2' }} grid />
         <ScatterField
-          points={DATA.map((p, i) => ({ x: p[0]!, y: p[1]!, color: blendByResponsibility(responsibilities[i]!, tokens.series), size: 4 }))}
+          points={DATA.map((p, i) => ({ x: p[0]!, y: p[1]!, color: blendColors(responsibilities[i]!, tokens.series), size: 4 }))}
         />
         <ScatterField points={MEANS.map((m, k) => ({ x: m[0]!, y: m[1]!, color: tokens.series[k], shape: 'cross', size: 9 }))} />
       </Plot>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { divergingScale, interpolateStops, oklabToSrgb, quantize, sequentialScale, srgbToOklab, withAlpha, cssColorToRgbaBytes } from './ColorScale.js';
+import { blendColors, categoricalScale, divergingScale, interpolateStops, oklabToSrgb, quantize, sequentialScale, srgbToOklab, withAlpha, cssColorToRgbaBytes } from './ColorScale.js';
 
 function parseRgbaString(color: string): readonly [number, number, number, number] {
   const match = /^rgba\((\d+), (\d+), (\d+), ([0-9.]+)\)$/.exec(color);
@@ -172,5 +172,44 @@ describe('cssColorToRgbaBytes', () => {
 
   it('throws on an unrecognised format', () => {
     expect(() => cssColorToRgbaBytes('not-a-colour')).toThrow();
+  });
+});
+
+describe('blendColors', () => {
+  it('returns the single colour when all the weight is on it', () => {
+    expect(blendColors([1, 0], ['#ff0000', '#0000ff'])).toBe('rgba(255, 0, 0, 1)');
+  });
+
+  it('mixes in linear light, so an even blend of red and blue is lighter than the encoded midpoint', () => {
+    const blended = blendColors([0.5, 0.5], ['#ff0000', '#0000ff']);
+    const [, r, , b] = /rgba\((\d+), (\d+), (\d+), 1\)/.exec(blended)!;
+    // The gamma-encoded midpoint would be 128; mixing in linear light lands near 188.
+    expect(Number(r)).toBeGreaterThan(180);
+    expect(Number(r)).toBe(Number(b));
+  });
+
+  it('normalises weights that do not sum to one', () => {
+    expect(blendColors([2, 2], ['#ff0000', '#0000ff'])).toBe(blendColors([0.5, 0.5], ['#ff0000', '#0000ff']));
+  });
+
+  it('falls back to the first colour when every weight is zero', () => {
+    expect(blendColors([0, 0], ['#123456', '#abcdef'])).toBe('#123456');
+  });
+});
+
+describe('categoricalScale', () => {
+  const scale = categoricalScale(['#ff0000', '#00ff00', '#0000ff']);
+
+  it('snaps to the nearest palette entry rather than interpolating', () => {
+    expect(scale(0)).toBe('#ff0000');
+    expect(scale(0.4)).toBe('#ff0000');
+    expect(scale(0.6)).toBe('#00ff00');
+    expect(scale(2)).toBe('#0000ff');
+  });
+
+  it('clamps out-of-range and non-finite values', () => {
+    expect(scale(-5)).toBe('#ff0000');
+    expect(scale(99)).toBe('#0000ff');
+    expect(scale(NaN)).toBe('#ff0000');
   });
 });

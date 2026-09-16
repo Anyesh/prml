@@ -11,10 +11,10 @@ import {
   type GmmParams,
   type Mat,
 } from '@prml/math';
-import { Axes, ContourField, Heatmap, Plot, ScatterField, sequentialScale, useResolvedTokens } from '@prml/viz';
+import { Axes, blendColors, categoricalScale, ContourField, Heatmap, Plot, ScatterField, sequentialScale, useResolvedTokens } from '@prml/viz';
 import { StepThrough } from '@prml/ui';
 import { faithfulLikeData } from './data.js';
-import { blendByResponsibility, categoricalInterpolator } from './colors.js';
+
 import '../widgets.css';
 
 export const title = 'Hard versus soft: K-means and EM side by side';
@@ -93,7 +93,7 @@ export default function KMeansVsEM() {
     () => evalGrid(GRID_AXIS, GRID_AXIS, (x, y) => kmeansAssign([[x, y]], kFrame.means)[0]!),
     [kFrame.means],
   );
-  const colorAt = useMemo(() => categoricalInterpolator(tokens.series), [tokens.series]);
+  const colorAt = useMemo(() => categoricalScale(tokens.series), [tokens.series]);
 
   const density = useMemo(
     () => evalGrid(GRID_AXIS, GRID_AXIS, (x, y) => gmmPdf([x, y], emFrame.params)),
@@ -133,7 +133,7 @@ export default function KMeansVsEM() {
             points={DATA.map((p, i) => ({
               x: p[0]!,
               y: p[1]!,
-              color: emFrame.responsibilities ? blendByResponsibility(emFrame.responsibilities[i]!, tokens.series) : tokens.color.inkFaint,
+              color: emFrame.responsibilities ? blendColors(emFrame.responsibilities[i]!, tokens.series) : tokens.color.inkFaint,
               size: 3.5,
             }))}
           />
