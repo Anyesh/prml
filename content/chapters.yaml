@@ -1,4 +1,24 @@
+- number: 1
+  title: "Introduction"
+  summary: "Polynomial curve fitting used as a single worked problem that surfaces almost every theme in the book: over-fitting, how more data changes what you can afford to fit, and why a penalty term helps. Then the three tools the rest of the book runs on, probability, decision theory and information theory, each introduced where the curve-fitting problem needs it rather than as separate preliminaries."
+  bookPages: [1, 66]
+
+- number: 2
+  title: "Probability Distributions"
+  summary: "The distributions everything later is assembled from, and the reason each one keeps appearing: conjugacy. Binary and multinomial variables with their Beta and Dirichlet priors, then the Gaussian at length, including its conditionals, marginals and sequential updates. Closes with the exponential family, which explains why these particular distributions and no others, and with nonparametric methods for when no fixed form will do."
+  bookPages: [67, 136]
+
 - number: 3
   title: "Linear Models for Regression"
   summary: "Curve fitting as linear combinations of fixed basis functions, and what goes wrong when you choose the model by minimising error. Introduces the bias-variance trade-off, then replaces point estimates with distributions over weights, which makes the model report its own uncertainty and select its own complexity."
   bookPages: [137, 176]
+
+- number: 4
+  title: "Linear Models for Classification"
+  summary: "The same linear machinery pointed at discrete targets, where fitting squared error to class labels visibly fails and something else is needed. Works through discriminant functions, then generative models that fit each class separately, then discriminative ones that fit the boundary directly. Ends with the Laplace approximation, the first tool in the book for a posterior with no closed form."
+  bookPages: [179, 224]
+
+- number: 9
+  title: "Mixture Models and EM"
+  summary: "What to do when the thing that explains your data was never observed. K-means first, as the hard-assignment version whose limitations motivate everything after, then Gaussian mixtures fitted by expectation-maximisation. The general form of EM at the end shows it is not a clustering trick but a lower-bound argument that reappears throughout the rest of the book."
+  bookPages: [423, 460]

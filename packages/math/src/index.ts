@@ -7,3 +7,10 @@ export * from './special.js';
 export * from './linalg/index.js';
 export * from './distributions/index.js';
 export * from './regression/index.js';
+
+// One directory per chapter under construction, each owned end to end by the author of
+// that chapter, so no two parallel authors ever write the same barrel.
+export * from './information/index.js';
+export * from './gaussian/index.js';
+export * from './classification/index.js';
+export * from './mixtures/index.js';
