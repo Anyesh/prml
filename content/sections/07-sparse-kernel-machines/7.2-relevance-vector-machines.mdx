@@ -1,0 +1,195 @@
+---
+chapter: 7
+section: "7.2"
+title: Relevance Vector Machines
+bookPages: [345, 358]
+summary: A Bayesian sparse kernel model that prunes weights by giving each its own prior precision, trading the SVM's margin for a predictive variance and no cross-validation.
+concepts:
+  - relevance-vector-machine
+  - relevance-vector
+  - sparsity-quality-statistic
+  - rvm-laplace-classification
+prereqs: ["7.1", "3.5", "4.4", "6.4"]
+equations:
+  - { id: "7.78", name: kernel-weighted RVM model }
+  - { id: "7.80", name: ARD weight prior }
+  - { id: "7.82", name: posterior mean }
+  - { id: "7.83", name: posterior covariance }
+  - { id: "7.87", name: alpha re-estimation }
+  - { id: "7.88", name: beta re-estimation }
+  - { id: "7.89", name: per-weight gamma }
+  - { id: "7.91", name: predictive variance }
+  - { id: "7.97", name: single-alpha log evidence term }
+  - { id: "7.101", name: optimal finite alpha }
+  - { id: "7.116", name: classification alpha re-estimation }
+widgets: [RvmSparsityAnimator]
+difficulty: 4
+---
+
+import RvmSparsityAnimator from '@widgets/ch07/RvmSparsityAnimator';
+import SparsityMechanism from '@widgets/ch07/figures/SparsityMechanism';
+import RvmVsSvmComparison from '@widgets/ch07/figures/RvmVsSvmComparison';
+import RelevanceVsSupportLocation from '@widgets/ch07/figures/RelevanceVsSupportLocation';
+import RvmClassificationBoundary from '@widgets/ch07/figures/RvmClassificationBoundary';
+import GammaPerWeightBars from '@widgets/ch07/figures/GammaPerWeightBars';
+
+## Intuition
+
+Section 7.1 got sparsity from a margin: a point either sits exactly on it or gets discarded. That mechanism has nothing to do with probability, so a support vector machine never says how confident it is, only which side of the line a point falls on.
+
+The relevance vector machine gets sparsity a different way, one already met in chapter three's evidence framework. Give every weight its own prior precision instead of sharing one, then maximise the evidence over all of them. Most precisions run away to a value so large their weights are pinned to zero; the survivors are called relevance vectors, playing the same practical role as support vectors for an entirely different reason.
+
+Because it stayed Bayesian throughout, the model comes with a predictive variance for free rather than one bolted on afterward, and needs no held-out set to choose its own complexity. The price is a training procedure that hunts for a mode instead of solving a convex program.
+
+## The math
+
+Keep chapter three's linear model but give every weight its own precision, and to compare directly against the SVM tie each basis function to a kernel centred on a training point:
+
+<MathBlock id="7.78" name="kernel-weighted RVM model">
+
+$$y(\mathbf{x}) = \sum_{n=1}^{N} w_n k(\mathbf{x}, \mathbf{x}_n) + b$$
+
+</MathBlock>
+
+<MathBlock id="7.80" name="ARD weight prior">
+
+$$p(\mathbf{w}\mid\boldsymbol{\alpha}) = \prod_{i} \mathcal{N}(w_i \mid 0, \alpha_i^{-1})$$
+
+</MathBlock>
+
+Given $\boldsymbol{\alpha}$ and $\beta$, the posterior is the same Gaussian 3.3 already derived, only with a diagonal precision in place of an isotropic one:
+
+<MathBlock id="7.82" name="posterior mean">
+
+$$\mathbf{m} = \beta\boldsymbol{\Sigma}\boldsymbol{\Phi}^{\mathrm{T}}\mathbf{t}$$
+
+</MathBlock>
+
+<MathBlock id="7.83" name="posterior covariance">
+
+$$\boldsymbol{\Sigma} = \big(\mathbf{A}+\beta\boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\Phi}\big)^{-1}$$
+
+</MathBlock>
+
+Maximising the evidence exactly as in 3.5, but once per weight, gives a fixed point:
+
+<MathBlock id="7.87" name="alpha re-estimation">
+
+$$\alpha_i^{\mathrm{new}} = \gamma_i / m_i^2$$
+
+</MathBlock>
+
+<MathBlock id="7.88" name="beta re-estimation">
+
+$$(\beta^{\mathrm{new}})^{-1} = \frac{\|\mathbf{t}-\boldsymbol{\Phi}\mathbf{m}\|^2}{N-\sum_i\gamma_i}$$
+
+</MathBlock>
+
+where $\gamma_i$
+
+<MathBlock id="7.89" name="per-weight gamma">
+
+$$\gamma_i = 1 - \alpha_i\Sigma_{ii}$$
+
+</MathBlock>
+
+again measures how much the data, rather than the prior, pins down weight $i$. Isolating one basis function's exact contribution to the marginal likelihood
+
+<MathBlock id="7.97" name="single-alpha log evidence term">
+
+$$\lambda(\alpha_i) = \frac{1}{2}\Big[\ln\alpha_i - \ln(\alpha_i+s_i) + \frac{q_i^2}{\alpha_i+s_i}\Big]$$
+
+</MathBlock>
+
+reveals a single maximum, either finite
+
+<MathBlock id="7.101" name="optimal finite alpha">
+
+$$\alpha_i = s_i^2/(q_i^2-s_i)$$
+
+</MathBlock>
+
+or at infinity when $q_i^2 \leqslant s_i$, depending only on how well that basis function aligns with what the rest of the model cannot already explain.
+
+<Figure caption="lambda(alpha) for a surviving basis function against one that gets pruned to alpha = infinity." width="wide">
+  <SparsityMechanism client:visible />
+</Figure>
+
+Predictions inherit chapter three's predictive variance unchanged:
+
+<MathBlock id="7.91" name="predictive variance">
+
+$$\sigma^2(\mathbf{x}) = \beta^{-1} + \boldsymbol{\phi}(\mathbf{x})^{\mathrm{T}}\boldsymbol{\Sigma}\boldsymbol{\phi}(\mathbf{x})$$
+
+</MathBlock>
+
+Classification swaps the closed-form integral for the Laplace approximation of 4.4-4.5 and re-estimates $\alpha$ by the identical rule with $m_i$ replaced by the mode:
+
+<MathBlock id="7.116" name="classification alpha re-estimation">
+
+$$\alpha_i^{\mathrm{new}} = \gamma_i / (w_i^{\star})^2$$
+
+</MathBlock>
+
+## Interactive
+
+<Widget
+  title="Sparsity emerging sweep by sweep"
+  figure="7.10"
+  caption="Step through the re-estimation. Watch pruned bars climb off the chart while the fitted curve settles onto only the ringed relevance vectors."
+>
+  <RvmSparsityAnimator client:visible />
+</Widget>
+
+Most bars are gone within a handful of sweeps; the fitted curve keeps its shape long after most of the model has been switched off.
+
+## Worked example
+
+Eleven points on $[-1,1]$, an RBF basis with one kernel per point plus a bias ($\gamma=3$), fit to a target built from exactly three true weights: $0.2$ at the bias, $1.5$ and $-1.2$ at two centres, plus a little noise. Starting every $\alpha_i=1$, $\beta=1$, direct re-estimation from 7.87-7.88 converges in 21 sweeps.
+
+Nine of the twelve hyperparameters run to the ceiling; the three survivors sit at $\alpha\approx18.8, 0.48, 0.70$ with recovered weights $0.229, 1.445, -1.197$, close to the planted values despite the noise. $\beta\approx712$, a tight noise precision consistent with how the data was generated.
+
+<Figure caption="Gamma per weight on this fit: three bars stay off the floor, the rest collapse to zero." width="wide">
+  <GammaPerWeightBars client:visible />
+</Figure>
+
+<Figure caption="The same shape fit by RVM and SVM: fewer retained points and a predictive band the SVM has no analogue for." width="wide">
+  <RvmVsSvmComparison client:visible />
+</Figure>
+
+<Figure caption="Support vectors sit on the boundary; relevance vectors on the same data sit away from it." width="wide">
+  <RelevanceVsSupportLocation client:visible />
+</Figure>
+
+<Figure caption="RVM classification: posterior shading from 4.5's moderated sigmoid, relevance vectors ringed." width="wide">
+  <RvmClassificationBoundary client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="Why does the RVM produce a predictive variance that the SVM has no analogue for?" concepts={["relevance-vector-machine"]}>
+It never stopped being Bayesian: the same posterior covariance that shrinks the weights also feeds directly into 7.91's predictive variance, with no separate machinery bolted on.
+</Recall>
+
+<Recall question="What does gamma_i measure here, and how does it connect to chapter 3?" concepts={["relevance-vector-machine"]}>
+Exactly chapter 3's effective-parameters idea, applied per weight instead of summed over all of them: how much weight i is determined by the data rather than held near zero by its own prior.
+</Recall>
+
+<Recall question="What decides whether a basis function is pruned outright or kept at a finite alpha?" concepts={["sparsity-quality-statistic"]}>
+Comparing $q_i^2$ against $s_i$ in 7.101: alignment with the residual against overlap with the rest of the model. $q_i^2 > s_i$ gives a finite optimum; otherwise $\alpha_i$ is sent to infinity.
+</Recall>
+
+<Recall question="Where do relevance vectors tend to sit relative to the decision boundary, compared to support vectors?" concepts={["relevance-vector"]}>
+Away from it. A support vector is kept because it sits exactly on the margin; a relevance vector is kept because its basis function aligns well with the data overall, which typically happens nearer the class centres.
+</Recall>
+
+<Recall question="Why can't RVM classification integrate the weights out in closed form the way RVM regression does?" concepts={["rvm-laplace-classification"]}>
+The Gaussian prior is no longer conjugate to a sigmoid likelihood. The Laplace approximation from 4.4 stands in: find the mode by the same Newton step as ordinary Bayesian logistic regression, then read a Gaussian off its curvature.
+</Recall>
+
+## Connections
+
+- **Extends** [7.1](/sections/7-1)'s sparse kernel-weighted predictor, trading its margin for [3.5](/sections/3-5)'s evidence framework applied per weight.
+- **Reuses** [4.4](/sections/4-4)'s Laplace approximation for classification and [6.4](/sections/6-4)'s predictive-variance comparison against a Gaussian process.
+- **Chapter 9** gives an EM-based alternative route to the same fixed point, usually slower to converge than direct re-estimation.
+

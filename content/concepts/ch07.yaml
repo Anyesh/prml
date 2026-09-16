@@ -1,0 +1,103 @@
+- id: margin
+  name: "Margin"
+  definition: "The perpendicular distance from the decision boundary to the closest training point. A support vector machine picks the boundary that maximises this distance, out of every boundary that separates the classes."
+  introducedIn: "7.1"
+  usedIn: ["7.2"]
+  requires: ["linear-discriminant"]
+  aliases: []
+
+- id: support-vector-machine
+  name: "Support vector machine"
+  definition: "A maximum-margin classifier whose dual formulation depends on the training data only through a kernel, so the boundary lives in an implicit feature space of arbitrary dimension without that space ever being built."
+  introducedIn: "7.1"
+  usedIn: ["7.2"]
+  requires: ["margin", "kernel-function", "dual-representation"]
+  aliases: ["SVM"]
+
+- id: support-vector
+  name: "Support vector"
+  definition: "A training point whose Lagrange multiplier is nonzero at the SVM solution, and so is the only kind of point the fitted decision function ever needs to look up again. Every other point could be deleted with no effect on the boundary."
+  introducedIn: "7.1"
+  usedIn: ["7.2"]
+  requires: ["support-vector-machine"]
+  aliases: []
+
+- id: soft-margin
+  name: "Soft margin"
+  definition: "Relaxing the hard separating constraint with a slack variable per point and a cost C per unit of slack, so a boundary can trade a few margin violations for a wider margin everywhere else. C interpolates between fitting the training set exactly and ignoring it almost entirely."
+  introducedIn: "7.1"
+  usedIn: []
+  requires: ["support-vector-machine"]
+  aliases: ["slack variable", "box constraint"]
+
+- id: hinge-loss
+  name: "Hinge loss"
+  definition: "The error function [1 - z]+ of the margin z = t*y(x): exactly zero once a point clears the margin by more than its own width, and linear in how far short it falls otherwise. Its flat region is what produces a sparse solution, unlike a smooth loss that stays nonzero everywhere."
+  introducedIn: "7.1"
+  usedIn: []
+  requires: ["soft-margin"]
+  aliases: []
+
+- id: sequential-minimal-optimisation
+  name: "Sequential minimal optimisation"
+  definition: "An algorithm for the SVM's quadratic program that updates exactly two Lagrange multipliers at a time, the smallest subproblem the equality constraint allows, and solves that pair analytically instead of calling a general-purpose solver."
+  introducedIn: "7.1"
+  usedIn: []
+  requires: ["support-vector-machine"]
+  aliases: ["SMO"]
+
+- id: support-vector-regression
+  name: "Support vector regression"
+  definition: "Extending the SVM to a real-valued target by replacing squared error with a loss that is exactly zero inside a tolerance band around the prediction, so points already close enough contribute nothing and the fitted function again depends on a sparse subset of the data."
+  introducedIn: "7.1"
+  usedIn: []
+  requires: ["support-vector-machine"]
+  aliases: ["SVR"]
+
+- id: epsilon-insensitive-loss
+  name: "Epsilon-insensitive loss"
+  definition: "The error function used in support vector regression: zero for a residual smaller than epsilon in absolute value, and linear in the excess beyond it. Its flat region is the direct analogue of the hinge loss's, and produces sparsity the same way."
+  introducedIn: "7.1"
+  usedIn: []
+  requires: ["support-vector-regression"]
+  aliases: []
+
+- id: pac-learning
+  name: "PAC learning"
+  definition: "A framework asking how large a training set must be for a learned function to have error below a threshold with high probability, over every possible data distribution. Its worst-case guarantees are typically far too conservative to size a real data set."
+  introducedIn: "7.1"
+  usedIn: []
+  requires: []
+  aliases: ["computational learning theory", "statistical learning theory", "probably approximately correct"]
+
+- id: relevance-vector-machine
+  name: "Relevance vector machine"
+  definition: "A Bayesian sparse model that places a separate precision hyperparameter on every weight and maximises the evidence over them, driving most weights' posteriors to a point mass at zero. Shares the SVM's sparse, kernel-shaped predictor while adding calibrated predictive variance and needing no held-out cross-validation to set its complexity."
+  introducedIn: "7.2"
+  usedIn: []
+  requires: ["automatic-relevance-determination", "model-evidence", "support-vector-machine"]
+  aliases: ["RVM"]
+
+- id: relevance-vector
+  name: "Relevance vector"
+  definition: "A training point whose weight survives the RVM's pruning, because its hyperparameter stayed finite rather than being driven to the ceiling that fixes the corresponding weight at zero. Tends to sit away from the decision boundary, the opposite of where a support vector sits."
+  introducedIn: "7.2"
+  usedIn: []
+  requires: ["relevance-vector-machine"]
+  aliases: []
+
+- id: sparsity-quality-statistic
+  name: "Sparsity and quality statistics"
+  definition: "The pair (s_i, q_i) that isolates one hyperparameter's exact contribution to the log marginal likelihood: s_i measures how much basis function i overlaps with the rest of the model, and q_i measures how well it aligns with the residual the rest of the model leaves behind. q_i^2 > s_i gives a finite optimum for that hyperparameter; q_i^2 <= s_i sends it to infinity and prunes the basis function."
+  introducedIn: "7.2"
+  usedIn: []
+  requires: ["relevance-vector-machine"]
+  aliases: ["sparsity factor", "quality factor"]
+
+- id: rvm-laplace-classification
+  name: "RVM classification by Laplace approximation"
+  definition: "Fitting the RVM's ARD prior to a logistic model by finding the MAP weights with the same Newton step as ordinary Bayesian logistic regression, then reading a Gaussian approximation to the marginal likelihood off the curvature there, since the ARD prior removes the closed-form integral regression enjoyed."
+  introducedIn: "7.2"
+  usedIn: []
+  requires: ["relevance-vector-machine", "laplace-approximation", "logistic-regression"]
+  aliases: []
