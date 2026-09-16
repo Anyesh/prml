@@ -22,6 +22,8 @@ difficulty: 4
 import EvidenceApproximation from '@widgets/ch03/EvidenceApproximation';
 import EvidenceTerms from '@widgets/ch03/figures2/EvidenceTerms';
 import EffectiveParameters from '@widgets/ch03/figures2/EffectiveParameters';
+import AlphaBetaSurface from '@widgets/ch03/figures3/AlphaBetaSurface';
+import GammaAgainstAlpha from '@widgets/ch03/figures3/GammaAgainstAlpha';
 
 ## Intuition
 
@@ -95,6 +97,14 @@ $$\frac{1}{\beta} = \frac{1}{N - \gamma}\sum_{n=1}^{N}\big\{t_n - \mathbf{m}_N^{
 
 </MathBlock>
 
+<Figure caption="The evidence as a surface over both hyperparameters, with the fixed point's actual path across it. The iteration is climbing, not evaluating a formula." width="wide">
+  <AlphaBetaSurface client:visible />
+</Figure>
+
+<Figure caption="γ against the prior precision, with M+1 marked. It approaches the nominal count from below as the prior weakens and collapses towards zero as the prior tightens." width="wide">
+  <GammaAgainstAlpha client:visible />
+</Figure>
+
 Both implicit, so iterate. One subtlety bites implementations: the $\lambda_i$ scale with
 $\beta$, which the iteration is changing. Rescale them each sweep; freezing them converges
 to the wrong answer while looking stable. And $N - \gamma$ is the familiar $N - M$ bias
@@ -133,33 +143,24 @@ summand is in $[0, 1)$. A $\gamma$ outside that means the eigenvalues were not r
 
 ## Recall
 
-<Recall question="Why does maximising the evidence with respect to α and β not over-fit, even though it uses the training data?" concepts={["model-evidence"]}>
-Because the weights are integrated out before the maximisation. The quantity being maximised
-is the probability of the data averaged over all weight settings, which already carries the
-Occam penalty from 3.4, rather than the best achievable fit.
+<Recall question="Why does maximising the evidence over α and β not over-fit?" concepts={["model-evidence"]}>
+The weights are integrated out *before* the maximisation, so what is maximised already
+carries the Occam penalty rather than being the best achievable fit.
 </Recall>
 
 <Recall question="What does γ measure, and what is its range?" concepts={["effective-parameters"]}>
-The number of parameter directions the data determines rather than the prior. Each term
-$\lambda_i/(\alpha + \lambda_i)$ lies in $[0, 1)$, so $\gamma$ lies between $0$ and $M$, and
-sits near $M$ only when the data constrains every direction strongly.
+How many parameter directions the data determines rather than the prior. Each term is in
+$[0, 1)$, so $\gamma$ lies between $0$ and $M$.
 </Recall>
 
 <Recall question="Why is 3.95 divided by N − γ rather than N − M?" concepts={["effective-parameters"]}>
-Because only $\gamma$ parameters were actually fitted to the data; the rest were held near
-zero by the prior and consumed no degrees of freedom. It is the familiar bias correction
-applied to the effective parameter count instead of the nominal one.
+Only $\gamma$ parameters were actually fitted; the rest were held near zero by the prior and
+consumed no degrees of freedom.
 </Recall>
 
-<Recall question="What goes wrong if the eigenvalues in 3.91 are computed once and reused across iterations?" concepts={["effective-parameters"]}>
-They are eigenvalues of $\beta\boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\Phi}$ and scale
-with $\beta$, which the iteration changes each sweep. Freezing them converges smoothly to
-the wrong $\alpha$, $\beta$ and $\gamma$, which is a failure with no visible symptom.
-</Recall>
-
-<Recall question="Which term of 3.86 is the Occam factor, and what is it measuring?" concepts={["model-evidence"]}>
-The $-\frac{1}{2}\ln|\mathbf{A}|$ term. It is the log-volume of the posterior, so it charges
-the model once for every direction in weight space the data had to narrow down.
+<Recall question="What goes wrong if the eigenvalues in 3.91 are computed once and reused?" concepts={["effective-parameters"]}>
+They scale with $\beta$, which the iteration changes each sweep. Freezing them converges
+smoothly to the wrong answer, with no visible symptom.
 </Recall>
 
 ## Connections
