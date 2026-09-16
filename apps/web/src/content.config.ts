@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { defineCollection, type Loader } from 'astro:content';
-import { file, glob } from 'astro/loaders';
+import { defineCollection } from 'astro:content';
+import { file, glob, type Loader } from 'astro/loaders';
 import { z } from 'astro/zod';
 import { parse as parseYaml } from 'yaml';
 
