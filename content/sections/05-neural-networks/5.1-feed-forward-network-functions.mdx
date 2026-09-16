@@ -1,0 +1,135 @@
+---
+chapter: 5
+section: "5.1"
+title: Feed-forward Network Functions
+bookPages: [227, 231]
+summary: A feed-forward network keeps chapter 3's weighted sum of nonlinear functions but stops fixing the functions in advance, learning them from data instead.
+concepts: [feed-forward-network, weight-space-symmetry, basis-function]
+prereqs: ["3.1", "3.6", "1.2"]
+equations:
+  - { id: "5.1", name: adaptive basis function model }
+  - { id: "5.7", name: two-layer network function }
+  - { id: "5.8", name: bias absorbed into the sum }
+widgets: [NetworkFunctionExplorer]
+difficulty: 3
+---
+
+import NetworkFunctionExplorer from '@widgets/ch05/NetworkFunctionExplorer';
+import ApproximatingFunctions from '@widgets/ch05/figures/ApproximatingFunctions';
+import WeightSpaceSymmetry from '@widgets/ch05/figures/WeightSpaceSymmetry';
+
+## Intuition
+
+Chapter 3 built curved fits from a weighted sum of fixed functions. They could be exotic,
+Gaussian bumps, sigmoids, anything, but they had to be nailed down before any data arrived.
+Section 3.6 showed the bill for that: covering a high-dimensional input properly takes an
+unaffordable number of them, placed blind.
+
+A feed-forward network keeps the shape, a weighted sum passed through a nonlinearity, but
+stops fixing the functions. Each hidden unit forms its own weighted sum of the inputs,
+squashes it through a shared nonlinearity, and hands the result to the next weighted sum.
+Every one of those weights is fit to the data rather than chosen for it in advance.
+
+That buys placement chapter 3 could not afford, paid for three times over ahead: fitting
+stops being convex, so there is no closed form and no guarantee of finding the best
+weights, and the best weights are not even unique, since relabelling or flipping hidden
+units leaves the function they compute identical.
+
+## The math
+
+Chapter 3's model summed fixed functions of $\mathbf{x}$:
+
+<MathBlock id="5.1" name="adaptive basis function model">
+
+$$y(\mathbf{x}, \mathbf{w}) = f\left(\sum_{j=1}^{M} w_j \phi_j(\mathbf{x})\right)$$
+
+</MathBlock>
+
+A network makes each $\phi_j$ itself a weighted sum passed through a nonlinearity $h$, with
+weights fit alongside $w_j$. Stacking one such layer feeding another gives, for a hidden
+layer of tanh units and a linear or sigmoidal output:
+
+<MathBlock id="5.7" name="two-layer network function">
+
+$$y_k(\mathbf{x}, \mathbf{w}) = \sigma\left(\sum_{j} w_{kj}^{(2)} h\left(\sum_i w_{ji}^{(1)} x_i + w_{j0}^{(1)}\right) + w_{k0}^{(2)}\right)$$
+
+</MathBlock>
+
+Absorbing each bias as $w_{j0}$ paired with a fixed $x_0 = 1$ tidies the sum into one index:
+
+<MathBlock id="5.8" name="bias absorbed into the sum">
+
+$$a_j = \sum_{i=0}^{D} w_{ji}^{(1)} x_i$$
+
+</MathBlock>
+
+<Figure caption="Every thin curve is one hidden unit's tanh bump, scaled by its output weight; watch the bold sum gain corners as hidden units are added." width="wide">
+  <NetworkFunctionExplorer client:visible />
+</Figure>
+
+Three tanh units, arranged this way and fit by gradient descent, already reach four
+qualitatively different targets:
+
+<Figure caption="The same three-unit architecture, trained separately on each target. Corners in |x| and step(x) are the hardest: a sum of smooth tanh curves can only approximate a kink, never draw one exactly." width="wide">
+  <ApproximatingFunctions client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="A network you can resize"
+  figure="5.1"
+  caption="Raise M from one hidden unit upward. One unit can only bend the line once; a handful already buys a bump; more keep adding independent curvature."
+>
+  <NetworkFunctionExplorer client:visible />
+</Widget>
+
+## Worked example
+
+Flip the sign of one hidden unit's incoming weights, since tanh is odd, and its activation
+flips sign too. Also flip the sign of that unit's output weight, and the two flips cancel:
+the network computes the same function with a visibly different weight vector.
+
+<Figure caption="Base weights against a permuted, sign-flipped copy computing the identical function. The two curves lie exactly on top of each other." width="wide">
+  <WeightSpaceSymmetry client:visible />
+</Figure>
+
+Computed over 81 grid points on $[-3, 3]$ for a two-hidden-unit network, the largest gap
+between the two curves came out at $3\times10^{-16}$, floating-point noise rather than any
+real difference. For $M$ tanh units, that sign flip alone gives $2^M$ equivalent weight
+vectors, and relabelling the units gives $M!$ more.
+
+## Recall
+
+<Recall question="What does a network keep from chapter 3's linear basis function model, and what does it change?" concepts={["feed-forward-network"]}>
+It keeps the weighted-sum-through-a-nonlinearity shape, but the functions being summed are
+themselves learned weighted sums, fit to the data instead of fixed before it arrives.
+</Recall>
+
+<Recall question="What three costs does a learned basis carry that a fixed one did not?" concepts={["feed-forward-network"]}>
+The fitting problem is no longer convex, so there is no closed-form solution; there is no
+guarantee gradient-based training finds the global optimum; and the optimum, if found, is
+not unique.
+</Recall>
+
+<Recall question="Where do the M! and 2^M factors in weight-space symmetry come from?" concepts={["weight-space-symmetry"]}>
+2^M from flipping each tanh unit's incoming and outgoing weights together, since tanh is
+odd; M! from relabelling which hidden unit is which. Both leave the network function
+unchanged.
+</Recall>
+
+<Recall question="Why does 3.6's coverage argument not apply to a learned basis?" concepts={["basis-function", "feed-forward-network"]}>
+The exponential blow-up came from placing functions before seeing the data. A network
+places them by training, so it never needs to cover the input space, only the region the
+data actually occupies.
+</Recall>
+
+## Connections
+
+- **Answers** [3.6](/sections/3-6): this chapter is what happens when the basis is learned
+  instead of fixed.
+- **Builds on** [3.1](/sections/3-1)'s weighted-sum-of-functions shape and [1.2](/sections/1-2)'s
+  probabilistic groundwork for the likelihoods used from 5.2 onward.
+- **Leads to** [5.2](/sections/5-2), where fitting these weights replaces a normal equation
+  with an iterative search.
+

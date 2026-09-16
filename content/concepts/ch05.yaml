@@ -1,0 +1,87 @@
+- id: feed-forward-network
+  name: "Feed-forward network"
+  definition: "A function built from layers of adaptive basis functions, each a fixed nonlinearity applied to a weighted sum of the layer below, with every weight learned from data rather than fixed in advance. The price of a learned basis is that the fitting problem is no longer convex."
+  introducedIn: "5.1"
+  usedIn: ["5.2", "5.3", "5.4", "5.5", "5.6", "5.7"]
+  requires: ["basis-function"]
+  aliases: ["multilayer perceptron", "neural network"]
+
+- id: weight-space-symmetry
+  name: "Weight-space symmetry"
+  definition: "The existence of multiple, generally many, distinct weight vectors that compute the exact same network function: tanh's oddness gives a sign-flip symmetry per hidden unit, and relabelling hidden units gives a permutation symmetry, together multiplying out to M!·2^M equivalent solutions for M tanh units."
+  introducedIn: "5.1"
+  usedIn: ["5.7"]
+  requires: ["feed-forward-network"]
+  aliases: []
+
+- id: local-quadratic-approximation
+  name: "Local quadratic approximation"
+  definition: "A second-order Taylor expansion of the error function around a point, replacing the true error surface with an ellipsoid whose shape is set by the Hessian's eigenvalues and eigenvectors. Exact only at a true quadratic error, but the tool every non-convex optimiser reasons with locally."
+  introducedIn: "5.2"
+  usedIn: ["5.4", "5.7"]
+  requires: ["feed-forward-network"]
+  aliases: []
+
+- id: error-backpropagation
+  name: "Error backpropagation"
+  definition: "An algorithm for computing every weight's error derivative in one forward pass and one backward pass, costing O(W) total against the O(W²) of perturbing each weight separately and re-running the forward pass. What makes gradient-based training of a network with thousands of weights practical at all."
+  introducedIn: "5.3"
+  usedIn: ["5.4", "5.5", "5.6", "5.7"]
+  requires: ["feed-forward-network"]
+  aliases: ["backprop"]
+
+- id: hessian-matrix
+  name: "Hessian matrix"
+  definition: "The matrix of an error function's second derivatives with respect to every pair of weights, whose eigenvalues describe which directions in weight space are sharply pinned down by the data and which are left almost flat. Exact evaluation costs the same O(W) per direction as a gradient, but assembling the whole matrix still costs O(W²) passes."
+  introducedIn: "5.4"
+  usedIn: ["5.5", "5.7"]
+  requires: ["error-backpropagation", "local-quadratic-approximation"]
+  aliases: []
+
+- id: outer-product-approximation
+  name: "Outer-product (Levenberg-Marquardt) approximation"
+  definition: "Dropping the term in the exact Hessian that is weighted by the residual, leaving a sum of outer products of per-pattern gradients. Cheap, guaranteed positive semi-definite, and accurate only near a good fit, where the dropped term is small because the residuals are."
+  introducedIn: "5.4"
+  usedIn: []
+  requires: ["hessian-matrix"]
+  aliases: ["Levenberg-Marquardt approximation"]
+
+- id: weight-decay
+  name: "Weight decay"
+  definition: "Adding a penalty proportional to the sum of squared weights to the error function, shrinking every weight toward zero during training. The neural-network instance of the general regularisation idea, complicated here by the fact that a network's own symmetries and rescalings make a single shared decay rate an arbitrary choice."
+  introducedIn: "5.5"
+  usedIn: ["5.7"]
+  requires: ["regularisation", "feed-forward-network"]
+  aliases: []
+
+- id: early-stopping
+  name: "Early stopping"
+  definition: "Halting training before the error on held-out validation data starts rising, even though training error keeps falling. Controls effective model complexity without touching the error function at all, and behaves enough like weight decay in weight space that the two are often interchangeable in practice."
+  introducedIn: "5.5"
+  usedIn: []
+  requires: ["feed-forward-network", "validation-set"]
+  aliases: []
+
+- id: tangent-propagation
+  name: "Tangent propagation"
+  definition: "Penalising a network's output for changing along directions in input space where it should not, by adding to the error a term built from the Jacobian dotted with a tangent vector describing a known invariance (rotation, translation, and similar). An alternative to manufacturing more training examples by literally applying the transformation."
+  introducedIn: "5.5"
+  usedIn: []
+  requires: ["error-backpropagation"]
+  aliases: []
+
+- id: mixture-density-network
+  name: "Mixture density network"
+  definition: "A network whose outputs parameterise a mixture of Gaussians, mixing coefficients, means and variances all as functions of the input, rather than a single point prediction. Necessary whenever the same input can produce genuinely different outputs, where a single conditional mean is not merely noisy but actively misleading."
+  introducedIn: "5.6"
+  usedIn: []
+  requires: ["feed-forward-network", "responsibility"]
+  aliases: ["MDN"]
+
+- id: bayesian-neural-network
+  name: "Bayesian neural network"
+  definition: "Placing a prior over a network's weights and using the Laplace approximation to turn the posterior's mode and curvature into a predictive distribution, so predictions come with error bars that widen away from the training data. Extends the same machinery already used for Bayesian logistic regression to a non-convex likelihood."
+  introducedIn: "5.7"
+  usedIn: []
+  requires: ["laplace-approximation", "hessian-matrix", "feed-forward-network"]
+  aliases: []

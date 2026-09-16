@@ -1,0 +1,136 @@
+---
+chapter: 5
+section: "5.4"
+title: The Hessian Matrix
+bookPages: [249, 255]
+summary: The error surface's curvature in every weight direction, exact by extending backpropagation one derivative further, or cheaply approximated by dropping the term a good fit makes small.
+concepts: [hessian-matrix, outer-product-approximation, local-quadratic-approximation]
+prereqs: ["5.3", "5.2"]
+equations:
+  - { id: "5.33", name: Hessian eigenvalue equation }
+  - { id: "5.82", name: single-output sum-of-squares error }
+  - { id: "5.83", name: exact Hessian split into two terms }
+  - { id: "5.84", name: outer-product approximation }
+widgets: [HessianEllipseExplorer]
+difficulty: 4
+---
+
+import HessianEllipseExplorer from '@widgets/ch05/HessianEllipseExplorer';
+import EigenvalueSpectrum from '@widgets/ch05/figures/EigenvalueSpectrum';
+import OuterProductGapOverTraining from '@widgets/ch05/figures/OuterProductGapOverTraining';
+import OuterProductAlwaysPsd from '@widgets/ch05/figures/OuterProductAlwaysPsd';
+
+## Intuition
+
+The gradient says which way is downhill. It says nothing about how far downhill goes before
+the ground curves back up, or whether that curve is the same in every direction.
+
+The Hessian answers exactly that: one number per pair of weights, describing how sharply
+the error bends along each combination of them. Some directions turn out pinned down hard
+by the data, changing the error fast; others are almost flat, so a wide range of values
+along them costs almost nothing.
+
+Getting the exact Hessian costs one more backward pass than the gradient did, extending the
+same trick from section 5.3. But a much cheaper stand-in exists, built from pieces the
+gradient already computed, and it is exact precisely where it matters least to be: right at
+a good fit.
+
+## The math
+
+Restrict to one output unit and sum-of-squares error:
+
+<MathBlock id="5.82" name="single-output sum-of-squares error">
+
+$$E = \frac{1}{2}\sum_n (y_n - t_n)^2$$
+
+</MathBlock>
+
+Differentiating twice splits the exact Hessian into two pieces:
+
+<MathBlock id="5.83" name="exact Hessian split into two terms">
+
+$$\mathbf{H} = \sum_n \nabla y_n \nabla y_n^{\mathrm{T}} + \sum_n (y_n - t_n)\nabla\nabla y_n$$
+
+</MathBlock>
+
+The second term is weighted by the residual itself, so dropping it is exact wherever the fit
+already is:
+
+<MathBlock id="5.84" name="outer-product approximation">
+
+$$\mathbf{H} \approx \sum_n \mathbf{b}_n \mathbf{b}_n^{\mathrm{T}}, \qquad \mathbf{b}_n = \nabla y_n$$
+
+</MathBlock>
+
+<Figure caption="The relative gap between the exact Hessian and this approximation, at the same trained network across a training run: it shrinks as the residuals do." width="wide">
+  <OuterProductGapOverTraining client:visible />
+</Figure>
+
+<Figure caption="Smallest eigenvalue of each Hessian at the same point, partway through training. The exact Hessian's dips below zero; the outer-product approximation's cannot, by construction." width="wide">
+  <OuterProductAlwaysPsd client:visible />
+</Figure>
+
+At a minimum, the Hessian's eigenvectors give the axes a quadratic bowl bends along:
+
+<MathBlock id="5.33" name="Hessian eigenvalue equation">
+
+$$\mathbf{H}\mathbf{u}_i = \lambda_i \mathbf{u}_i$$
+
+</MathBlock>
+
+## Interactive
+
+<Widget
+  title="Exact Hessian against the outer-product approximation"
+  caption="Step through three points in training. Watch the dashed approximation ellipse converge onto the solid exact one as the residual shrinks."
+>
+  <HessianEllipseExplorer client:visible />
+</Widget>
+
+## Worked example
+
+The same trained network, all thirteen weights this time, gives thirteen eigenvalues rather
+than the two the ellipse above showed. With four data points and thirteen weights, the fit
+is a near-exact interpolation, so several eigenvalues sit orders of magnitude below the
+largest.
+
+<Figure caption="Eigenvalues of the exact Hessian, sorted by magnitude on a log scale; red bars mark a negative sign. The smallest are close enough to zero that their sign is not meaningful, only their size." width="wide">
+  <EigenvalueSpectrum client:visible />
+</Figure>
+
+Those near-zero directions are where thirteen weights fit four points: the data leaves them
+almost entirely undetermined. The outer-product approximation gets the large end of the
+spectrum right first, since it is built from $\nabla y_n$, largest exactly where the output
+is most sensitive to a weight, the same directions the exact Hessian pins down hardest.
+
+## Recall
+
+<Recall question="What does a Hessian eigenvalue tell you that the gradient alone does not?" concepts={["hessian-matrix"]}>
+How sharply the error curves along that eigenvector's direction: a large eigenvalue means
+that direction is tightly pinned by the data, a small one means it is nearly free.
+</Recall>
+
+<Recall question="Which term does the outer-product approximation drop, and why is dropping it safe near a good fit?" concepts={["outer-product-approximation"]}>
+It drops the term weighted by the residual (y − t) in 5.83. Near a good fit the residuals
+are small, so that term is small too, and the remaining sum of outer products is nearly all
+of the true Hessian.
+</Recall>
+
+<Recall question="Why is exactHessian's extra cost only one more backward pass, not a whole separate algorithm?" concepts={["hessian-matrix"]}>
+It reuses backpropagation's own forward and backward recursions, differentiated once more
+in a chosen direction, rather than perturbing pairs of weights and re-running the network.
+</Recall>
+
+<Recall question="What does the outer-product approximation guarantee that the exact Hessian does not?" concepts={["outer-product-approximation"]}>
+It is a sum of outer products, so it is always positive semi-definite, even far from a
+minimum where the exact Hessian can have negative eigenvalues.
+</Recall>
+
+## Connections
+
+- **Extends** [5.3](/sections/5-3)'s backward recursion one derivative further.
+- **Returns to** [5.2](/sections/5-2)'s local quadratic approximation with a way to compute
+  the matrix it depends on.
+- **Feeds** [5.7](/sections/5-7), where this same Hessian sets the width of a Bayesian
+  network's predictive uncertainty.
+

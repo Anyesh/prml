@@ -1,0 +1,139 @@
+---
+chapter: 5
+section: "5.3"
+title: Error Backpropagation
+bookPages: [241, 248]
+summary: One forward pass and one backward pass gives every weight's error derivative in time proportional to the number of weights, not its square.
+concepts: [error-backpropagation, feed-forward-network]
+prereqs: ["5.2", "5.1"]
+equations:
+  - { id: "5.48", name: forward propagation }
+  - { id: "5.53", name: derivative with respect to a weight }
+  - { id: "5.54", name: output delta }
+  - { id: "5.56", name: backpropagation formula }
+widgets: [BackpropStepper]
+difficulty: 4
+---
+
+import BackpropStepper from '@widgets/ch05/BackpropStepper';
+import EfficiencyComparison from '@widgets/ch05/figures/EfficiencyComparison';
+import GradientCheckAgreement from '@widgets/ch05/figures/GradientCheckAgreement';
+import JacobianCheck from '@widgets/ch05/figures/JacobianCheck';
+
+## Intuition
+
+Gradient descent needs a derivative for every weight, every step. Perturbing one weight,
+re-running the whole network, and measuring how much the error moved would work, but doing
+that separately for each weight means paying for the whole network again for every single
+one of them.
+
+Backpropagation pays once. It runs the network forward, keeping every intermediate value,
+then runs a second pass backward from the error, reusing exactly those values to hand every
+weight its own derivative in one pass. The trick is an error signal that a unit only needs
+to combine with what the units just downstream already computed, never with the whole
+network again.
+
+That signal has a name, delta, and a clean rule for how it moves backward through a layer.
+Watching it arrive one unit at a time is the fastest way to see why the whole algorithm
+costs so little.
+
+## The math
+
+Forward propagation is a weighted sum then a nonlinearity, unit by unit:
+
+<MathBlock id="5.48" name="forward propagation">
+
+$$a_j = \sum_i w_{ji} z_i, \qquad z_j = h(a_j)$$
+
+</MathBlock>
+
+Each weight's derivative separates into a backward-flowing signal $\delta_j$ times the
+forward value feeding it:
+
+<MathBlock id="5.53" name="derivative with respect to a weight">
+
+$$\frac{\partial E_n}{\partial w_{ji}} = \delta_j z_i, \qquad \delta_j \equiv \frac{\partial E_n}{\partial a_j}$$
+
+</MathBlock>
+
+At the output, for every canonical error-activation pairing this chapter uses:
+
+<MathBlock id="5.54" name="output delta">
+
+$$\delta_k = y_k - t_k$$
+
+</MathBlock>
+
+Everywhere else, $\delta$ propagates backward through exactly the weights it came forward
+through:
+
+<MathBlock id="5.56" name="backpropagation formula">
+
+$$\delta_j = h'(a_j)\sum_k w_{kj}\delta_k$$
+
+</MathBlock>
+
+<Figure caption="Each weight's analytic gradient against a central difference of the same error, for every weight in a 3-4-2 network. Every point sits on the diagonal, within the central difference's own truncation error." width="wide">
+  <GradientCheckAgreement client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Backpropagation, unit by unit"
+  figure="5.7"
+  caption="Step forward through the network, watch y appear, then keep stepping to see δ arrive backward, output first, hidden units last."
+>
+  <BackpropStepper client:visible />
+</Widget>
+
+## Worked example
+
+One forward-backward pass through a 3-4-2 network costs a small constant number of
+multiply-adds per weight; perturbing each weight separately costs a whole forward pass, one
+per weight, so the total grows with the square of the weight count instead.
+
+<Figure caption="Multiply-add counts against weight count. Backpropagation's line stays straight; finite differences curve away above it, twenty times more expensive already by W = 20." width="wide">
+  <EfficiencyComparison client:visible />
+</Figure>
+
+The same backward machinery, run once more from each output instead of from the error,
+gives the Jacobian $\partial y_k/\partial x_i$: how a change at an input ripples through to
+one output, without touching the weights at all.
+
+<Figure caption="One output's sensitivity to each of three inputs, from a central difference on the same trained network above." width="wide">
+  <JacobianCheck client:visible />
+</Figure>
+
+## Recall
+
+<Recall question="What does δ mean, and what equation defines it?" concepts={["error-backpropagation"]}>
+δⱼ is ∂Eₙ/∂aⱼ, the error's sensitivity to a unit's pre-activation. Every weight's own
+derivative is this signal times whatever forward value fed that weight, eq 5.53.
+</Recall>
+
+<Recall question="Why is the output delta the same y − t for sum-of-squares, binary cross-entropy and softmax cross-entropy?" concepts={["error-backpropagation"]}>
+Each error function is paired with the output activation that makes its own derivative
+cancel against the activation's derivative, leaving the same simple form in every case.
+</Recall>
+
+<Recall question="Why does one forward-and-backward pass cost O(W) rather than O(W²)?" concepts={["error-backpropagation"]}>
+Every weight's derivative reuses values already computed for its neighbours instead of
+re-running the network from scratch, so the total work grows with the number of weights,
+not its square.
+</Recall>
+
+<Recall question="What besides the gradient can the same backward machinery compute?" concepts={["error-backpropagation"]}>
+The Jacobian of outputs with respect to inputs, by running the identical backward
+recursion starting from each output instead of from the error.
+</Recall>
+
+## Connections
+
+- **Builds on** [5.2](/sections/5-2)'s need for $\nabla E$ at every step of gradient
+  descent.
+- **Verified against** the central-difference numerical gradient, an independent check
+  used the same way throughout `@prml/math`'s own test suite.
+- **Feeds** [5.4](/sections/5-4), where the same backward recursion is extended one more
+  derivative to reach the Hessian.
+

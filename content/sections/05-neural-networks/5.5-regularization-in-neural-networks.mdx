@@ -1,0 +1,129 @@
+---
+chapter: 5
+section: "5.5"
+title: Regularization in Neural Networks
+bookPages: [256, 271]
+summary: Controlling how many hidden units to use is really controlling effective complexity, and weight decay, early stopping and invariance penalties each do that without touching the unit count.
+concepts: [weight-decay, early-stopping, tangent-propagation, feed-forward-network]
+prereqs: ["5.2", "5.4", "1.5"]
+equations:
+  - { id: "5.112", name: weight decay }
+  - { id: "5.125", name: tangent vector }
+  - { id: "5.128", name: tangent propagation penalty }
+widgets: [EarlyStoppingExplorer]
+difficulty: 3
+---
+
+import EarlyStoppingExplorer from '@widgets/ch05/EarlyStoppingExplorer';
+import WeightDecayShrinkage from '@widgets/ch05/figures/WeightDecayShrinkage';
+import TangentVectorConcept from '@widgets/ch05/figures/TangentVectorConcept';
+import AugmentationReducesSensitivity from '@widgets/ch05/figures/AugmentationReducesSensitivity';
+
+## Intuition
+
+The number of hidden units sets a network's raw capacity, but capacity is a blunt
+instrument: too few and nothing fits, too many and everything fits, including the noise.
+What actually needs controlling is effective complexity, and three quite different levers
+reach it without ever touching the unit count.
+
+Weight decay pulls every weight toward zero, so large, wild coefficients cost more than
+small, cautious ones. Early stopping never changes the error function at all; it simply
+quits training before the network has had time to memorise its particular sample of noise.
+And when the real problem is a known invariance, rotate a digit, shift a signal, the answer
+is neither: penalise the network directly for changing its output along that one direction,
+because more data pulled from the same family will not teach the same lesson nearly as
+directly.
+
+## The math
+
+Adding a penalty proportional to the weights themselves keeps everything else unchanged:
+
+<MathBlock id="5.112" name="weight decay">
+
+$$\tilde{E}(\mathbf{w}) = E(\mathbf{w}) + \frac{\lambda}{2}\mathbf{w}^{\mathrm{T}}\mathbf{w}$$
+
+</MathBlock>
+
+<Figure caption="The same noisy fit at three decay strengths: the undecayed curve chases every point, and the wildest curve tames as λ grows." width="wide">
+  <WeightDecayShrinkage client:visible />
+</Figure>
+
+For a known transformation $s(\mathbf{x}, \xi)$ (a rotation angle, a shift), its tangent
+vector is how the input moves as $\xi$ leaves zero:
+
+<MathBlock id="5.125" name="tangent vector">
+
+$$\boldsymbol{\tau} = \left.\frac{\partial s(\mathbf{x}, \xi)}{\partial \xi}\right|_{\xi=0}$$
+
+</MathBlock>
+
+<Figure caption="A shifted curve against the first-order prediction its tangent vector makes. The two nearly coincide for a small shift, which is exactly what makes the tangent vector a useful local stand-in for the whole transformation." width="wide">
+  <TangentVectorConcept client:visible />
+</Figure>
+
+Penalising the output's Jacobian dotted with $\boldsymbol{\tau}$ discourages exactly the
+sensitivity an invariance says should not exist:
+
+<MathBlock id="5.128" name="tangent propagation penalty">
+
+$$\Omega = \frac{1}{2}\sum_n \sum_k \left(\sum_i J_{nki}\tau_{ni}\right)^2$$
+
+</MathBlock>
+
+## Interactive
+
+<Widget
+  title="Early stopping"
+  figure="5.12"
+  caption="Drag the stopping epoch across the marked minimum and watch training error keep improving while validation error has already turned back up."
+>
+  <EarlyStoppingExplorer client:visible />
+</Widget>
+
+## Worked example
+
+An alternative to penalising sensitivity directly: manufacture more training examples by
+applying the transformation itself, here a small shift, and let ordinary training absorb
+the invariance from the data.
+
+<Figure caption="Average sensitivity to a shift of 0.1, before and after training includes shifted copies of every point. Five different initial weight seeds all show the same reduction." width="wide">
+  <AugmentationReducesSensitivity client:visible />
+</Figure>
+
+Averaged over four training points, augmenting with shifted copies cuts mean sensitivity by
+roughly a tenth compared to training on the unshifted points alone, at the cost of three
+times as many training examples for the same information.
+
+## Recall
+
+<Recall question="Why can weight decay and early stopping often substitute for each other?" concepts={["weight-decay", "early-stopping"]}>
+Both limit how far training moves weights from a small starting point: decay by directly
+penalising their size, stopping by cutting the number of steps available to grow them.
+</Recall>
+
+<Recall question="What does a tangent vector represent, concretely?" concepts={["tangent-propagation"]}>
+The direction an input moves, to first order, as a known transformation's parameter leaves
+zero: a rotation's tangent vector at angle zero, a shift's at offset zero.
+</Recall>
+
+<Recall question="Why prefer a tangent-propagation penalty over training on transformed copies of the data?" concepts={["tangent-propagation"]}>
+The penalty targets the exact direction the invariance describes directly, in one pass,
+where augmented copies only teach it indirectly and need many examples to approximate the
+same constraint.
+</Recall>
+
+<Recall question="Why does an untrained network's error keep falling on the training set even after validation error turns back up?" concepts={["early-stopping"]}>
+Nothing stops the network from continuing to fit the training sample's specific noise; that
+noise is not shared with the validation set, so fitting it more only pushes validation error
+up.
+</Recall>
+
+## Connections
+
+- **Uses** [5.2](/sections/5-2)'s gradient descent as the training loop every strategy here
+  regularises.
+- **Uses** [5.4](/sections/5-4)'s backward machinery again for tangent propagation's
+  Jacobian term.
+- **Parallels** [1.5](/sections/1-5)'s decision theory: all three strategies trade training
+  fit for a complexity the loss function alone cannot see.
+

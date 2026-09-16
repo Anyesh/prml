@@ -1,0 +1,132 @@
+---
+chapter: 5
+section: "5.6"
+title: Mixture Density Networks
+bookPages: [272, 276]
+summary: When one input can genuinely produce several different outputs, a network that predicts a single conditional mean is not noisy, it is wrong, and a mixture of Gaussians is the fix.
+concepts: [mixture-density-network, responsibility, feed-forward-network]
+prereqs: ["5.3", "5.1"]
+equations:
+  - { id: "5.148", name: mixture model }
+  - { id: "5.150", name: mixing coefficients }
+  - { id: "5.153", name: mixture error function }
+  - { id: "5.158", name: predictive mean }
+widgets: [MdnVsConditionalMean]
+difficulty: 4
+---
+
+import MdnVsConditionalMean from '@widgets/ch05/MdnVsConditionalMean';
+import MixingCoefficientsAcrossInput from '@widgets/ch05/figures/MixingCoefficientsAcrossInput';
+import ConditionalDensityContour from '@widgets/ch05/figures/ConditionalDensityContour';
+import PredictiveVarianceAcrossInput from '@widgets/ch05/figures/PredictiveVarianceAcrossInput';
+
+## Intuition
+
+Sum-of-squares error assumes one right answer per input, corrupted by symmetric noise. A
+robot arm's inverse kinematics has two elbow positions that reach the same point; an
+inverted sine has two x values behind the same t. Neither is noise. Both answers are
+correct, and averaging them gives a point that is not.
+
+That average is exactly what a conditional-mean network produces, because sum-of-squares
+error is minimised by the mean of whatever the true distribution is, single-peaked or not.
+Through the ambiguous region it draws a confident curve through empty space.
+
+The fix keeps the network but changes what it outputs: not a single value but the
+parameters of a small mixture of Gaussians, one distribution per plausible branch, with
+weights that shift smoothly as the true answer moves from being one of several to being the
+only one left.
+
+## The math
+
+The target is modelled as a mixture, parameters all functions of the input:
+
+<MathBlock id="5.148" name="mixture model">
+
+$$p(\mathbf{t}\mid\mathbf{x}) = \sum_{k=1}^{K}\pi_k(\mathbf{x})\,\mathcal{N}\big(\mathbf{t}\mid \boldsymbol{\mu}_k(\mathbf{x}), \sigma_k^2(\mathbf{x})\big)$$
+
+</MathBlock>
+
+A softmax keeps the mixing coefficients a valid distribution over branches:
+
+<MathBlock id="5.150" name="mixing coefficients">
+
+$$\pi_k(\mathbf{x}) = \frac{\exp(a_k^\pi)}{\sum_l \exp(a_l^\pi)}$$
+
+</MathBlock>
+
+<Figure caption="Mixing coefficients across the input range for a trained three-component network. Two components take turns dominating; the third stays a minor contributor almost everywhere." width="wide">
+  <MixingCoefficientsAcrossInput client:visible />
+</Figure>
+
+Training minimises the negative log likelihood of the whole mixture at once:
+
+<MathBlock id="5.153" name="mixture error function">
+
+$$E(\mathbf{w}) = -\sum_n \ln\left(\sum_{k=1}^{K}\pi_k(\mathbf{x}_n,\mathbf{w})\,\mathcal{N}\big(\mathbf{t}_n\mid \boldsymbol{\mu}_k(\mathbf{x}_n,\mathbf{w}), \sigma_k^2(\mathbf{x}_n,\mathbf{w})\big)\right)$$
+
+</MathBlock>
+
+<Figure caption="The full predictive density over the input-target plane: two ridges track the two true branches, thinning toward the edges where only one branch survives." width="wide">
+  <ConditionalDensityContour client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="A conditional mean against a mixture"
+  figure="5.19"
+  caption="Compare the two panels through the middle of the plot. The mean network's curve runs through empty space; the mixture's larger points sit where points actually are."
+>
+  <MdnVsConditionalMean client:visible />
+</Widget>
+
+## Worked example
+
+Collapsing the mixture to a single number the way 5.158 defines still has a use, provided
+its spread is read alongside it rather than ignored:
+
+<MathBlock id="5.158" name="predictive mean">
+
+$$\mathbb{E}[\mathbf{t}\mid\mathbf{x}] = \sum_{k=1}^{K}\pi_k(\mathbf{x})\boldsymbol{\mu}_k(\mathbf{x})$$
+
+</MathBlock>
+
+<Figure caption="Total predictive variance across the same input range. It rises through the region where the two branches are both live, exactly where a single mean is least trustworthy." width="wide">
+  <PredictiveVarianceAcrossInput client:visible />
+</Figure>
+
+The variance climbs right where the earlier density plot showed two ridges rather than one:
+it is the mixture's own warning that its mean is a summary, not an answer.
+
+## Recall
+
+<Recall question="Why does a sum-of-squares network fail on a genuinely multi-valued target, rather than just fitting it noisily?" concepts={["mixture-density-network"]}>
+Sum-of-squares error is minimised by the conditional mean, and when the true distribution
+has separate branches, their mean sits between them, on a value neither branch produces.
+</Recall>
+
+<Recall question="What three quantities does a mixture density network output, and what keeps each one valid?" concepts={["mixture-density-network"]}>
+Mixing coefficients through a softmax so they sum to one, standard deviations through an
+exponential so they stay positive, and means output directly with no transformation needed.
+</Recall>
+
+<Recall question="What does a component's responsibility measure, here?" concepts={["responsibility", "mixture-density-network"]}>
+How much of a given training target's likelihood that one component accounts for,
+relative to the others; it is what each component's output gradient is weighted by.
+</Recall>
+
+<Recall question="Why is the predictive mean alone not enough, even from a correctly fitted mixture?" concepts={["mixture-density-network"]}>
+It collapses several branches back into one number exactly where a single number is least
+informative; the predictive variance climbing in that same region is the model's own signal
+not to trust the mean there.
+</Recall>
+
+## Connections
+
+- **Builds on** [5.3](/sections/5-3)'s backpropagation, now fed a mixture likelihood's
+  gradient at the output layer instead of $y - t$.
+- **Reuses** [5.1](/sections/5-1)'s network function unchanged; only what the outputs mean
+  is new.
+- **Anticipates** [5.7](/sections/5-7)'s move away from a single best-fit answer, here for
+  the output, there for the weights.
+

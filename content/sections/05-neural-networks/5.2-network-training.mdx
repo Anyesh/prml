@@ -1,0 +1,139 @@
+---
+chapter: 5
+section: "5.2"
+title: Network Training
+bookPages: [232, 240]
+summary: Fitting a network's weights means climbing a non-convex error surface with no normal equation to jump to, so the shape of that surface and the size of each step both matter.
+concepts: [local-quadratic-approximation, feed-forward-network]
+prereqs: ["5.1", "3.1"]
+equations:
+  - { id: "5.11", name: sum-of-squares error }
+  - { id: "5.28", name: local quadratic approximation }
+  - { id: "5.36", name: error in the eigenbasis }
+  - { id: "5.41", name: gradient descent update }
+widgets: [ErrorSurfaceDescent]
+difficulty: 3
+---
+
+import ErrorSurfaceDescent from '@widgets/ch05/ErrorSurfaceDescent';
+import LocalMinimaFromSeveralStarts from '@widgets/ch05/figures/LocalMinimaFromSeveralStarts';
+import QuadraticApproxEllipse from '@widgets/ch05/figures/QuadraticApproxEllipse';
+import ErrorVsIterationComparison from '@widgets/ch05/figures/ErrorVsIterationComparison';
+
+## Intuition
+
+Chapter 3's weights had a formula: set the gradient to zero and solve. A network's weights
+do not, because the error is no longer quadratic in them, so there is nothing to solve, only
+a surface to climb down.
+
+That surface can have many valleys, and gradient descent only ever sees the one it is
+standing in. Two starting points can end at two different weight vectors with two different
+errors, and nothing about the descent itself reveals whether a better valley exists
+elsewhere.
+
+The step size is its own hazard, independent of which valley is reached. Too small and
+training crawls, spending far more steps than the problem needs. Too large and a step
+launches past the valley floor entirely, landing somewhere steeper than where it started, so
+the next step is bigger still.
+
+## The math
+
+Regression's per-pattern error is still sum-of-squares:
+
+<MathBlock id="5.11" name="sum-of-squares error">
+
+$$E(\mathbf{w}) = \frac{1}{2}\sum_{n=1}^{N}\|\mathbf{y}(\mathbf{x}_n, \mathbf{w}) - \mathbf{t}_n\|^2$$
+
+</MathBlock>
+
+Near any point $\hat{\mathbf{w}}$, a Taylor expansion replaces the true surface with a
+quadratic bowl set by the gradient $\mathbf{b}$ and Hessian $\mathbf{H}$:
+
+<MathBlock id="5.28" name="local quadratic approximation">
+
+$$E(\mathbf{w}) \approx E(\hat{\mathbf{w}}) + (\mathbf{w}-\hat{\mathbf{w}})^{\mathrm{T}}\mathbf{b} + \frac{1}{2}(\mathbf{w}-\hat{\mathbf{w}})^{\mathrm{T}}\mathbf{H}(\mathbf{w}-\hat{\mathbf{w}})$$
+
+</MathBlock>
+
+Written in the Hessian's own eigenvectors, the bowl separates into independent directions:
+
+<MathBlock id="5.36" name="error in the eigenbasis">
+
+$$E(\mathbf{w}) = E(\mathbf{w}^\star) + \frac{1}{2}\sum_i \lambda_i \alpha_i^2$$
+
+</MathBlock>
+
+Large $\lambda_i$ pin that direction down sharply; small $\lambda_i$ leave it almost flat.
+
+<Figure caption="The true error surface's contours against the ellipse this local quadratic model predicts near a minimum: close agreement right at the point they share, growing apart with distance." width="wide">
+  <QuadraticApproxEllipse client:visible />
+</Figure>
+
+Descent follows the gradient down:
+
+<MathBlock id="5.41" name="gradient descent update">
+
+$$\mathbf{w}^{(\tau+1)} = \mathbf{w}^{(\tau)} - \eta\nabla E(\mathbf{w}^{(\tau)})$$
+</MathBlock>
+
+## Interactive
+
+<Widget
+  title="Descending a two-weight error surface"
+  caption="Raise the learning rate until the path overshoots the valley and diverges, then bring it back down and count how many more steps a cautious rate needs."
+>
+  <ErrorSurfaceDescent client:visible />
+</Widget>
+
+<Figure caption="The same surface, three fixed learning rates. The smallest crawls, the middle settles into a shallow plateau far above zero, and the largest overshoots and diverges outright within a handful of steps." width="wide">
+  <ErrorVsIterationComparison client:visible />
+</Figure>
+
+## Worked example
+
+Five starting points, one fixed learning rate, the same tiny network and dataset as above.
+
+<Figure caption="Each coloured path descends from a different corner of the same surface. Rings mark where each one sits after 200 steps." width="wide">
+  <LocalMinimaFromSeveralStarts client:visible />
+</Figure>
+
+After 200 steps, four of the five runs are still stuck at error $\approx 0.109$, in two
+pairs that are exact mirror images under 5.1's sign symmetry. The fifth, started nearer the
+basin, has already reached $0.00056$: almost two hundred times smaller, on the identical
+surface and step budget. The other four are not stuck at a different minimum, only at a
+plateau where the hidden unit has saturated and its gradient has shrunk to nearly nothing;
+given enough further steps they would reach the same low error too.
+
+## Recall
+
+<Recall question="Why is there no normal-equation solution for a network's weights?" concepts={["feed-forward-network"]}>
+The error is no longer quadratic in the weights once a nonlinear hidden layer sits between
+them and the output, so setting the gradient to zero gives no closed-form system to solve.
+</Recall>
+
+<Recall question="What does the local quadratic approximation's eigenbasis tell you about a minimum?" concepts={["local-quadratic-approximation"]}>
+Each eigenvalue sets how sharply the error rises along its own eigenvector direction: large
+eigenvalues pin that direction down tightly, small ones leave it nearly flat.
+</Recall>
+
+<Recall question="What happens to gradient descent when the learning rate is too large?" concepts={["local-quadratic-approximation"]}>
+A step can overshoot the valley floor and land somewhere with an even steeper gradient, so
+the following step grows instead of shrinking, and the path diverges.
+</Recall>
+
+<Recall question="Why can different starting points look stuck at different errors after the same number of steps?" concepts={["feed-forward-network"]}>
+Not necessarily because they found different minima: a start that pushes a hidden unit into
+tanh's saturated tail sees its gradient shrink toward zero there, so it can sit on a
+plateau for far longer than a start that never saturates, even on the way to the same
+eventual minimum.
+</Recall>
+
+## Connections
+
+- **Builds on** [5.1](/sections/5-1)'s network function, now treated as something to fit
+  rather than just evaluate.
+- **Sets up** [5.3](/sections/5-3): computing $\nabla E$ efficiently enough to take any of
+  these steps at all is exactly what backpropagation buys.
+- **Sets up** [5.4](/sections/5-4), which returns to $\mathbf{H}$ from 5.28 and asks how to
+  compute it rather than merely reason about its eigenvalues.
+

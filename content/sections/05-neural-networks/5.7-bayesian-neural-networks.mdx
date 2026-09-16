@@ -1,0 +1,134 @@
+---
+chapter: 5
+section: "5.7"
+title: Bayesian Neural Networks
+bookPages: [277, 290]
+summary: The same Laplace approximation that turned logistic regression's weights into a posterior does the same for a network's, and the payoff is a predictive spread that grows away from the data.
+concepts: [bayesian-neural-network, hessian-matrix]
+prereqs: ["5.4", "4.4"]
+equations:
+  - { id: "5.166", name: Hessian of the negative log posterior }
+  - { id: "5.167", name: Laplace-approximated weight posterior }
+  - { id: "5.173", name: predictive variance }
+  - { id: "5.190", name: marginalized classification probability }
+widgets: [LaplacePredictiveErrorBars]
+difficulty: 5
+---
+
+import LaplacePredictiveErrorBars from '@widgets/ch05/LaplacePredictiveErrorBars';
+import EffectiveParametersVsAlpha from '@widgets/ch05/figures/EffectiveParametersVsAlpha';
+import MarginalizedVsPointEstimateBoundary from '@widgets/ch05/figures/MarginalizedVsPointEstimateBoundary';
+import PosteriorEllipseInWeightSpace from '@widgets/ch05/figures/PosteriorEllipseInWeightSpace';
+
+## Intuition
+
+A trained network reports one weight vector, as if training had discovered the truth
+instead of merely the best fit to what little data was on hand. Section 4.4 already refused
+that story for logistic regression, fitting a Gaussian to the posterior's mode and
+curvature instead of collapsing it to a point.
+
+Nothing about that argument needed the likelihood to be convex, only that it have a mode
+worth expanding around, and section 5.4 already built the tool that expansion needs: the
+network's own Hessian. Reapplying 4.4's Laplace approximation costs no new machinery, only
+a bigger, non-convex log posterior underneath it.
+
+What it buys is a predictive distribution that knows what it does not know. Near the
+training data, well-determined weight directions leave little room to disagree, so
+predictions stay tight. Far from it, the same weight directions swing freely, and the
+predictive spread grows to say so honestly.
+
+## The math
+
+The negative log posterior's curvature combines the prior with $\beta$ times the network's
+own Hessian:
+
+<MathBlock id="5.166" name="Hessian of the negative log posterior">
+
+$$\mathbf{A} = \alpha\mathbf{I} + \beta\mathbf{H}$$
+
+</MathBlock>
+
+Centred at the mode, this gives a Gaussian standing in for the true posterior:
+
+<MathBlock id="5.167" name="Laplace-approximated weight posterior">
+
+$$q(\mathbf{w}\mid\mathcal{D}) = \mathcal{N}(\mathbf{w}\mid \mathbf{w}_{\mathrm{MAP}}, \mathbf{A}^{-1})$$
+
+</MathBlock>
+
+Linearising the network around $\mathbf{w}_{\mathrm{MAP}}$ turns that weight uncertainty into
+output uncertainty:
+
+<MathBlock id="5.173" name="predictive variance">
+
+$$\sigma^2(\mathbf{x}) = \frac{1}{\beta} + \mathbf{g}^{\mathrm{T}}\mathbf{A}^{-1}\mathbf{g}, \qquad \mathbf{g} = \nabla_{\mathbf{w}} y(\mathbf{x}, \mathbf{w}_{\mathrm{MAP}})$$
+
+</MathBlock>
+
+<Figure caption="The Gaussian this posterior places over two of the network's weights, at fixed values of every other weight." width="wide">
+  <PosteriorEllipseInWeightSpace client:visible />
+</Figure>
+
+$\alpha$ itself is set by the same evidence-style re-estimation as 3.5, reading off how many
+weight directions the data actually pins down:
+
+<Figure caption="Effective parameters against the prior precision α, from the same eigenvalues β·H supplies to the evidence framework. Small α trusts nearly every direction; large α trusts almost none." width="wide">
+  <EffectiveParametersVsAlpha client:visible />
+</Figure>
+
+## Interactive
+
+<Widget
+  title="Predictive uncertainty away from the data"
+  caption="Follow the shaded band past either edge of the training points and watch it widen, exactly where 5.173's g swings furthest between nearby weight settings."
+>
+  <LaplacePredictiveErrorBars client:visible />
+</Widget>
+
+## Worked example
+
+The classification case swaps $y - t$ for the same cross-entropy output this chapter has
+used throughout, then reads off a marginalized probability by scaling the activation with
+4.5's $\kappa$ before the sigmoid:
+
+<MathBlock id="5.190" name="marginalized classification probability">
+
+$$p(t=1\mid\mathbf{x},\mathcal{D}) = \sigma\big(\kappa(\sigma_a^2(\mathbf{x}))\,a_{\mathrm{MAP}}(\mathbf{x})\big)$$
+
+</MathBlock>
+
+<Figure caption="Point-estimate confidence contours (red) against the marginalized ones (blue) at p = 0.1, 0.5, 0.9. The 0.5 boundary is identical either way; the outer contours pull back toward it once uncertainty is included." width="wide">
+  <MarginalizedVsPointEstimateBoundary client:visible />
+</Figure>
+
+Marginalizing never moves where $p=0.5$: that contour is where $a_{\mathrm{MAP}}=0$, and
+scaling zero by $\kappa$ leaves it at zero regardless. Every other contour moves, pulled back
+toward 0.5, because $\kappa \le 1$ always shrinks the activation it multiplies.
+
+## Recall
+
+<Recall question="What does the Laplace approximation need from a network that it did not already need from logistic regression?" concepts={["bayesian-neural-network"]}>
+Nothing new in principle: a mode to expand around and a Hessian at that mode. The network's
+log posterior is no longer convex, but Laplace's expansion only ever uses local curvature.
+</Recall>
+
+<Recall question="Why does predictive variance grow away from the training data?" concepts={["bayesian-neural-network"]}>
+5.173's second term is a quadratic form in the output's weight-gradient against the inverse
+curvature; far from the data that gradient points along directions the Hessian barely
+constrains, so the quadratic form grows.
+</Recall>
+
+<Recall question="Why does marginalizing a classifier's output leave the p = 0.5 boundary exactly where the point estimate put it?" concepts={["bayesian-neural-network"]}>
+The boundary is where the pre-sigmoid activation is zero, and scaling zero by any positive
+factor, including κ, is still zero. Only points away from the boundary see their
+probability change.
+</Recall>
+
+## Connections
+
+- **Reapplies** [4.4](/sections/4-4)'s Laplace approximation and [4.5](/sections/4-5)'s
+  $\kappa$ marginalization to a non-convex likelihood.
+- **Depends on** [5.4](/sections/5-4)'s exact Hessian for $\mathbf{A}$.
+- **Closes the chapter's arc**: 5.1 traded a fixed basis for a learned, non-unique one, and
+  this section is what taking that non-uniqueness seriously as uncertainty looks like.
+
