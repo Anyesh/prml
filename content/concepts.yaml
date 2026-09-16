@@ -1,3 +1,51 @@
+- id: basis-function
+  name: "Basis function"
+  definition: "A fixed nonlinear function of the input that the model takes a weighted sum of. Curvature comes from the basis, so the model stays linear in its weights and the fitting problem stays closed-form."
+  introducedIn: "3.1"
+  usedIn: ["3.6"]
+  requires: []
+  aliases: ["feature map", "phi"]
+
+- id: design-matrix
+  name: "Design matrix"
+  definition: "The matrix holding one row of basis-function values per observation. Every closed-form result in linear regression is written in terms of it, and its conditioning decides whether those results survive floating point."
+  introducedIn: "3.1"
+  usedIn: []
+  requires: ["basis-function"]
+  aliases: ["Phi"]
+
+- id: maximum-likelihood
+  name: "Maximum likelihood"
+  definition: "Choosing parameters that make the observed data most probable. Under Gaussian noise it is exactly least squares, which is why sum-of-squares error is a consequence of a noise model rather than an arbitrary choice."
+  introducedIn: "3.1"
+  usedIn: ["3.2"]
+  requires: ["design-matrix"]
+  aliases: ["ML", "least squares"]
+
+- id: regularisation
+  name: "Regularisation"
+  definition: "Adding a penalty on large weights to the error function. It shrinks the fit towards simplicity and, as a side effect, lifts the eigenvalues of the design matrix away from zero, removing the ill-conditioning of the unregularised solution."
+  introducedIn: "3.1"
+  usedIn: ["3.2", "3.5"]
+  requires: ["maximum-likelihood"]
+  aliases: ["weight decay", "ridge", "lambda"]
+
+- id: overfitting
+  name: "Over-fitting"
+  definition: "Fitting the noise in a particular dataset rather than the structure behind it. The training error keeps improving while predictions get worse, so the error being minimised cannot detect it."
+  introducedIn: "3.2"
+  usedIn: ["3.4"]
+  requires: ["maximum-likelihood"]
+  aliases: []
+
+- id: bias-variance-tradeoff
+  name: "Bias-variance trade-off"
+  definition: "Expected squared loss splits into how far the average fit sits from the truth, how far individual fits scatter around their own average, and irreducible noise. Model flexibility moves the first two in opposite directions."
+  introducedIn: "3.2"
+  usedIn: []
+  requires: ["overfitting"]
+  aliases: ["bias variance decomposition"]
+
 - id: conjugate-prior
   name: "Conjugate prior"
   definition: "A prior whose family is closed under the likelihood, so the posterior has the same form as the prior. This is what keeps Bayesian linear regression in closed form rather than requiring integration."
@@ -10,7 +58,7 @@
   name: "Posterior distribution"
   definition: "The distribution over parameters after observing data, proportional to the likelihood times the prior. Replaces the single best-fit estimate with a statement of how much the data pins each direction down."
   introducedIn: "3.3"
-  usedIn: []
+  usedIn: ["3.4", "3.5"]
   requires: ["conjugate-prior"]
   aliases: []
 
@@ -26,7 +74,7 @@
   name: "Equivalent kernel"
   definition: "The weights a linear model implicitly places on training targets when predicting at a new input. Shows that a parametric model is doing local smoothing, which is the doorway to kernel methods."
   introducedIn: "3.3"
-  usedIn: []
+  usedIn: ["3.6"]
   requires: ["posterior-distribution"]
   aliases: ["smoother matrix"]
 
@@ -37,3 +85,43 @@
   usedIn: []
   requires: ["conjugate-prior"]
   aliases: ["online learning"]
+
+- id: model-evidence
+  name: "Model evidence"
+  definition: "The probability a model assigned to the observed data, averaged over every parameter setting it considered possible. Because it is a normalised probability over datasets, a model that can explain anything scores poorly on whatever actually happened."
+  introducedIn: "3.4"
+  usedIn: ["3.5"]
+  requires: ["posterior-distribution"]
+  aliases: ["marginal likelihood", "evidence"]
+
+- id: occam-factor
+  name: "Occam factor"
+  definition: "The ratio of posterior width to prior width for a parameter: how far the data narrowed a belief relative to how uncommitted the model started. At most one, so its logarithm penalises each parameter the data had to pin down."
+  introducedIn: "3.4"
+  usedIn: ["3.5"]
+  requires: ["model-evidence"]
+  aliases: ["Occam's razor", "complexity penalty"]
+
+- id: effective-parameters
+  name: "Effective number of parameters"
+  definition: "How many parameter directions the data determines rather than the prior, summing each direction's ratio of data precision to total precision. Interpolates between zero and the nominal parameter count, and measures complexity as used rather than as declared."
+  introducedIn: "3.5"
+  usedIn: ["3.6"]
+  requires: ["model-evidence", "regularisation"]
+  aliases: ["gamma"]
+
+- id: curse-of-dimensionality
+  name: "Curse of dimensionality"
+  definition: "Covering a space with local functions costs a count that is exponential in its dimension, because the per-axis requirement multiplies across axes. It is what makes a fixed basis unusable beyond a few input dimensions."
+  introducedIn: "3.6"
+  usedIn: []
+  requires: ["basis-function"]
+  aliases: []
+
+- id: data-manifold
+  name: "Data manifold"
+  definition: "The lower-dimensional surface real data clusters near, because input variables are correlated rather than independent. Exploiting it requires knowing where the data went, which is precisely what a fixed basis cannot wait for."
+  introducedIn: "3.6"
+  usedIn: []
+  requires: ["curse-of-dimensionality"]
+  aliases: ["intrinsic dimensionality"]

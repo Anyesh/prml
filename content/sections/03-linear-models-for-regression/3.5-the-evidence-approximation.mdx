@@ -1,0 +1,200 @@
+---
+chapter: 3
+section: "3.5"
+title: The Evidence Approximation
+bookPages: [165, 171]
+summary: Maximising the marginal likelihood sets the prior and noise precisions from the training data alone, and reveals how many parameters the data actually determines.
+concepts:
+  - model-evidence
+  - effective-parameters
+  - regularisation
+prereqs: ["3.3", "3.4"]
+equations:
+  - { id: "3.77", name: marginal likelihood integral }
+  - { id: "3.86", name: log marginal likelihood }
+  - { id: "3.91", name: effective number of parameters }
+  - { id: "3.92", name: alpha re-estimation }
+  - { id: "3.95", name: beta re-estimation }
+widgets: [EvidenceApproximation]
+difficulty: 4
+---
+
+import EvidenceApproximation from '@widgets/ch03/EvidenceApproximation';
+
+## Intuition
+
+Section 3.3 was fully Bayesian about the weights and quietly cheated about everything else.
+It treated two quantities as known constants: how tightly the prior pins the weights towards
+zero, and how noisy the observations are. Neither is known. Being consistent would mean
+putting priors on those too and integrating them out along with the weights, and that
+integral has no closed form.
+
+The evidence approximation is the compromise that works. Integrate over the weights, which
+is tractable, then pick the single pair of precisions that maximises what is left. It is
+empirical Bayes: the hyperparameters are fitted to the data rather than marginalised away.
+
+It sounds like it should over-fit, since we are choosing hyperparameters using the same data
+we fitted on. It does not, and the reason matters. The weights have already been integrated
+out before the maximisation happens. So the quantity being maximised is not "how well can
+this model fit" but "how probable was this data under this model averaged over all its
+weights", and that quantity, as the previous section showed, already contains a complexity
+penalty. Maximising it is therefore maximising a score that has already charged for
+flexibility.
+
+The by-product is the more interesting result. The re-estimation produces a number counting
+how many of the model's parameters the data actually determines, as opposed to how many the
+model has. Fit ten basis functions to data that only supports three directions and that
+count will come out near three. It is a measurement of effective complexity, taken from the
+training data, and the frequentist treatment offers nothing like it.
+
+## The math
+
+Being consistent would mean integrating the hyperparameters out too. Instead we integrate
+only the weights:
+
+<MathBlock id="3.77" name="marginal likelihood integral">
+
+$$p(\mathbf{t} \mid \alpha, \beta) = \int p(\mathbf{t} \mid \mathbf{w}, \beta)\,p(\mathbf{w} \mid \alpha)\,\mathrm{d}\mathbf{w}$$
+
+</MathBlock>
+
+Both factors are Gaussian, so the integral is a Gaussian integral and evaluates in closed
+form. Taking logs, with $\mathbf{A} = \mathbf{S}_N^{-1}$ from 3.54:
+
+<MathBlock id="3.86" name="log marginal likelihood">
+
+$$\ln p(\mathbf{t} \mid \alpha, \beta) = \frac{M}{2}\ln\alpha + \frac{N}{2}\ln\beta - E(\mathbf{m}_N) - \frac{1}{2}\ln|\mathbf{A}| - \frac{N}{2}\ln(2\pi)$$
+
+</MathBlock>
+
+Every term earns its place. The $\frac{M}{2}\ln\alpha$ rewards a confident prior,
+$E(\mathbf{m}_N)$ is the penalised fit error, and $-\frac{1}{2}\ln|\mathbf{A}|$ is the Occam
+factor from 3.4 in its exact form: the log-volume of the posterior, charging for every
+direction the data had to pin down. Compute this in logs throughout, because $|\mathbf{A}|$
+for a degree-nine fit underflows to zero long before its logarithm does.
+
+Setting the derivative with respect to $\alpha$ to zero introduces the quantity this section
+is really about. With $\lambda_i$ the eigenvalues of $\beta\boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\Phi}$:
+
+<MathBlock id="3.91" name="effective number of parameters">
+
+$$\gamma = \sum_{i}\frac{\lambda_i}{\alpha + \lambda_i}$$
+
+</MathBlock>
+
+Each term is between zero and one, and it is a ratio of how strongly the data constrains
+direction $i$ to how strongly the prior does. Where the data dominates, the term is near one
+and the parameter counts. Where the prior dominates, it is near zero and the parameter is
+along for the ride. So $\gamma$ interpolates between $0$ and $M$ and measures effective
+complexity rather than nominal complexity.
+
+The two re-estimation formulas follow:
+
+<MathBlock id="3.92" name="alpha re-estimation">
+
+$$\alpha = \frac{\gamma}{\mathbf{m}_N^{\mathrm{T}}\mathbf{m}_N}$$
+
+</MathBlock>
+
+<MathBlock id="3.95" name="beta re-estimation">
+
+$$\frac{1}{\beta} = \frac{1}{N - \gamma}\sum_{n=1}^{N}\big\{t_n - \mathbf{m}_N^{\mathrm{T}}\boldsymbol{\phi}(\mathbf{x}_n)\big\}^2$$
+
+</MathBlock>
+
+Both are implicit: $\gamma$ depends on $\alpha$ and $\beta$, and $\mathbf{m}_N$ depends on
+both, so this is a fixed point to iterate rather than a formula to evaluate. One subtlety
+bites implementations: the $\lambda_i$ are eigenvalues of
+$\beta\boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\Phi}$ and therefore scale with $\beta$,
+which the iteration is itself changing. Compute the eigenvalues of
+$\boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\Phi}$ once and rescale them each sweep; holding
+them fixed converges to the wrong answer while looking perfectly stable.
+
+The $N - \gamma$ in 3.95 is worth a second look. The unbiased variance estimate familiar
+from elsewhere divides by $N - M$, the number of observations minus the number of
+parameters. Here it is minus the *effective* number, which is the same correction applied
+honestly.
+
+## Interactive
+
+<Widget
+  title="Hyperparameters chosen by the evidence"
+  figure="3.16"
+  caption="Read the panel for γ rather than the fit. Raise the degree and watch γ stop climbing while M keeps going: the gap between them is the count of parameters the prior is holding down because the data has nothing to say about them."
+>
+  <EvidenceApproximation client:visible />
+</Widget>
+
+The same widget appears in 3.4, where the question was which model order wins. Here the
+question is different: at a fixed order, what did the data actually determine? Push the
+degree past the peak and watch $\gamma$ flatten out while $M + 1$ keeps increasing.
+
+## Worked example
+
+Take the book's sinusoidal dataset, 25 points, fitted with a degree-9 polynomial, and start
+the iteration at $\alpha = \beta = 1$.
+
+The first sweep computes the posterior at those values, forms $\gamma$ from 3.91, and gets a
+value well below the model's ten parameters, because the high-order coefficients are barely
+constrained by 25 points. That small $\gamma$ feeds 3.92, and since
+$\mathbf{m}_N^{\mathrm{T}}\mathbf{m}_N$ is also small under a tight prior, $\alpha$ moves. At
+the same time the residual sum in 3.95 is divided by $N - \gamma$ rather than $N$, which
+inflates the noise estimate relative to the naive one, and $\beta$ moves too.
+
+Iterating to convergence takes on the order of tens of sweeps. What converges is a joint
+statement: this much prior precision, this much noise precision, and this many effective
+parameters. The gap between $\gamma$ and $M + 1 = 10$ is the interesting part, and it is
+positive by a clear margin. The model has ten coefficients; the data pays for fewer.
+
+The sanity check worth running on any implementation is that $\gamma$ stays within
+$[0, M]$. Each summand in 3.91 is a ratio of a non-negative eigenvalue to itself plus a
+positive $\alpha$, so no term can leave $[0, 1)$. A $\gamma$ outside that range means the
+eigenvalues were not rescaled by the current $\beta$.
+
+## Recall
+
+<Recall question="Why does maximising the evidence with respect to α and β not over-fit, even though it uses the training data?" concepts={["model-evidence"]}>
+Because the weights are integrated out before the maximisation. The quantity being maximised
+is the probability of the data averaged over all weight settings, which already carries the
+Occam penalty from 3.4, rather than the best achievable fit.
+</Recall>
+
+<Recall question="What does γ measure, and what is its range?" concepts={["effective-parameters"]}>
+The number of parameter directions the data determines rather than the prior. Each term
+$\lambda_i/(\alpha + \lambda_i)$ lies in $[0, 1)$, so $\gamma$ lies between $0$ and $M$, and
+sits near $M$ only when the data constrains every direction strongly.
+</Recall>
+
+<Recall question="Why is 3.95 divided by N − γ rather than N − M?" concepts={["effective-parameters"]}>
+Because only $\gamma$ parameters were actually fitted to the data; the rest were held near
+zero by the prior and consumed no degrees of freedom. It is the familiar bias correction
+applied to the effective parameter count instead of the nominal one.
+</Recall>
+
+<Recall question="What goes wrong if the eigenvalues in 3.91 are computed once and reused across iterations?" concepts={["effective-parameters"]}>
+They are eigenvalues of $\beta\boldsymbol{\Phi}^{\mathrm{T}}\boldsymbol{\Phi}$ and scale
+with $\beta$, which the iteration changes each sweep. Freezing them converges smoothly to
+the wrong $\alpha$, $\beta$ and $\gamma$, which is a failure with no visible symptom.
+</Recall>
+
+<Recall question="Which term of 3.86 is the Occam factor, and what is it measuring?" concepts={["model-evidence"]}>
+The $-\frac{1}{2}\ln|\mathbf{A}|$ term. It is the log-volume of the posterior, so it charges
+the model once for every direction in weight space the data had to narrow down.
+</Recall>
+
+## Connections
+
+Depends on [3.3 Bayesian Linear Regression](/sections/3-3) for the posterior it integrates
+over, and on [3.4 Bayesian Model Comparison](/sections/3-4) for why the resulting quantity
+is safe to maximise.
+
+It closes the loop 3.1 opened: the regularisation coefficient that section had to guess at,
+$\lambda = \alpha/\beta$, is now determined by the data without a validation set.
+
+$\gamma$ returns in chapter 7 as the mechanism behind the relevance vector machine, where
+letting each weight have its own $\alpha$ drives most of them to infinity and prunes the
+model automatically.
+
+Chapter 10 replaces this approximation with a fully variational treatment, which puts
+distributions over $\alpha$ and $\beta$ instead of point estimates, and recovers a bound on
+3.77 rather than maximising it directly.

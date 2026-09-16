@@ -1,0 +1,180 @@
+---
+chapter: 3
+section: "3.4"
+title: Bayesian Model Comparison
+bookPages: [161, 164]
+summary: Marginalising over parameters scores whole models against each other, and penalises complexity automatically because a model that can explain anything explains nothing strongly.
+concepts:
+  - model-evidence
+  - occam-factor
+  - overfitting
+prereqs: ["3.3"]
+equations:
+  - { id: "3.68", name: model evidence }
+  - { id: "3.70", name: Occam factor approximation }
+  - { id: "3.73", name: expected Bayes factor }
+widgets: [EvidenceApproximation]
+difficulty: 4
+---
+
+import EvidenceApproximation from '@widgets/ch03/EvidenceApproximation';
+
+## Intuition
+
+The previous section marginalised over weights to get predictions. Do the same thing one
+level up and you get a way to compare models.
+
+The quantity is the probability the model assigned to the data you actually observed,
+before you fitted anything, averaged over every parameter setting the model considered
+possible. That is a strange thing to compute at first, and it is the whole idea, so it is
+worth being concrete about why it punishes complexity on its own.
+
+A probability distribution over datasets has to sum to one. A simple model concentrates that
+fixed budget on a narrow range of datasets: the ones it can produce. If the observed data
+falls in that range, the model assigned it a high probability. A complex model spreads the
+same budget across a much wider range, because it can produce many more datasets. Even if
+the observed data is comfortably inside that range, the probability assigned to it is
+diluted across all the other things the model could equally have produced.
+
+So the complex model is not penalised for being wrong. It is penalised for being
+uncommitted. A model that can fit anything is a model that predicted nothing in particular,
+and the evidence charges it for that.
+
+This has no free parameter, no held-out set, and no cross-validation loop. It falls out of
+the sum rule. What it does require is that you meant your prior, since a prior chosen to be
+vague to avoid taking a position will be scored for exactly that vagueness.
+
+There is a caveat the book is careful about, and it is not a footnote. The evidence compares
+models under the assumption that one of them is true. If all your models are wrong, the
+evidence tells you which is least bad at the one thing it measures, not whether any of them
+should be trusted. Held-out data remains the check on the whole framework.
+
+## The math
+
+The evidence for model $\mathcal{M}_i$ is the likelihood with the parameters integrated out:
+
+<MathBlock id="3.68" name="model evidence">
+
+$$p(\mathcal{D} \mid \mathcal{M}_i) = \int p(\mathcal{D} \mid \mathbf{w}, \mathcal{M}_i)\,p(\mathbf{w} \mid \mathcal{M}_i)\,\mathrm{d}\mathbf{w}$$
+
+</MathBlock>
+
+To see where the complexity penalty comes from, approximate that integral crudely. Suppose
+the posterior over a single parameter is sharply peaked at $w_{\mathrm{MAP}}$ with width
+$\Delta w_{\mathrm{posterior}}$, and the prior is flat over a much wider range
+$\Delta w_{\mathrm{prior}}$. Then
+
+<MathBlock id="3.70" name="Occam factor approximation">
+
+$$p(\mathcal{D}) \simeq p(\mathcal{D} \mid w_{\mathrm{MAP}})\frac{\Delta w_{\mathrm{posterior}}}{\Delta w_{\mathrm{prior}}}$$
+
+</MathBlock>
+
+The first factor is the best fit. The second is the Occam factor, and it is a ratio of
+widths: how much the data narrowed your belief about this parameter, relative to how wide
+you were willing to be beforehand. It is at most one, and taking logs with $M$ parameters
+multiplies it by $M$. So the log evidence is best-fit minus a term proportional to the
+number of parameters the data had to pin down.
+
+That is where the penalty lives, and it is not a rule anyone added. Nobody chose the
+coefficient; it came out of the integral.
+
+Averaging the log Bayes factor over datasets drawn from the true model $\mathcal{M}_1$ gives
+
+<MathBlock id="3.73" name="expected Bayes factor">
+
+$$\int p(\mathcal{D} \mid \mathcal{M}_1)\ln\frac{p(\mathcal{D} \mid \mathcal{M}_1)}{p(\mathcal{D} \mid \mathcal{M}_2)}\,\mathrm{d}\mathcal{D}$$
+
+</MathBlock>
+
+which is a Kullback-Leibler divergence, and therefore non-negative, and zero only when the
+two models are identical. On average, the evidence favours the model that generated the
+data. That is a guarantee about the average, not about your particular dataset, which is why
+any single comparison can still mislead.
+
+## Interactive
+
+<Widget
+  title="Evidence against model order"
+  figure="3.14"
+  caption="Drag the polynomial degree and watch the left panel. The evidence rises while the model is too rigid to fit the sine, peaks, then falls as extra coefficients start being paid for rather than earning their place. Nothing here is held out and nothing is cross-validated: the curve comes from the training data alone."
+>
+  <EvidenceApproximation client:visible />
+</Widget>
+
+The peak is the thing to notice. Training error alone would fall monotonically with degree
+and recommend the most complex model on the list. The evidence, computed from exactly the
+same data, turns over.
+
+## Worked example
+
+Two models for a coin, one dataset: eight heads in ten flips.
+
+Model $\mathcal{M}_1$ says the coin is fair. It has no parameters, so its evidence is just
+the binomial probability of the observation: $\binom{10}{8}(0.5)^{10} \approx 0.0439$.
+
+Model $\mathcal{M}_2$ says the bias $\mu$ is unknown, with a uniform prior on $[0, 1]$. Its
+evidence marginalises $\mu$ out:
+
+$$
+p(\mathcal{D} \mid \mathcal{M}_2)
+= \int_0^1 \binom{10}{8}\mu^8(1-\mu)^2\,\mathrm{d}\mu
+= \binom{10}{8}B(9, 3)
+= \frac{1}{11} \approx 0.0909
+$$
+
+So the flexible model wins here, by a Bayes factor of about $2.07$. Eight heads in ten is
+uncomfortable enough for a fair coin that the extra parameter pays for itself.
+
+Now change one number. With six heads in ten, $\mathcal{M}_1$ gives $\approx 0.205$ while
+$\mathcal{M}_2$ still gives $1/11 \approx 0.0909$, and the simple model wins by a factor of
+$2.26$. The flexible model was not punished for fitting badly: it fits at least as well in
+both cases, since $\mu = 0.6$ is available to it. It was punished for spreading its
+probability across every dataset from zero heads to ten, which costs it exactly the same
+amount either way, while the fair-coin model spent everything near five.
+
+That is the Occam factor with actual numbers. Note also that $\mathcal{M}_2$'s evidence is
+$1/11$ regardless of the outcome, which is the flat-prior model's honest confession: it
+predicted every result equally.
+
+## Recall
+
+<Recall question="Why does the evidence penalise complex models without any explicit penalty term?" concepts={["model-evidence", "occam-factor"]}>
+Because it is a normalised probability over datasets. A model that can generate a wider
+range of datasets must spread the same total probability more thinly, so it assigns less to
+any particular one, including the observed one.
+</Recall>
+
+<Recall question="What exactly is the Occam factor a ratio of?" concepts={["occam-factor"]}>
+The width of the posterior over a parameter to the width of the prior: how far the data
+narrowed your belief, relative to how uncommitted you started. It is at most one, and its
+log contributes once per parameter.
+</Recall>
+
+<Recall question="When does Bayesian model comparison give a misleading answer?" concepts={["model-evidence"]}>
+When none of the candidate models is true, or when the priors do not represent real beliefs.
+The framework compares candidates against each other and assumes the truth is among them;
+it cannot report that the whole set is wrong. Held-out data is still the outside check.
+</Recall>
+
+<Recall question="What does 3.73 guarantee, and what does it not?" concepts={["model-evidence"]}>
+It guarantees that the log Bayes factor favours the true model *on average over datasets*,
+because it is a KL divergence and therefore non-negative. It says nothing about any single
+dataset, which can favour the wrong model.
+</Recall>
+
+## Connections
+
+Uses exactly the machinery of [3.3 Bayesian Linear Regression](/sections/3-3), applied one
+level up: there the integral was over weights to get predictions, here it is over weights to
+score a model.
+
+It answers the question [3.2 The Bias-Variance Decomposition](/sections/3-2) could pose but
+not resolve, and it does so from a single dataset.
+
+[3.5 The Evidence Approximation](/sections/3-5) makes it practical by using the same
+quantity to choose the continuous hyperparameters $\alpha$ and $\beta$, rather than to
+choose between a discrete list of models.
+
+The Occam factor argument carries into chapter 10, where variational methods compute a bound
+on this same evidence when the integral has no closed form.

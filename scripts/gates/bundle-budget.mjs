@@ -69,28 +69,24 @@ export async function runBundleBudgetGate({
     };
   }
 
-  const byTitle = new Map();
+  // Matched by route rather than by <title>, because the rendered title is decorated with
+  // the section number and the site name while the route is the section's identity. Title
+  // matching was the earlier approach and broke the moment the layout added a suffix.
+  const byRoute = new Map();
   for (const page of pages) {
-    if (!page.title) continue;
-    if (!byTitle.has(page.title)) byTitle.set(page.title, []);
-    byTitle.get(page.title).push(page);
+    byRoute.set(routeOf(page, distDir), page);
   }
 
   const measured = [];
   for (const section of sections) {
-    const matches = byTitle.get(section.title) ?? [];
-    if (matches.length === 0) {
-      failures.push({ file: section.file, message: `"${section.title}" has no built HTML page in dist/` });
-      continue;
-    }
-    if (matches.length > 1) {
-      warnings.push({
+    const page = byRoute.get(`sections/${section.id.replace('.', '-')}`);
+    if (!page) {
+      failures.push({
         file: section.file,
-        message: `title "${section.title}" matches ${matches.length} built pages; skipping strict check`,
+        message: `section ${section.id} has no built page at /sections/${section.id.replace('.', '-')}/ in dist/`,
       });
       continue;
     }
-    const [page] = matches;
     const budget = section.isWidgetPage
       ? (budgets.overrides?.[section.id] ?? budgets.defaultWidgetBudgetBytes)
       : budgets.proseBudgetBytes;
@@ -121,27 +117,62 @@ export async function runBundleBudgetGate({
   };
 }
 
+const ISLAND_URL_RE = /(?:component-url|renderer-url)="([^"]+)"/g;
+const IMPORT_RE = /(?:^|[\s;}])(?:import|export)\s*(?:[\w*{},\s]*?from\s*)?["']([^"']+)["']|\bimport\(\s*["']([^"']+)["']\s*\)/g;
+
+/**
+ * Every byte of JavaScript the page causes the browser to fetch, gzipped.
+ *
+ * Island chunks are named in `astro-island` attributes rather than in a `<script src>`, and
+ * each chunk statically imports further chunks, so counting script tags alone reports a
+ * fraction of the truth: a page shipping the whole React runtime through an island measured
+ * as a few kilobytes before this followed the graph.
+ */
+function collectJsBytes(entries, distDir) {
+  const seen = new Set();
+  const queue = [...entries];
+  let bytes = 0;
+
+  while (queue.length > 0) {
+    const file = queue.pop();
+    if (seen.has(file) || !fs.existsSync(file)) continue;
+    seen.add(file);
+
+    const source = fs.readFileSync(file);
+    bytes += zlib.gzipSync(source).length;
+
+    const text = source.toString('utf8');
+    for (const match of text.matchAll(IMPORT_RE)) {
+      const spec = match[1] ?? match[2];
+      if (!spec || /^https?:\/\//.test(spec)) continue;
+      const resolved = spec.startsWith('/')
+        ? path.join(distDir, spec)
+        : path.resolve(path.dirname(file), spec);
+      if (resolved.endsWith('.js')) queue.push(resolved);
+    }
+  }
+
+  return bytes;
+}
+
 function measurePage(htmlFile, distDir) {
   const html = fs.readFileSync(htmlFile, 'utf8');
   const titleMatch = TITLE_RE.exec(html);
   const title = titleMatch ? titleMatch[1].trim() : null;
 
-  const scriptFiles = new Set();
-  for (const match of html.matchAll(SCRIPT_SRC_RE)) {
-    const src = match[1];
-    if (/^https?:\/\//.test(src)) continue;
+  const entries = new Set();
+  const add = (src) => {
+    if (!src || /^https?:\/\//.test(src)) return;
     const resolved = src.startsWith('/')
       ? path.join(distDir, src)
       : path.join(path.dirname(htmlFile), src);
-    if (fs.existsSync(resolved)) scriptFiles.add(resolved);
-  }
+    if (fs.existsSync(resolved)) entries.add(resolved);
+  };
 
-  let bytes = 0;
-  for (const scriptFile of scriptFiles) {
-    bytes += zlib.gzipSync(fs.readFileSync(scriptFile)).length;
-  }
+  for (const match of html.matchAll(SCRIPT_SRC_RE)) add(match[1]);
+  for (const match of html.matchAll(ISLAND_URL_RE)) add(match[1]);
 
-  return { file: htmlFile, title, bytes };
+  return { file: htmlFile, title, bytes: collectJsBytes([...entries], distDir) };
 }
 
 async function main() {
@@ -154,6 +185,13 @@ async function main() {
     process.exit(1);
   }
   process.exit(reportGate(result, { json: args.json }));
+}
+
+function routeOf(page, distDir) {
+  return path
+    .relative(distDir, page.file)
+    .replace(/\\/g, '/')
+    .replace(/\/?index\.html$/, '');
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

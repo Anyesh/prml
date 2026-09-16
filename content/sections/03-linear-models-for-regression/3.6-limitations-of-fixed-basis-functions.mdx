@@ -1,0 +1,157 @@
+---
+chapter: 3
+section: "3.6"
+title: Limitations of Fixed Basis Functions
+bookPages: [172, 176]
+summary: Everything in this chapter rests on choosing the basis before seeing the data, and in more than a few input dimensions that choice becomes impossible to make. This is why later chapters learn the basis instead.
+concepts:
+  - basis-function
+  - curse-of-dimensionality
+  - data-manifold
+prereqs: ["3.1", "3.5"]
+equations: []
+widgets: [BasisFunctionExplorer]
+difficulty: 2
+---
+
+import BasisFunctionExplorer from '@widgets/ch03/BasisFunctionExplorer';
+
+## Intuition
+
+This chapter has been a good deal for one page of algebra. Fix some nonlinear functions of
+the input, stay linear in the weights, and you get closed-form fitting, a closed-form
+posterior, predictions with error bars, and a model-selection criterion that needs no
+held-out data. It is tempting to stop here.
+
+The reason not to is in the first line of the deal. The basis functions are fixed before the
+training data is observed. In one input dimension that is a mild inconvenience, and the
+widget below is about how mild: try a few families, look at the fit, adjust. In ten
+dimensions it is fatal.
+
+The problem is coverage. Local basis functions, like Gaussian bumps, work by having one
+somewhere near wherever you want to make a prediction. Tiling a line with bumps at a given
+spacing takes a handful. Tiling a square at the same spacing takes that number squared.
+Tiling a ten-dimensional cube takes it to the tenth power. And you have to lay them out
+before seeing the data, so you cannot concentrate them where the data actually is, because
+you do not yet know.
+
+Two properties of real data rescue the situation, and both point at the same fix. Real data
+almost never fills its input space: inputs are correlated, so the data clusters near a
+lower-dimensional surface inside the space. And targets usually depend strongly on only a
+few directions along that surface, not on all of them.
+
+Both facts are useless to a fixed basis, because exploiting either one requires knowing
+where the data went before choosing the functions. That is the whole motivation for what
+follows. Some models place their basis functions only where data turned out to be. Others
+learn the basis functions themselves, and give up the closed-form solutions in exchange.
+
+## The math
+
+There are no new equations here; the point is a counting argument about the ones already
+established.
+
+Take Gaussian basis functions with width $s$ on an input space of dimension $D$, and suppose
+you want a basis function within distance $s$ of any point in the unit cube. Along one axis
+that needs roughly $1/s$ of them. Covering the cube needs the product over all axes, so the
+count grows like $M \sim (1/s)^D$: exponential in the input dimension. With $s = 0.2$ and
+$D = 10$, that is $5^{10}$, about ten million basis functions, and the design matrix
+$\boldsymbol{\Phi}$ from 3.16 would have ten million columns.
+
+Every result in this chapter still holds at that size, and none of them is any use. The
+posterior covariance $\mathbf{S}_N$ of 3.54 is an $M \times M$ matrix and its Cholesky
+factorisation costs $O(M^3)$. The evidence in 3.86 needs $\ln|\mathbf{A}|$ on the same
+matrix. The mathematics does not break; the arithmetic becomes impossible.
+
+Polynomials are no better, only differently bad. A full polynomial basis of degree $d$ in
+$D$ dimensions has $\binom{D + d}{d}$ terms, which for $D = 10$ and $d = 3$ is already 286,
+and being global they have the other failure too: every coefficient affects every
+prediction, so nothing is local and nothing can be pinned down independently.
+
+Note what $\gamma$ from 3.91 would say here. With ten million basis functions and a thousand
+data points, the effective number of parameters cannot exceed the number of observations, so
+$\gamma$ would sit somewhere near a thousand at most, while $M$ is ten million. The evidence
+framework correctly reports that almost none of the model is being determined by the data.
+It diagnoses the problem accurately and offers no way out of it, because the basis was
+already chosen.
+
+## Interactive
+
+<Widget
+  title="Basis functions and the fits they permit"
+  figure="3.1"
+  caption="Set the Gaussian family and count the bumps needed to cover this one-dimensional interval properly. Now imagine the same covering in ten dimensions: that count raised to the tenth power, every one of them placed before any data arrived."
+>
+  <BasisFunctionExplorer client:visible />
+</Widget>
+
+The same widget appears in 3.1, where it was about what basis functions buy you. Here it is
+about what they cost. Shrink the width and watch how many more you need to cover the
+interval; that multiplication is the one that gets raised to the power of the input
+dimension.
+
+## Worked example
+
+Count the basis functions needed for handwritten digit images, the running example of
+chapter 12. A 28 by 28 greyscale image has $D = 784$.
+
+A fixed Gaussian basis covering that space at any useful resolution is not merely large, it
+is beyond absurd: even two basis functions per axis gives $2^{784}$, a number with 236
+digits, against perhaps $10^{80}$ atoms in the observable universe. There is no computer and
+no dataset that makes this approach meaningful.
+
+Yet the problem is entirely tractable in practice, and the reason is the first rescue above.
+Real digit images do not fill that 784-dimensional space. They lie close to a surface of
+maybe ten or twenty intrinsic dimensions, parameterised by things like stroke thickness,
+slant, and the loop sizes of a 6 or an 8. Almost every point in the 784-dimensional cube is
+noise, not a digit.
+
+So the basis functions needed are not $2^{784}$ but something closer to the number required
+to cover a twenty-dimensional manifold, and crucially they need to sit *on* that manifold.
+Which you cannot arrange in advance, because the manifold is only visible in the data.
+
+That single observation splits the rest of the book. Put the basis functions at the data
+points and you get kernel methods, chapter 6, where the manifold is never described
+explicitly but the kernel only ever compares points that exist. Let the basis functions
+learn where to sit and you get neural networks, chapter 5, which trade every closed-form
+result in this chapter for the ability to adapt. Find the manifold first and you get the
+latent variable models of chapter 12.
+
+## Recall
+
+<Recall question="Why does the number of fixed basis functions grow exponentially with input dimension?" concepts={["curse-of-dimensionality", "basis-function"]}>
+Because local basis functions work by covering the space, and covering needs roughly $1/s$
+functions along each axis independently. Over $D$ axes the counts multiply, giving
+$M \sim (1/s)^D$.
+</Recall>
+
+<Recall question="What two properties of real data make the problem tractable in practice?" concepts={["data-manifold"]}>
+Input variables are correlated, so data lies near a manifold of much lower intrinsic
+dimension than the input space; and targets typically depend on only a few directions within
+that manifold.
+</Recall>
+
+<Recall question="Why can a fixed basis not exploit either of those properties?" concepts={["basis-function", "data-manifold"]}>
+Because both require knowing where the data lies, and the basis must be chosen before the
+data is observed. Exploiting them means either placing basis functions at observed data
+points, as kernel methods do, or learning them, as neural networks do.
+</Recall>
+
+<Recall question="What would the effective number of parameters report for a hugely over-specified fixed basis?" concepts={["curse-of-dimensionality"]}>
+A value far below $M$, bounded above by roughly the number of observations. The evidence
+framework correctly diagnoses that the data determines almost none of the model, but cannot
+fix it, because the basis was already fixed.
+</Recall>
+
+## Connections
+
+Closes the argument opened in [3.1 Linear Basis Function Models](/sections/3-1), where
+fixing the basis in advance was named as the price of the closed-form solution. This section
+is that price coming due.
+
+Uses the effective parameter count from
+[3.5 The Evidence Approximation](/sections/3-5) to show that the framework can diagnose the
+problem without being able to solve it.
+
+Leads out of the chapter in three directions: chapter 5 learns the basis functions, chapter
+6 places them at the data, and chapter 12 finds the manifold the data lies on. The curse of
+dimensionality itself is developed in section 1.4.

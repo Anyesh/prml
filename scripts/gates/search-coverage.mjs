@@ -6,7 +6,8 @@
  * Pagefind's fragment files are gzip-compressed JSON prefixed with a
  * "pagefind_dcd" magic header (verified empirically against a real pagefind
  * build; see README). Route URLs aren't decided by this gate's owner, so
- * sections are matched to fragments by title rather than by URL shape.
+ * Sections are matched to fragments by route, because the rendered title is decorated
+ *   with the section number and the site name while the route is the section's identity.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -47,7 +48,7 @@ export async function runSearchCoverageGate({ sectionsDir = SECTIONS_DIR, distDi
       continue;
     }
     if (frontmatter.draft) continue;
-    sections.push({ file: rel, title: frontmatter.title });
+    sections.push({ file: rel, title: frontmatter.title, id: frontmatter.section });
   }
 
   if (sections.length === 0) {
@@ -62,28 +63,23 @@ export async function runSearchCoverageGate({ sectionsDir = SECTIONS_DIR, distDi
     };
   }
 
-  const byTitle = new Map();
+  const byRoute = new Map();
   for (const fragment of fragments) {
-    const title = fragment.meta?.title;
-    if (!title) continue;
-    if (!byTitle.has(title)) byTitle.set(title, []);
-    byTitle.get(title).push(fragment);
+    const route = String(fragment.url ?? '').replace(/^\/|\/$|index\.html$/g, '');
+    if (route) byRoute.set(route, fragment);
   }
 
   for (const section of sections) {
-    const matches = byTitle.get(section.title) ?? [];
-    if (matches.length === 0) {
-      failures.push({ file: section.file, message: `"${section.title}" was not found in the Pagefind index` });
-      continue;
-    }
-    if (matches.length > 1) {
-      warnings.push({
+    const route = `sections/${String(section.id).replace('.', '-')}`;
+    const fragment = byRoute.get(route);
+    if (!fragment) {
+      failures.push({
         file: section.file,
-        message: `title "${section.title}" matches ${matches.length} indexed pages; skipping strict check`,
+        message: `section ${section.id} is not in the Pagefind index at /${route}/`,
       });
       continue;
     }
-    const [fragment] = matches;
+
     if (!fragment.content || fragment.content.trim().length === 0) {
       failures.push({ file: section.file, message: `"${section.title}" is indexed with an empty body` });
     }

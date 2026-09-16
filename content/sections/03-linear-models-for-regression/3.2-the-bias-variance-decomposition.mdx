@@ -1,0 +1,190 @@
+---
+chapter: 3
+section: "3.2"
+title: The Bias-Variance Decomposition
+bookPages: [147, 151]
+summary: Expected error splits into three pieces, two of which a model choice can move and in opposite directions. It explains the over-fitting trade-off exactly, and is useless for acting on it.
+concepts:
+  - bias-variance-tradeoff
+  - regularisation
+  - overfitting
+prereqs: ["3.1"]
+equations:
+  - { id: "3.37", name: expected squared loss }
+  - { id: "3.41", name: bias-variance-noise decomposition }
+  - { id: "3.45", name: ensemble average prediction }
+  - { id: "3.46", name: squared bias }
+  - { id: "3.47", name: variance }
+widgets: [BiasVarianceTradeoff]
+difficulty: 3
+---
+
+import BiasVarianceTradeoff from '@widgets/ch03/BiasVarianceTradeoff';
+
+## Intuition
+
+Over-fitting and under-fitting sound like opposites, and the previous section treated them
+that way: too few basis functions and the model cannot reach the truth, too many and it
+chases noise. This section shows they are two terms in one equation, and that a knob which
+improves one always worsens the other.
+
+The idea is to stop asking how a model does on the dataset in front of you and ask how it
+does on average over every dataset you might have drawn. Imagine fitting the same model to
+a hundred different samples from the same source. You get a hundred different fitted curves.
+Two separate things can go wrong with that cloud of curves.
+
+The cloud can sit in the wrong place. A heavily constrained model produces nearly the same
+curve every time, so the cloud is tight, but if the model cannot represent the truth then
+every curve in it misses in the same direction. That is bias.
+
+Or the cloud can be spread out. A flexible model produces a very different curve for each
+sample, because it is fitting the noise, which differs between samples. Individual curves
+are wild even though their average may be close to the truth. That is variance.
+
+There is also a floor. Even a perfect model cannot predict the noise on the next
+measurement, and that part of the error belongs to the data, not the model.
+
+The reason this is a trade-off rather than two independent problems is that both are
+controlled by the same thing: how much freedom the model has. Constrain it and bias grows
+while variance shrinks. Release it and the reverse. Somewhere in between their sum is
+smallest.
+
+The catch, and it is severe, is that computing any of this requires the ensemble of
+datasets. In practice you have one. If you had a hundred you would not need the
+decomposition, you would pool them and fit a better model. So this explains the trade-off
+without providing a way to act on it, which is exactly why the next three sections exist.
+
+## The math
+
+The optimal prediction under squared loss is the conditional mean, call it $h(\mathbf{x})$.
+Expected loss decomposes into a term that depends on the chosen function and a term that
+does not:
+
+<MathBlock id="3.37" name="expected squared loss">
+
+$$\mathbb{E}[L] = \int\{y(\mathbf{x}) - h(\mathbf{x})\}^2p(\mathbf{x})\,\mathrm{d}\mathbf{x} + \iint\{h(\mathbf{x}) - t\}^2p(\mathbf{x}, t)\,\mathrm{d}\mathbf{x}\,\mathrm{d}t$$
+
+</MathBlock>
+
+The second integral has no $y$ in it, so no amount of modelling touches it. It is the noise
+floor.
+
+Now take the first term and average it over datasets $\mathcal{D}$. Add and subtract the
+average prediction, expand the square, and the cross term integrates to zero, leaving
+
+<MathBlock id="3.41" name="bias-variance-noise decomposition">
+
+$$\text{expected loss} = (\text{bias})^2 + \text{variance} + \text{noise}$$
+
+</MathBlock>
+
+With $L$ datasets and the ensemble average
+
+<MathBlock id="3.45" name="ensemble average prediction">
+
+$$\bar{y}(\mathbf{x}) = \frac{1}{L}\sum_{l=1}^{L}y^{(l)}(\mathbf{x})$$
+
+</MathBlock>
+
+the two model-dependent terms are
+
+<MathBlock id="3.46" name="squared bias">
+
+$$(\text{bias})^2 = \frac{1}{N}\sum_{n=1}^{N}\{\bar{y}(\mathbf{x}_n) - h(\mathbf{x}_n)\}^2$$
+
+</MathBlock>
+
+<MathBlock id="3.47" name="variance">
+
+$$\text{variance} = \frac{1}{N}\sum_{n=1}^{N}\frac{1}{L}\sum_{l=1}^{L}\big\{y^{(l)}(\mathbf{x}_n) - \bar{y}(\mathbf{x}_n)\big\}^2$$
+
+</MathBlock>
+
+Read the two together and the asymmetry is clear. Bias compares the *average* fit to the
+truth, so it is blind to how much individual fits scatter. Variance compares individual
+fits to their own average, so it never looks at the truth at all. A model can therefore have
+zero bias and be useless, which is what the low-regularisation end of the widget shows.
+
+The cross term vanishing is what makes this exact rather than an approximation, and it is
+also why the decomposition is specific to squared loss. Under a different loss the terms do
+not separate this cleanly.
+
+## Interactive
+
+<Widget
+  title="Bias against variance"
+  figure="3.5"
+  caption="Drag the regularisation slider from one end to the other and watch the left panel. At high regularisation every fit is nearly identical and all of them miss the sine; at low regularisation they scatter wildly but their average tracks it. The right panel shows the two effects trading off, and where their sum is smallest."
+>
+  <BiasVarianceTradeoff client:visible />
+</Widget>
+
+Do one thing deliberately: park the slider where variance is large and look only at the
+bold average curve. It sits almost on the truth. Any single fit is badly wrong, but their
+average is not, and that is the observation chapter 14 turns into a method.
+
+## Worked example
+
+Take the crudest possible model: ignore the input entirely and always predict a constant
+$c$. Its variance is zero, because every dataset produces the same curve, so the entire
+expected loss above the noise floor is bias.
+
+Against $h(x) = \sin(2\pi x)$ on $[0, 1]$, the best such constant is the mean of the sine
+over that interval, which is $0$. The squared bias is then the mean of $\sin^2(2\pi x)$,
+which is $1/2$. So this model carries a squared bias of $0.5$ and a variance of $0$.
+
+Now the opposite extreme: interpolate, passing exactly through every data point. Bias is
+essentially zero, because averaged over many datasets the interpolants' noise cancels and
+their average tracks the sine closely. But each individual fit reproduces its own dataset's
+noise, so with noise standard deviation $0.2$ the variance at the data points is about
+$0.2^2 = 0.04$ per point, and between points it is far worse, because an interpolant through
+noisy values oscillates violently in the gaps.
+
+Neither extreme is close to optimal, and neither can be improved by adjusting the same knob
+in the same direction: the constant model needs more freedom, the interpolant needs less.
+That is the trade-off, and 3.41 says it is not avoidable, only balanced.
+
+## Recall
+
+<Recall question="Which of the three terms in the decomposition can a modelling choice not affect?" concepts={["bias-variance-tradeoff"]}>
+The noise term. It is the second integral in 3.37, which contains no $y$ at all: it is the
+variance of the target around its own conditional mean, a property of the data source rather
+than of the model.
+</Recall>
+
+<Recall question="Why can a model have essentially zero bias and still be a bad model?" concepts={["bias-variance-tradeoff", "overfitting"]}>
+Because bias measures only where the *average* fit sits. An interpolant averages out to
+roughly the right curve across many datasets while every individual fit oscillates through
+the noise, so bias is near zero and variance is enormous.
+</Recall>
+
+<Recall question="Why is this decomposition of limited practical use for model selection?" concepts={["bias-variance-tradeoff"]}>
+Both 3.46 and 3.47 are averages over an ensemble of datasets, and in practice there is only
+one. If many independent datasets were available, pooling them into a single larger fit
+would be the better move anyway.
+</Recall>
+
+<Recall question="What happens to bias and to variance as a regularisation coefficient increases?" concepts={["regularisation"]}>
+Bias increases and variance decreases. Larger $\lambda$ constrains the weights, so fits vary
+less between datasets, but the constrained family is further from the truth. Their sum has a
+minimum at an intermediate value.
+</Recall>
+
+<Recall question="Why is the decomposition specific to squared loss?" concepts={["bias-variance-tradeoff"]}>
+The separation depends on a cross term integrating to zero when the square is expanded
+around the ensemble average. That cancellation is a property of the quadratic, and under
+other loss functions the terms do not split apart so cleanly.
+</Recall>
+
+## Connections
+
+Follows directly from [3.1 Linear Basis Function Models](/sections/3-1), which introduced
+the over-fitting this section decomposes, and from the squared-loss result of chapter 1.
+
+[3.3 Bayesian Linear Regression](/sections/3-3) is the answer to the practical objection
+raised above. It avoids the trade-off rather than balancing it, because averaging over the
+posterior plays the role the ensemble of datasets plays here, and a posterior is available
+from a single dataset.
+
+The observation that an average of high-variance fits is a good fit is the seed of the
+ensemble methods in chapter 14.
