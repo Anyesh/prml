@@ -10,7 +10,7 @@
     "dev": "pnpm --filter @prml/web dev",
     "build": "pnpm --filter @prml/web build",
     "preview": "pnpm --filter @prml/web preview",
-    "typecheck": "tsc --noEmit -p packages/math && tsc --noEmit -p packages/ui && tsc --noEmit -p packages/viz",
+    "typecheck": "tsc --noEmit -p packages/math && tsc --noEmit -p packages/ui && tsc --noEmit -p packages/viz && pnpm --filter @prml/web exec astro check --minimumSeverity error",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:visual": "playwright test",

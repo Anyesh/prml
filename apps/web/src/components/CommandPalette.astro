@@ -34,13 +34,22 @@ import '../styles/palette.css';
     readonly haystack: string;
   }
 
-  const dialog = document.getElementById('palette') as HTMLDialogElement | null;
-  const input = document.getElementById('palette-input') as HTMLInputElement | null;
-  const list = document.getElementById('palette-results');
-  const status = document.getElementById('palette-status');
-  if (!dialog || !input || !list || !status) throw new Error('palette markup missing');
+  // Narrowing from a single combined guard does not survive into the handlers defined
+  // below, so each element is asserted where it is bound rather than checked in one place.
+  function required<T extends Element>(id: string): T {
+    const found = document.getElementById(id);
+    if (!found) throw new Error(`palette markup missing: #${id}`);
+    return found as unknown as T;
+  }
 
-  const fuzzy = new uFuzzy({ intraMax: 1 });
+  const dialog = required<HTMLDialogElement>('palette');
+  const input = required<HTMLInputElement>('palette-input');
+  const list = required<HTMLElement>('palette-results');
+  const status = required<HTMLElement>('palette-status');
+
+  // Single-error mode: one typo per term is tolerated, which is what a palette needs when
+  // you are half-remembering a name. Anything looser starts matching unrelated sections.
+  const fuzzy = new uFuzzy({ intraMode: 1, intraIns: 1, intraSub: 1, intraTrn: 1, intraDel: 1 });
   let entries: Entry[] | null = null;
   let shown: Entry[] = [];
   let active = 0;

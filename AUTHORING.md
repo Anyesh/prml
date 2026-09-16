@@ -195,10 +195,16 @@ chapter only warns, so keep genuine prerequisites in.
 ```
 pnpm lint:content     gates 1, 2, 4, 5
 pnpm lint             colour, svg, canvas, Math.random, hooks
+pnpm typecheck        the three packages and the site, including .astro files
 pnpm test             golden fixtures
 pnpm build            schema and structure, and it must succeed
 ```
 
-All four must be clean. Then report: what you built, any concept-ordering conflicts you
+All five must be clean. `pnpm build` does not typecheck, so a type error ships unless
+`pnpm typecheck` is run too; that is what it is there for.
+
+Assert numerics at 1e-9. If a case genuinely cannot hold there, say which one and why in
+your report rather than loosening the tolerance quietly: a tolerance of 1e-6 lets a 3e-9
+drift through, and that drift is exactly what these fixtures exist to catch. Then report: what you built, any concept-ordering conflicts you
 found, anything you filed in `REQUESTS.md`, and anything you could not verify numerically.
 Report problems plainly rather than working around them quietly.

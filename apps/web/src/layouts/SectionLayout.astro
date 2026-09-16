@@ -63,7 +63,10 @@ const pagefindMeta = `section:${sectionId}, title:${title}`;
         'prml:last-visited',
         JSON.stringify({ url: window.location.pathname, title: label }),
       );
-    } catch (err) {}
+    } catch (err) {
+      // Visit tracking is best-effort because localStorage throws outright in a private
+      // window and wherever site data is blocked, and a reading page must still render.
+    }
   </script>
 </BaseLayout>
 
