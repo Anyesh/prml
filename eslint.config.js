@@ -140,7 +140,9 @@ export default defineConfig([
   },
   {
     files: ['**/*.{js,mjs,cjs,jsx,ts,tsx}'],
-    ignores: ['packages/ui/src/tokens.ts', '**/*.test.ts', '**/*.test.tsx'],
+    // This file is exempt for the same reason tokens.ts is: it enumerates every CSS colour
+    // name in order to ban them, so the rule would otherwise flag its own definition.
+    ignores: ['packages/ui/src/tokens.ts', 'eslint.config.js', '**/*.test.ts', '**/*.test.tsx'],
     rules: {
       'no-restricted-syntax': ['error', ...colorLiteralSelectors],
     },
