@@ -1,5 +1,6 @@
 import type { Family, Rng } from '../types.js';
-import { NotImplemented } from '../types.js';
+import { logBeta, betainc } from '../special.js';
+import { gammaSample } from './gamma.js';
 
 export interface BetaParams {
   readonly a: number;
@@ -7,37 +8,36 @@ export interface BetaParams {
 }
 
 export function betaLogPdf(x: number, p: BetaParams): number {
-  void x;
-  void p;
-  throw new NotImplemented('betaLogPdf');
+  if (x < 0 || x > 1) return -Infinity;
+  // Guarded so (a - 1) * log(0) does not become 0 * -Infinity = NaN when a === 1.
+  const left = p.a === 1 ? 0 : (p.a - 1) * Math.log(x);
+  const right = p.b === 1 ? 0 : (p.b - 1) * Math.log(1 - x);
+  return left + right - logBeta(p.a, p.b);
 }
 
 export function betaPdf(x: number, p: BetaParams): number {
-  void x;
-  void p;
-  throw new NotImplemented('betaPdf');
+  return Math.exp(betaLogPdf(x, p));
 }
 
 export function betaCdf(x: number, p: BetaParams): number {
-  void x;
-  void p;
-  throw new NotImplemented('betaCdf');
+  if (x <= 0) return 0;
+  if (x >= 1) return 1;
+  return betainc(x, p.a, p.b);
 }
 
 export function betaSample(rng: Rng, p: BetaParams): number {
-  void rng;
-  void p;
-  throw new NotImplemented('betaSample');
+  const x = gammaSample(rng, { shape: p.a, rate: 1 });
+  const y = gammaSample(rng, { shape: p.b, rate: 1 });
+  return x / (x + y);
 }
 
 export function betaMean(p: BetaParams): number {
-  void p;
-  throw new NotImplemented('betaMean');
+  return p.a / (p.a + p.b);
 }
 
 export function betaVariance(p: BetaParams): number {
-  void p;
-  throw new NotImplemented('betaVariance');
+  const s = p.a + p.b;
+  return (p.a * p.b) / (s * s * (s + 1));
 }
 
 /**
@@ -46,10 +46,7 @@ export function betaVariance(p: BetaParams): number {
  * implemented as a re-fit.
  */
 export function betaPosterior(prior: BetaParams, successes: number, failures: number): BetaParams {
-  void prior;
-  void successes;
-  void failures;
-  throw new NotImplemented('betaPosterior');
+  return { a: prior.a + successes, b: prior.b + failures };
 }
 
 export const Beta: Family<number, BetaParams> = {

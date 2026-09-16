@@ -101,7 +101,10 @@ describe('trapz', () => {
   it('integrates a linear ramp exactly on an unequally spaced grid', () => {
     const xs = [0, 1, 3];
     const ys = xs.map((x) => 2 * x + 1);
-    const expected = 3 * 3 + 2 * 3;
+    // Antiderivative of 2x+1 is x^2+x; trapz is exact for a linear integrand
+    // regardless of spacing, so this closed form is the correct check, not a magic number.
+    const antiderivative = (x: number) => x * x + x;
+    const expected = antiderivative(3) - antiderivative(0);
     expect(trapz(ys, xs)).toBeCloseTo(expected, 9);
   });
 });

@@ -1,5 +1,12 @@
+import {
+  CholeskyDecomposition,
+  EigenvalueDecomposition,
+  LuDecomposition,
+  Matrix,
+  SingularValueDecomposition,
+} from 'ml-matrix';
 import type { Mat, Vec } from '../types.js';
-import { NotImplemented } from '../types.js';
+import { matmul, matScale, transpose } from './core.js';
 
 /**
  * Lower-triangular `L` with `A = L Lᵀ`. Throws when `a` is not positive definite rather
@@ -7,8 +14,11 @@ import { NotImplemented } from '../types.js';
  * downstream as a blank canvas with no error.
  */
 export function cholesky(a: Mat): number[][] {
-  void a;
-  throw new NotImplemented('cholesky');
+  const cho = new CholeskyDecomposition(new Matrix(a.map((row) => [...row])));
+  if (!cho.isPositiveDefinite()) {
+    throw new Error('cholesky: matrix is not positive definite');
+  }
+  return cho.lowerTriangularMatrix.to2DArray();
 }
 
 /**
@@ -16,29 +26,38 @@ export function cholesky(a: Mat): number[][] {
  * numerically singular, and this is the standard fix before factorising.
  */
 export function jitter(a: Mat, eps = 1e-8): number[][] {
-  void a;
-  void eps;
-  throw new NotImplemented('jitter');
+  return a.map((row, i) => row.map((v, j) => (i === j ? v + eps : v)));
 }
 
 /** Solves `A x = b` by LU. For symmetric positive-definite `A`, prefer `solveCholesky`. */
 export function solve(a: Mat, b: Vec): number[] {
-  void a;
-  void b;
-  throw new NotImplemented('solve');
+  const lu = new LuDecomposition(new Matrix(a.map((row) => [...row])));
+  const x = lu.solve(Matrix.columnVector([...b]));
+  return x.to1DArray();
 }
 
 export function solveMat(a: Mat, b: Mat): number[][] {
-  void a;
-  void b;
-  throw new NotImplemented('solveMat');
+  const lu = new LuDecomposition(new Matrix(a.map((row) => [...row])));
+  const x = lu.solve(new Matrix(b.map((row) => [...row])));
+  return x.to2DArray();
 }
 
 /** Solves `A x = b` given `L` from `cholesky(A)`, by forward then back substitution. */
 export function solveCholesky(l: Mat, b: Vec): number[] {
-  void l;
-  void b;
-  throw new NotImplemented('solveCholesky');
+  const n = l.length;
+  const y = new Array<number>(n);
+  for (let i = 0; i < n; i++) {
+    let sum = b[i]!;
+    for (let k = 0; k < i; k++) sum -= l[i]![k]! * y[k]!;
+    y[i] = sum / l[i]![i]!;
+  }
+  const x = new Array<number>(n);
+  for (let i = n - 1; i >= 0; i--) {
+    let sum = y[i]!;
+    for (let k = i + 1; k < n; k++) sum -= l[k]![i]! * x[k]!;
+    x[i] = sum / l[i]![i]!;
+  }
+  return x;
 }
 
 /**
@@ -47,13 +66,11 @@ export function solveCholesky(l: Mat, b: Vec): number[] {
  * posterior covariance a widget draws as an ellipse), not as a way to solve systems.
  */
 export function inverse(a: Mat): number[][] {
-  void a;
-  throw new NotImplemented('inverse');
+  return solveMat(a, identity(a.length));
 }
 
 export function det(a: Mat): number {
-  void a;
-  throw new NotImplemented('det');
+  return new LuDecomposition(new Matrix(a.map((row) => [...row]))).determinant;
 }
 
 /**
@@ -61,8 +78,10 @@ export function det(a: Mat): number {
  * determinant of a 50×50 GP kernel matrix underflows to zero long before its log does.
  */
 export function logDet(a: Mat): number {
-  void a;
-  throw new NotImplemented('logDet');
+  const l = cholesky(a);
+  let sum = 0;
+  for (let i = 0; i < l.length; i++) sum += Math.log(l[i]![i]!);
+  return 2 * sum;
 }
 
 export interface EigenSym {
@@ -81,8 +100,28 @@ export interface EigenSym {
  * without fixing one, PCA axes flip arbitrarily between frames as the user drags data.
  */
 export function eigSym(a: Mat): EigenSym {
-  void a;
-  throw new NotImplemented('eigSym');
+  const evd = new EigenvalueDecomposition(new Matrix(a.map((row) => [...row])), {
+    assumeSymmetric: true,
+  });
+  const n = a.length;
+  const ascending = evd.realEigenvalues;
+  const vecCols = evd.eigenvectorMatrix;
+
+  const order = ascending.map((_, i) => i).sort((i, j) => ascending[j]! - ascending[i]!);
+  const values = order.map((i) => ascending[i]!);
+  const vectors = order.map((col) => {
+    const row = new Array<number>(n);
+    for (let r = 0; r < n; r++) row[r] = vecCols.get(r, col);
+    let maxIdx = 0;
+    for (let i = 1; i < n; i++) {
+      if (Math.abs(row[i]!) > Math.abs(row[maxIdx]!)) maxIdx = i;
+    }
+    if (row[maxIdx]! < 0) {
+      for (let i = 0; i < n; i++) row[i] = -row[i]!;
+    }
+    return row;
+  });
+  return { values, vectors };
 }
 
 export interface Svd {
@@ -94,13 +133,25 @@ export interface Svd {
 }
 
 export function svd(a: Mat): Svd {
-  void a;
-  throw new NotImplemented('svd');
+  const decomp = new SingularValueDecomposition(new Matrix(a.map((row) => [...row])));
+  return {
+    u: decomp.leftSingularVectors.to2DArray(),
+    s: decomp.diagonal,
+    v: decomp.rightSingularVectors.to2DArray(),
+  };
 }
 
 /** Moore-Penrose pseudo-inverse via SVD, with singular values below `rcond * s[0]` dropped. */
 export function pinv(a: Mat, rcond = 1e-12): number[][] {
-  void a;
-  void rcond;
-  throw new NotImplemented('pinv');
+  const { u, s, v } = svd(a);
+  const threshold = rcond * (s[0] ?? 0);
+  const sInv = s.map((sv) => (sv > threshold ? 1 / sv : 0));
+  const uScaled = transpose(u).map((col, i) => col.map((v) => v * sInv[i]!));
+  return matmul(v, uScaled);
+}
+
+function identity(n: number): number[][] {
+  const out: number[][] = Array.from({ length: n }, () => new Array(n).fill(0));
+  for (let i = 0; i < n; i++) out[i]![i] = 1;
+  return out;
 }

@@ -1,0 +1,599 @@
+{
+  "cases": [
+    {
+      "fn": "logGamma",
+      "args": [
+        0.001
+      ],
+      "expected": 6.907178885383853
+    },
+    {
+      "fn": "logGamma",
+      "args": [
+        1e-10
+      ],
+      "expected": 23.025850929882733
+    },
+    {
+      "fn": "logGamma",
+      "args": [
+        0.5
+      ],
+      "expected": 0.5723649429247
+    },
+    {
+      "fn": "logGamma",
+      "args": [
+        1.0
+      ],
+      "expected": 0.0
+    },
+    {
+      "fn": "logGamma",
+      "args": [
+        2.0
+      ],
+      "expected": 0.0
+    },
+    {
+      "fn": "logGamma",
+      "args": [
+        5.0
+      ],
+      "expected": 3.1780538303479458
+    },
+    {
+      "fn": "logGamma",
+      "args": [
+        10.0
+      ],
+      "expected": 12.801827480081469
+    },
+    {
+      "fn": "logGamma",
+      "args": [
+        170.0
+      ],
+      "expected": 701.4372638087372
+    },
+    {
+      "fn": "logGamma",
+      "args": [
+        1000000.0
+      ],
+      "expected": 12815504.569147611
+    },
+    {
+      "fn": "digamma",
+      "args": [
+        0.001
+      ],
+      "expected": -1000.5755719318103
+    },
+    {
+      "fn": "digamma",
+      "args": [
+        0.01
+      ],
+      "expected": -100.56088545786868
+    },
+    {
+      "fn": "digamma",
+      "args": [
+        0.5
+      ],
+      "expected": -1.9635100260214235
+    },
+    {
+      "fn": "digamma",
+      "args": [
+        1.0
+      ],
+      "expected": -0.5772156649015329
+    },
+    {
+      "fn": "digamma",
+      "args": [
+        2.0
+      ],
+      "expected": 0.42278433509846713
+    },
+    {
+      "fn": "digamma",
+      "args": [
+        10.0
+      ],
+      "expected": 2.251752589066721
+    },
+    {
+      "fn": "digamma",
+      "args": [
+        100.0
+      ],
+      "expected": 4.600161852738088
+    },
+    {
+      "fn": "digamma",
+      "args": [
+        1000000.0
+      ],
+      "expected": 13.81551005796419
+    },
+    {
+      "fn": "logBeta",
+      "args": [
+        0.5,
+        0.5
+      ],
+      "expected": 1.1447298858494
+    },
+    {
+      "fn": "logBeta",
+      "args": [
+        1.0,
+        1.0
+      ],
+      "expected": 0.0
+    },
+    {
+      "fn": "logBeta",
+      "args": [
+        2.0,
+        3.0
+      ],
+      "expected": -2.4849066497880004
+    },
+    {
+      "fn": "logBeta",
+      "args": [
+        0.001,
+        0.001
+      ],
+      "expected": 7.600900817008347
+    },
+    {
+      "fn": "logBeta",
+      "args": [
+        1000000.0,
+        1000000.0
+      ],
+      "expected": -1386300.0033629201
+    },
+    {
+      "fn": "logBeta",
+      "args": [
+        0.001,
+        1000000.0
+      ],
+      "expected": 6.8933633752167225
+    },
+    {
+      "fn": "logBeta",
+      "args": [
+        170.0,
+        170.0
+      ],
+      "expected": -236.97169319236423
+    },
+    {
+      "fn": "logMultivariateGamma",
+      "args": [
+        5.0,
+        1
+      ],
+      "expected": 3.1780538303479458
+    },
+    {
+      "fn": "logMultivariateGamma",
+      "args": [
+        3.0,
+        2
+      ],
+      "expected": 1.5501949939575645
+    },
+    {
+      "fn": "logMultivariateGamma",
+      "args": [
+        10.0,
+        5
+      ],
+      "expected": 58.8938418512374
+    },
+    {
+      "fn": "logMultivariateGamma",
+      "args": [
+        0.6,
+        1
+      ],
+      "expected": 0.398233858069235
+    },
+    {
+      "fn": "logMultivariateGamma",
+      "args": [
+        100.0,
+        10
+      ],
+      "expected": 3513.957215821629
+    },
+    {
+      "fn": "logMultivariateGamma",
+      "args": [
+        50.5,
+        3
+      ],
+      "expected": 435.41937708698566
+    },
+    {
+      "fn": "erf",
+      "args": [
+        0.0
+      ],
+      "expected": 0.0
+    },
+    {
+      "fn": "erf",
+      "args": [
+        0.001
+      ],
+      "expected": 0.0011283787909692363
+    },
+    {
+      "fn": "erf",
+      "args": [
+        -0.0001
+      ],
+      "expected": -0.00011283791633342487
+    },
+    {
+      "fn": "erf",
+      "args": [
+        0.5
+      ],
+      "expected": 0.5204998778130465
+    },
+    {
+      "fn": "erf",
+      "args": [
+        1.0
+      ],
+      "expected": 0.8427007929497148
+    },
+    {
+      "fn": "erf",
+      "args": [
+        2.0
+      ],
+      "expected": 0.9953222650189527
+    },
+    {
+      "fn": "erf",
+      "args": [
+        -3.0
+      ],
+      "expected": -0.9999779095030014
+    },
+    {
+      "fn": "erf",
+      "args": [
+        5.0
+      ],
+      "expected": 0.9999999999984626
+    },
+    {
+      "fn": "erf",
+      "args": [
+        10.0
+      ],
+      "expected": 1.0
+    },
+    {
+      "fn": "erfc",
+      "args": [
+        0.0
+      ],
+      "expected": 1.0
+    },
+    {
+      "fn": "erfc",
+      "args": [
+        0.5
+      ],
+      "expected": 0.4795001221869535
+    },
+    {
+      "fn": "erfc",
+      "args": [
+        1.0
+      ],
+      "expected": 0.15729920705028516
+    },
+    {
+      "fn": "erfc",
+      "args": [
+        -0.0001
+      ],
+      "expected": 1.0001128379163333
+    },
+    {
+      "fn": "erfc",
+      "args": [
+        -3.0
+      ],
+      "expected": 1.9999779095030015
+    },
+    {
+      "fn": "erfc",
+      "args": [
+        -5.0
+      ],
+      "expected": 1.9999999999984626
+    },
+    {
+      "fn": "erfc",
+      "args": [
+        -8.0
+      ],
+      "expected": 2.0
+    },
+    {
+      "fn": "erfc",
+      "args": [
+        3.0
+      ],
+      "expected": 2.2090496998585445e-05
+    },
+    {
+      "fn": "erfc",
+      "args": [
+        5.0
+      ],
+      "expected": 1.5374597944280347e-12
+    },
+    {
+      "fn": "erfc",
+      "args": [
+        8.0
+      ],
+      "expected": 1.1224297172982928e-29
+    },
+    {
+      "fn": "erfc",
+      "args": [
+        15.0
+      ],
+      "expected": 7.212994172451209e-100
+    },
+    {
+      "fn": "gammaincLower",
+      "args": [
+        1.0,
+        1.0
+      ],
+      "expected": 0.6321205588285577
+    },
+    {
+      "fn": "gammaincLower",
+      "args": [
+        0.5,
+        0.5
+      ],
+      "expected": 0.6826894921370859
+    },
+    {
+      "fn": "gammaincLower",
+      "args": [
+        5.0,
+        0.001
+      ],
+      "expected": 8.326391864211505e-18
+    },
+    {
+      "fn": "gammaincLower",
+      "args": [
+        5.0,
+        100.0
+      ],
+      "expected": 1.0
+    },
+    {
+      "fn": "gammaincLower",
+      "args": [
+        0.001,
+        0.001
+      ],
+      "expected": 0.9936876467088603
+    },
+    {
+      "fn": "gammaincLower",
+      "args": [
+        100.0,
+        50.0
+      ],
+      "expected": 3.2000653245851495e-10
+    },
+    {
+      "fn": "gammaincLower",
+      "args": [
+        100.0,
+        200.0
+      ],
+      "expected": 0.9999999999999981
+    },
+    {
+      "fn": "gammaincLower",
+      "args": [
+        0.001,
+        1000.0
+      ],
+      "expected": 1.0
+    },
+    {
+      "fn": "gammaincLower",
+      "args": [
+        1000.0,
+        1000.0
+      ],
+      "expected": 0.5042052441802155
+    },
+    {
+      "fn": "betainc",
+      "args": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "expected": 0.5000000000000001
+    },
+    {
+      "fn": "betainc",
+      "args": [
+        0.5,
+        1.0,
+        1.0
+      ],
+      "expected": 0.5
+    },
+    {
+      "fn": "betainc",
+      "args": [
+        0.1,
+        2.0,
+        5.0
+      ],
+      "expected": 0.11426500000000002
+    },
+    {
+      "fn": "betainc",
+      "args": [
+        0.999,
+        5.0,
+        5.0
+      ],
+      "expected": 0.9999999999998744
+    },
+    {
+      "fn": "betainc",
+      "args": [
+        0.001,
+        0.001,
+        0.001
+      ],
+      "expected": 0.49655933563910554
+    },
+    {
+      "fn": "betainc",
+      "args": [
+        0.5,
+        1000.0,
+        1000.0
+      ],
+      "expected": 0.4999999999999992
+    },
+    {
+      "fn": "betainc",
+      "args": [
+        1e-06,
+        2.0,
+        3.0
+      ],
+      "expected": 5.999992000002998e-12
+    },
+    {
+      "fn": "betainc",
+      "args": [
+        0.999999,
+        2.0,
+        3.0
+      ],
+      "expected": 1.0
+    },
+    {
+      "fn": "besselI",
+      "args": [
+        0.0,
+        0.0
+      ],
+      "expected": 1.0
+    },
+    {
+      "fn": "besselI",
+      "args": [
+        0.0,
+        0.001
+      ],
+      "expected": 1.0000002500000158
+    },
+    {
+      "fn": "besselI",
+      "args": [
+        0.0,
+        1.0
+      ],
+      "expected": 1.2660658777520084
+    },
+    {
+      "fn": "besselI",
+      "args": [
+        0.0,
+        10.0
+      ],
+      "expected": 2815.7166284662544
+    },
+    {
+      "fn": "besselI",
+      "args": [
+        0.0,
+        50.0
+      ],
+      "expected": 2.9325537838493355e+20
+    },
+    {
+      "fn": "besselI",
+      "args": [
+        0.0,
+        700.0
+      ],
+      "expected": 1.5295933476718723e+302
+    },
+    {
+      "fn": "besselI",
+      "args": [
+        1.0,
+        0.0
+      ],
+      "expected": 0.0
+    },
+    {
+      "fn": "besselI",
+      "args": [
+        1.0,
+        0.001
+      ],
+      "expected": 0.0005000000625000026
+    },
+    {
+      "fn": "besselI",
+      "args": [
+        1.0,
+        1.0
+      ],
+      "expected": 0.565159103992485
+    },
+    {
+      "fn": "besselI",
+      "args": [
+        1.0,
+        50.0
+      ],
+      "expected": 2.903078590103556e+20
+    },
+    {
+      "fn": "besselI",
+      "args": [
+        1.0,
+        700.0
+      ],
+      "expected": 1.528500390233903e+302
+    }
+  ]
+}

@@ -1,0 +1,319 @@
+{
+  "cases": [
+    {
+      "fn": "logPdf",
+      "x": 0.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": -0.9189385332046727
+    },
+    {
+      "fn": "pdf",
+      "x": 0.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": 0.3989422804014327
+    },
+    {
+      "fn": "logPdf",
+      "x": 5.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": -13.418938533204672
+    },
+    {
+      "fn": "pdf",
+      "x": 5.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": 1.4867195147342979e-06
+    },
+    {
+      "fn": "logPdf",
+      "x": -10.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": -50.918938533204674
+    },
+    {
+      "fn": "pdf",
+      "x": -10.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": 7.69459862670642e-23
+    },
+    {
+      "fn": "logPdf",
+      "x": 1000000.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": -500000000000.91895
+    },
+    {
+      "fn": "pdf",
+      "x": 1000000.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": 0.0
+    },
+    {
+      "fn": "logPdf",
+      "x": 2.0,
+      "params": {
+        "mu": 3.0,
+        "sigma2": 0.0001
+      },
+      "expected": -4996.313768347217
+    },
+    {
+      "fn": "pdf",
+      "x": 2.0,
+      "params": {
+        "mu": 3.0,
+        "sigma2": 0.0001
+      },
+      "expected": 0.0
+    },
+    {
+      "fn": "logPdf",
+      "x": 100.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1000000.0
+      },
+      "expected": -7.83169381218681
+    },
+    {
+      "fn": "pdf",
+      "x": 100.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1000000.0
+      },
+      "expected": 0.0003969525474770118
+    },
+    {
+      "fn": "logPdf",
+      "x": 0.0,
+      "params": {
+        "mu": -5.0,
+        "sigma2": 2.5
+      },
+      "expected": -6.37708389914175
+    },
+    {
+      "fn": "pdf",
+      "x": 0.0,
+      "params": {
+        "mu": -5.0,
+        "sigma2": 2.5
+      },
+      "expected": 0.00170007332050407
+    },
+    {
+      "fn": "logPdf",
+      "x": -40.0,
+      "params": {
+        "mu": -5.0,
+        "sigma2": 2.5
+      },
+      "expected": -246.37708389914172
+    },
+    {
+      "fn": "pdf",
+      "x": -40.0,
+      "params": {
+        "mu": -5.0,
+        "sigma2": 2.5
+      },
+      "expected": 9.995211658988239e-108
+    },
+    {
+      "fn": "cdf",
+      "x": 0.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": 0.5
+    },
+    {
+      "fn": "cdf",
+      "x": 1.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": 0.8413447460685429
+    },
+    {
+      "fn": "cdf",
+      "x": -1.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": 0.15865525393145707
+    },
+    {
+      "fn": "cdf",
+      "x": 5.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": 0.9999997133484281
+    },
+    {
+      "fn": "cdf",
+      "x": -5.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": 2.866515718791933e-07
+    },
+    {
+      "fn": "cdf",
+      "x": 6.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": 0.9999999990134123
+    },
+    {
+      "fn": "cdf",
+      "x": -6.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": 9.865876450376946e-10
+    },
+    {
+      "fn": "cdf",
+      "x": 8.0,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": 0.9999999999999993
+    },
+    {
+      "fn": "cdf",
+      "x": 10.0,
+      "params": {
+        "mu": 3.0,
+        "sigma2": 4.0
+      },
+      "expected": 0.9997673709209645
+    },
+    {
+      "fn": "cdf",
+      "x": -100.0,
+      "params": {
+        "mu": 3.0,
+        "sigma2": 4.0
+      },
+      "expected": 0.0
+    },
+    {
+      "fn": "quantile",
+      "q": 0.5,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": 0.0
+    },
+    {
+      "fn": "quantile",
+      "q": 0.975,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": 1.959963984540054
+    },
+    {
+      "fn": "quantile",
+      "q": 0.025,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": -1.9599639845400545
+    },
+    {
+      "fn": "quantile",
+      "q": 0.001,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": -3.090232306167813
+    },
+    {
+      "fn": "quantile",
+      "q": 0.999,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": 3.090232306167813
+    },
+    {
+      "fn": "quantile",
+      "q": 1e-06,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": -4.753424308822899
+    },
+    {
+      "fn": "quantile",
+      "q": 0.999999,
+      "params": {
+        "mu": 0.0,
+        "sigma2": 1.0
+      },
+      "expected": 4.753424308817087
+    },
+    {
+      "fn": "quantile",
+      "q": 0.5,
+      "params": {
+        "mu": 3.0,
+        "sigma2": 4.0
+      },
+      "expected": 3.0
+    },
+    {
+      "fn": "quantile",
+      "q": 0.1,
+      "params": {
+        "mu": -5.0,
+        "sigma2": 0.01
+      },
+      "expected": -5.12815515655446
+    }
+  ]
+}

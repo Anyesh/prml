@@ -1,0 +1,284 @@
+{
+  "cases": [
+    {
+      "fn": "bernoulliLogPmf",
+      "x": 1,
+      "params": {
+        "mu": 0.3
+      },
+      "expected": -1.2039728043259361
+    },
+    {
+      "fn": "bernoulliLogPmf",
+      "x": 0,
+      "params": {
+        "mu": 0.3
+      },
+      "expected": -0.35667494393873245
+    },
+    {
+      "fn": "bernoulliLogPmf",
+      "x": 1,
+      "params": {
+        "mu": 0.999999
+      },
+      "expected": -1.000000500029089e-06
+    },
+    {
+      "fn": "bernoulliLogPmf",
+      "x": 0,
+      "params": {
+        "mu": 1e-06
+      },
+      "expected": -1.0000005000003334e-06
+    },
+    {
+      "fn": "bernoulliLogPmf",
+      "x": 1,
+      "params": {
+        "mu": 0.5
+      },
+      "expected": -0.6931471805599453
+    },
+    {
+      "fn": "bernoulliLogPmf",
+      "x": 0,
+      "params": {
+        "mu": 0.5
+      },
+      "expected": -0.6931471805599453
+    },
+    {
+      "fn": "binomialLogPmf",
+      "m": 5,
+      "params": {
+        "n": 10,
+        "mu": 0.5
+      },
+      "expected": -1.4020427180880288
+    },
+    {
+      "fn": "binomialPmf",
+      "m": 5,
+      "params": {
+        "n": 10,
+        "mu": 0.5
+      },
+      "expected": 0.24609375000000003
+    },
+    {
+      "fn": "binomialLogPmf",
+      "m": 0,
+      "params": {
+        "n": 10,
+        "mu": 0.3
+      },
+      "expected": -3.5667494393873245
+    },
+    {
+      "fn": "binomialPmf",
+      "m": 0,
+      "params": {
+        "n": 10,
+        "mu": 0.3
+      },
+      "expected": 0.0282475249
+    },
+    {
+      "fn": "binomialLogPmf",
+      "m": 10,
+      "params": {
+        "n": 10,
+        "mu": 0.3
+      },
+      "expected": -12.03972804325936
+    },
+    {
+      "fn": "binomialPmf",
+      "m": 10,
+      "params": {
+        "n": 10,
+        "mu": 0.3
+      },
+      "expected": 5.9048999999999975e-06
+    },
+    {
+      "fn": "binomialLogPmf",
+      "m": 500,
+      "params": {
+        "n": 1000,
+        "mu": 0.5
+      },
+      "expected": -3.6799189920933486
+    },
+    {
+      "fn": "binomialPmf",
+      "m": 500,
+      "params": {
+        "n": 1000,
+        "mu": 0.5
+      },
+      "expected": 0.025225018178360804
+    },
+    {
+      "fn": "binomialLogPmf",
+      "m": 0,
+      "params": {
+        "n": 0,
+        "mu": 0.5
+      },
+      "expected": 0.0
+    },
+    {
+      "fn": "binomialPmf",
+      "m": 0,
+      "params": {
+        "n": 0,
+        "mu": 0.5
+      },
+      "expected": 1.0
+    },
+    {
+      "fn": "binomialLogPmf",
+      "m": 3,
+      "params": {
+        "n": 20,
+        "mu": 0.001
+      },
+      "expected": -13.701490801228791
+    },
+    {
+      "fn": "binomialPmf",
+      "m": 3,
+      "params": {
+        "n": 20,
+        "mu": 0.001
+      },
+      "expected": 1.1207742675061575e-06
+    },
+    {
+      "fn": "binomialLogPmf",
+      "m": 997,
+      "params": {
+        "n": 1000,
+        "mu": 0.999
+      },
+      "expected": -2.79226080481428
+    },
+    {
+      "fn": "binomialPmf",
+      "m": 997,
+      "params": {
+        "n": 1000,
+        "mu": 0.999
+      },
+      "expected": 0.061282509389840784
+    },
+    {
+      "fn": "multinomialLogPmf",
+      "counts": [
+        2,
+        3,
+        5
+      ],
+      "params": {
+        "n": 10,
+        "probs": [
+          0.2,
+          0.3,
+          0.5
+        ]
+      },
+      "expected": -2.4645159601402664
+    },
+    {
+      "fn": "multinomialLogPmf",
+      "counts": [
+        0,
+        0,
+        10
+      ],
+      "params": {
+        "n": 10,
+        "probs": [
+          0.1,
+          0.1,
+          0.8
+        ]
+      },
+      "expected": -2.231435513142097
+    },
+    {
+      "fn": "multinomialLogPmf",
+      "counts": [
+        250,
+        250,
+        500
+      ],
+      "params": {
+        "n": 1000,
+        "probs": [
+          0.25,
+          0.25,
+          0.5
+        ]
+      },
+      "expected": -7.013514393615878
+    },
+    {
+      "fn": "multinomialLogPmf",
+      "counts": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "params": {
+        "n": 1,
+        "probs": [
+          0.7,
+          0.1,
+          0.1,
+          0.1
+        ]
+      },
+      "expected": -0.35667494393873245
+    },
+    {
+      "fn": "logBinomialCoefficient",
+      "n": 10,
+      "k": 3,
+      "expected": 4.787491742782047
+    },
+    {
+      "fn": "logBinomialCoefficient",
+      "n": 1000,
+      "k": 500,
+      "expected": 689.4672615678519
+    },
+    {
+      "fn": "logBinomialCoefficient",
+      "n": 0,
+      "k": 0,
+      "expected": 0.0
+    },
+    {
+      "fn": "logBinomialCoefficient",
+      "n": 200,
+      "k": 100,
+      "expected": 135.7532360812785
+    },
+    {
+      "fn": "logBinomialCoefficient",
+      "n": 170,
+      "k": 85,
+      "expected": 115.03985954426628
+    },
+    {
+      "fn": "logBinomialCoefficient",
+      "n": 2000,
+      "k": 1,
+      "expected": 7.600902459544159
+    }
+  ]
+}

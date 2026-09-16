@@ -1,5 +1,7 @@
 import type { Rng } from './types.js';
-import { NotImplemented } from './types.js';
+
+const MASK64 = (1n << 64n) - 1n;
+const MULT = 6364136223846793005n;
 
 /**
  * PCG32 (O'Neill 2014), the XSH-RR variant: a 64-bit LCG whose output is permuted down
@@ -10,9 +12,36 @@ import { NotImplemented } from './types.js';
  * internally, so values above 2^53 must be passed as `bigint` to survive intact.
  */
 export function pcg32(seed: number | bigint, stream: number | bigint = 1): Rng {
-  void seed;
-  void stream;
-  throw new NotImplemented('pcg32');
+  const originalSeed = BigInt(seed);
+
+  function initState(seedB: bigint, streamB: bigint): { state: bigint; inc: bigint } {
+    const inc = ((streamB << 1n) | 1n) & MASK64;
+    let state = 0n;
+    state = (state * MULT + inc) & MASK64;
+    state = (state + seedB) & MASK64;
+    state = (state * MULT + inc) & MASK64;
+    return { state, inc };
+  }
+
+  let { state, inc } = initState(originalSeed, BigInt(stream));
+
+  function nextUint32(): number {
+    const old = state;
+    state = (state * MULT + inc) & MASK64;
+    const xorshifted = Number((((old >> 18n) ^ old) >> 27n) & 0xffffffffn);
+    const rot = Number(old >> 59n);
+    return ((xorshifted >>> rot) | (xorshifted << ((-rot) & 31))) >>> 0;
+  }
+
+  function next(): number {
+    return nextUint32() / 4294967296;
+  }
+
+  function fork(streamId: number): Rng {
+    return pcg32(originalSeed, streamId);
+  }
+
+  return { nextUint32, next, fork };
 }
 
 /**
@@ -20,9 +49,9 @@ export function pcg32(seed: number | bigint, stream: number | bigint = 1): Rng {
  * and the per-call closure overhead of `next()` shows up at that rate.
  */
 export function uniformArray(rng: Rng, n: number): number[] {
-  void rng;
-  void n;
-  throw new NotImplemented('uniformArray');
+  const out = new Array<number>(n);
+  for (let i = 0; i < n; i++) out[i] = rng.next();
+  return out;
 }
 
 /**
@@ -31,10 +60,17 @@ export function uniformArray(rng: Rng, n: number): number[] {
  * the displayed order depend on frame count.
  */
 export function shuffle<T>(rng: Rng, xs: readonly T[]): T[] {
-  void rng;
-  void xs;
-  throw new NotImplemented('shuffle');
+  const out = xs.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = randInt(rng, i + 1);
+    const tmp = out[i]!;
+    out[i] = out[j]!;
+    out[j] = tmp;
+  }
+  return out;
 }
+
+const normalCache = new WeakMap<Rng, number>();
 
 /**
  * One standard normal deviate. Must use the polar (Marsaglia) form and cache the second
@@ -46,20 +82,47 @@ export function shuffle<T>(rng: Rng, xs: readonly T[]): T[] {
  * module would make `linalg` depend on `distributions`.
  */
 export function standardNormal(rng: Rng): number {
-  void rng;
-  throw new NotImplemented('standardNormal');
+  const cached = normalCache.get(rng);
+  if (cached !== undefined) {
+    normalCache.delete(rng);
+    return cached;
+  }
+  let u = 0;
+  let v = 0;
+  let s = 0;
+  do {
+    u = 2 * rng.next() - 1;
+    v = 2 * rng.next() - 1;
+    s = u * u + v * v;
+  } while (s >= 1 || s === 0);
+  const factor = Math.sqrt((-2 * Math.log(s)) / s);
+  normalCache.set(rng, v * factor);
+  return u * factor;
 }
 
 /** Uniform integer in [0, n), free of the modulo bias that `next() * n | 0` introduces. */
 export function randInt(rng: Rng, n: number): number {
-  void rng;
-  void n;
-  throw new NotImplemented('randInt');
+  // Reject draws in the partial final bucket so every outcome in [0, n) stays equally
+  // likely; without this, values near 2^32 would be over-represented whenever n does
+  // not divide 2^32 evenly.
+  const limit = Math.floor(4294967296 / n) * n;
+  let x: number;
+  do {
+    x = rng.nextUint32();
+  } while (x >= limit);
+  return x % n;
 }
 
 /** Index sampled from `weights`, which need not be normalised but must be non-negative. */
 export function categorical(rng: Rng, weights: readonly number[]): number {
-  void rng;
-  void weights;
-  throw new NotImplemented('categorical');
+  let total = 0;
+  for (const w of weights) total += w;
+  let r = rng.next() * total;
+  for (let i = 0; i < weights.length; i++) {
+    r -= weights[i]!;
+    if (r < 0) return i;
+  }
+  // Floating-point rounding can leave r >= 0 after subtracting every weight;
+  // the last index is the only consistent choice left.
+  return weights.length - 1;
 }
