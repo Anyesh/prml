@@ -1,0 +1,21 @@
+- id: prior
+  name: "Prior"
+  definition: "A fixture concept used to test the graph gate against deliberately broken data."
+  introducedIn: "3.1"
+  usedIn: []
+  requires: ["posterior"]
+  aliases: []
+- id: posterior
+  name: "Posterior"
+  definition: "A fixture concept that requires prior, closing a requires-cycle for testing."
+  introducedIn: "3.1"
+  usedIn: []
+  requires: ["prior"]
+  aliases: []
+- id: dangling
+  name: "Dangling"
+  definition: "A fixture concept whose introducedIn points at a section that does not exist."
+  introducedIn: "7.7"
+  usedIn: []
+  requires: []
+  aliases: []

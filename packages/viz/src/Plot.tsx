@@ -113,9 +113,25 @@ export function Plot({
     return () => media.removeEventListener('change', update);
   }, []);
 
+  // Callers write these inline (`xDomain={[-1, 1]}`, `margin={{ left: 60 }}`), so a new
+  // object arrives on every render. Depending on the identities would rebuild the frame
+  // and repaint every canvas layer each time the parent renders, so the memos below must
+  // depend on the scalar contents instead.
+  const marginTop = marginOverride?.top;
+  const marginRight = marginOverride?.right;
+  const marginBottom = marginOverride?.bottom;
+  const marginLeft = marginOverride?.left;
+  const [x0Prop, x1Prop] = xDomain;
+  const [y0Prop, y1Prop] = yDomain;
+
   const margin: Margin = useMemo(
-    () => ({ ...DEFAULT_MARGIN, ...marginOverride }),
-    [marginOverride?.top, marginOverride?.right, marginOverride?.bottom, marginOverride?.left],
+    () => ({
+      top: marginTop ?? DEFAULT_MARGIN.top,
+      right: marginRight ?? DEFAULT_MARGIN.right,
+      bottom: marginBottom ?? DEFAULT_MARGIN.bottom,
+      left: marginLeft ?? DEFAULT_MARGIN.left,
+    }),
+    [marginTop, marginRight, marginBottom, marginLeft],
   );
 
   const registrations = useRef<Registration[]>([]);
@@ -169,8 +185,10 @@ export function Plot({
     const innerWidth = Math.max(0, outerWidth - margin.left - margin.right);
     const innerHeight = Math.max(0, height - margin.top - margin.bottom);
 
-    let [x0, x1] = xDomain;
-    let [y0, y1] = yDomain;
+    let x0 = x0Prop;
+    let x1 = x1Prop;
+    let y0 = y0Prop;
+    let y1 = y1Prop;
     if (equalAspect && innerWidth > 0 && innerHeight > 0) {
       const xPerPx = (x1 - x0) / innerWidth;
       const yPerPx = (y1 - y0) / innerHeight;
@@ -199,7 +217,7 @@ export function Plot({
       toData: (px, py) => [xScale.invert(px), yScale.invert(py)] as const,
       requestRedraw,
     };
-  }, [measured, height, xDomain[0], xDomain[1], yDomain[0], yDomain[1], margin, equalAspect, dpr, requestRedraw]);
+  }, [measured, height, x0Prop, x1Prop, y0Prop, y1Prop, margin, equalAspect, dpr, requestRedraw]);
 
   frameRef.current = frame;
 

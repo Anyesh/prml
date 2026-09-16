@@ -6,7 +6,7 @@ import {
   SingularValueDecomposition,
 } from 'ml-matrix';
 import type { Mat, Vec } from '../types.js';
-import { matmul, matScale, transpose } from './core.js';
+import { matmul, transpose } from './core.js';
 
 /**
  * Lower-triangular `L` with `A = L Lᵀ`. Throws when `a` is not positive definite rather

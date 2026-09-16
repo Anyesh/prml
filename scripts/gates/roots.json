@@ -1,0 +1,4 @@
+{
+  "description": "Section ids that are genuine entry points into the prereq graph: sections with no prerequisites that are not orphans. Every other section must be reachable from one of these by following prereqs. Update this list as chapter 1 content lands.",
+  "roots": ["1.1"]
+}

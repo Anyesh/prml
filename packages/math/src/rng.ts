@@ -23,7 +23,9 @@ export function pcg32(seed: number | bigint, stream: number | bigint = 1): Rng {
     return { state, inc };
   }
 
-  let { state, inc } = initState(originalSeed, BigInt(stream));
+  const seeded = initState(originalSeed, BigInt(stream));
+  const inc = seeded.inc;
+  let state = seeded.state;
 
   function nextUint32(): number {
     const old = state;
