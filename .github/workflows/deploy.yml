@@ -1,8 +1,13 @@
 name: Deploy to GitHub Pages
 
-# The site is built with `base: '/prml'` in apps/web/astro.config.mjs, and a project
-# Pages site is served from https://<owner>.github.io/<repository>. Those two must agree,
-# so renaming this repository breaks every URL in the build until `base` is changed to match.
+# The site is built with `base: '/prml'` in apps/web/astro.config.mjs, and a project Pages
+# site is served from the `<repository>` path of the account's Pages host. Those two must
+# agree, so renaming this repository breaks every URL in the build until `base` changes too.
+#
+# The host here is learn.anyesh.me, not anyesh.github.io: a custom domain on the account's
+# user site applies to all its project sites, so this deploys to learn.anyesh.me/prml/ and
+# the github.io address redirects there. The path is what `base` encodes, so the custom
+# domain needs no change here.
 
 on:
   push:
