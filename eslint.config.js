@@ -170,6 +170,9 @@ export default defineConfig([
   },
   {
     files: ['apps/web/src/widgets/**/*.{js,jsx,ts,tsx}'],
+    // Tests for widget-level derivations need the test runner and the filesystem; the import
+    // restriction below is about keeping what ships to a reader thin, not what verifies it.
+    ignores: ['**/*.test.ts', '**/*.test.tsx'],
     rules: {
       'no-restricted-syntax': [
         'error',
